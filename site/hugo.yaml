@@ -1,0 +1,64 @@
+baseURL: "https://legendary-broccoli-1p63635.pages.github.io/"
+title: "Model Context Protocol"
+
+enableRobotsTXT: true
+enableGitInfo: true
+
+outputs:
+  home: [HTML]
+  page: [HTML]
+  section: [HTML, RSS]
+
+module:
+  imports:
+    - path: github.com/imfing/hextra
+
+
+
+contentDir: ../docs
+
+markup:
+  goldmark:
+    renderer:
+      unsafe: false
+  extensions:
+    definitionList: true
+    footnote: true
+    linkify: true
+    linkifyProtocol: https
+    strikethrough: true
+    table: true
+    typographer:
+      apostrophe: "&rsquo;"
+      disable: false
+      ellipsis: "&hellip;"
+      emDash: "&mdash;"
+      enDash: "&ndash;"
+      leftAngleQuote: "&laquo;"
+      leftDoubleQuote: "&ldquo;"
+      leftSingleQuote: "&lsquo;"
+      rightAngleQuote: "&raquo;"
+      rightDoubleQuote: "&rdquo;"
+      rightSingleQuote: "&rsquo;"
+  highlight:
+    noClasses: false
+
+enableInlineShortcodes: true
+
+menu:
+  main:
+    - name: Guide
+      pageRef: /guide
+      weight: 1
+    - name: Specification
+      pageRef: /spec
+      weight: 2
+    - name: Search
+      weight: 3
+      params:
+        type: search
+    - name: GitHub
+      weight: 4
+      url: "https://github.com/modelcontextprotocol/spec"
+      params:
+        icon: github
