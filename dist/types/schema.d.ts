@@ -1,5 +1,9 @@
 export type JSONRPCMessage = JSONRPCRequest | JSONRPCNotification | JSONRPCResponse | JSONRPCError;
 export declare const JSONRPC_VERSION = "2.0";
+/**
+ * A progress token, used to associate progress notifications with the original request.
+ */
+export type ProgressToken = string | number;
 export interface Request {
     method: string;
     params?: {
@@ -7,7 +11,7 @@ export interface Request {
             /**
              * If specified, the caller is requesting out-of-band progress notifications for this request (as represented by notifications/progress). The value of this parameter is an opaque token that will be attached to any subsequent notifications. The receiver is not obligated to provide these notifications.
              */
-            progressToken?: string | number;
+            progressToken?: ProgressToken;
         };
         [key: string]: unknown;
     };
@@ -34,11 +38,15 @@ export interface Result {
     [key: string]: unknown;
 }
 /**
+ * A uniquely identifying ID for a request in JSON-RPC.
+ */
+export type RequestId = string | number;
+/**
  * A request that expects a response.
  */
 export interface JSONRPCRequest extends Request {
     jsonrpc: typeof JSONRPC_VERSION;
-    id: string | number;
+    id: RequestId;
 }
 /**
  * A notification which does not expect a response.
@@ -51,7 +59,7 @@ export interface JSONRPCNotification extends Notification {
  */
 export interface JSONRPCResponse {
     jsonrpc: typeof JSONRPC_VERSION;
-    id: string | number;
+    id: RequestId;
     result: Result;
 }
 export declare const PARSE_ERROR = -32700;
@@ -64,7 +72,7 @@ export declare const INTERNAL_ERROR = -32603;
  */
 export interface JSONRPCError {
     jsonrpc: typeof JSONRPC_VERSION;
-    id: string | number;
+    id: RequestId;
     error: {
         /**
          * The error type that occurred.
@@ -83,7 +91,7 @@ export interface JSONRPCError {
 /**
  * A response that indicates success but carries no data.
  */
-type EmptyResult = Result;
+export type EmptyResult = Result;
 export declare const PROTOCOL_VERSION = 1;
 /**
  * This request is sent from the client to the server when it first connects, asking it to begin initialization.
@@ -185,7 +193,7 @@ export interface ProgressNotification extends Notification {
         /**
          * The progress token which was given in the initial request, used to associate this notification with the request that is proceeding.
          */
-        progressToken: string | number;
+        progressToken: ProgressToken;
         /**
          * The progress thus far. This should increase every time progress is made, even if the total is unknown.
          *
@@ -403,20 +411,24 @@ export interface Prompt {
     /**
      * A list of arguments to use for templating the prompt.
      */
-    arguments?: {
-        /**
-         * The name of the argument.
-         */
-        name: string;
-        /**
-         * A human-readable description of the argument.
-         */
-        description?: string;
-        /**
-         * Whether this argument must be provided.
-         */
-        required?: boolean;
-    }[];
+    arguments?: PromptArgument[];
+}
+/**
+ * Describes an argument that a prompt can accept.
+ */
+export interface PromptArgument {
+    /**
+     * The name of the argument.
+     */
+    name: string;
+    /**
+     * A human-readable description of the argument.
+     */
+    description?: string;
+    /**
+     * Whether this argument must be provided.
+     */
+    required?: boolean;
 }
 /**
  * Sent from the client to request a list of tools the server has.
@@ -545,16 +557,7 @@ export interface CreateMessageRequest extends Request {
 /**
  * The client's response to a sampling/create_message request from the server. The client should inform the user before returning the sampled message, to allow them to inspect the response (human in the loop) and decide whether to allow the server to see it.
  */
-export interface CreateMessageResult extends Result {
-    role: "user" | "assistant";
-    content: {
-        type: "text";
-        text: string;
-    } | {
-        type: "image";
-        data: string;
-        mimeType: string;
-    };
+export interface CreateMessageResult extends Result, SamplingMessage {
     /**
      * The name of the model that generated the message.
      */
@@ -569,25 +572,33 @@ export interface CreateMessageResult extends Result {
  */
 export interface SamplingMessage {
     role: "user" | "assistant";
-    content: {
-        type: "text";
-        /**
-         * The text content of the message.
-         */
-        text: string;
-    } | {
-        type: "image";
-        /**
-         * The base64-encoded image data.
-         *
-         * @format byte
-         */
-        data: string;
-        /**
-         * The MIME type of the image. Different providers may support different image types.
-         */
-        mimeType: string;
-    };
+    content: TextContent | ImageContent;
+}
+/**
+ * Text provided to or from an LLM.
+ */
+export interface TextContent {
+    type: "text";
+    /**
+     * The text content of the message.
+     */
+    text: string;
+}
+/**
+ * An image provided to or from an LLM.
+ */
+export interface ImageContent {
+    type: "image";
+    /**
+     * The base64-encoded image data.
+     *
+     * @format byte
+     */
+    data: string;
+    /**
+     * The MIME type of the image. Different providers may support different image types.
+     */
+    mimeType: string;
 }
 /**
  * A request from the client to the server, to ask for completion options.
@@ -658,5 +669,4 @@ export type ClientResult = EmptyResult | CreateMessageResult;
 export type ServerRequest = PingRequest | CreateMessageRequest;
 export type ServerNotification = ProgressNotification | LoggingMessageNotification | ResourceUpdatedNotification | ResourceListChangedNotification | ToolListChangedNotification;
 export type ServerResult = EmptyResult | InitializeResult | CompleteResult | GetPromptResult | ListPromptsResult | ListResourcesResult | ReadResourceResult | CallToolResult | ListToolsResult;
-export {};
 //# sourceMappingURL=schema.d.ts.map
