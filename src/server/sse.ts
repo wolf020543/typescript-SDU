@@ -88,18 +88,28 @@ export class SSEServerTransport implements Transport {
       return;
     }
 
-    let message: JSONRPCMessage;
     try {
-      message = JSON.parse(body);
-      validateMessage(message);
+      await this.handleMessage(JSON.parse(body));
     } catch (error) {
-      this.onerror?.(error as Error);
       res.writeHead(400).end(`Invalid message: ${body}`);
       return;
     }
 
-    this.onmessage?.(message);
     res.writeHead(202).end("Accepted");
+  }
+
+  /**
+   * Handle a client message, regardless of how it arrived. This can be used to inform the server of messages that arrive via a means different than HTTP POST.
+   */
+  async handleMessage(message: JSONRPCMessage): Promise<void> {
+    try {
+      validateMessage(message);
+    } catch (error) {
+      this.onerror?.(error as Error);
+      return;
+    }
+
+    this.onmessage?.(message);
   }
 
   async close(): Promise<void> {
