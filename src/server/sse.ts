@@ -90,7 +90,7 @@ export class SSEServerTransport implements Transport {
 
     try {
       await this.handleMessage(JSON.parse(body));
-    } catch (error) {
+    } catch {
       res.writeHead(400).end(`Invalid message: ${body}`);
       return;
     }
@@ -106,7 +106,7 @@ export class SSEServerTransport implements Transport {
       validateMessage(message);
     } catch (error) {
       this.onerror?.(error as Error);
-      return;
+      throw error;
     }
 
     this.onmessage?.(message);

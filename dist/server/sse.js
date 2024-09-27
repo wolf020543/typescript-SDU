@@ -70,7 +70,7 @@ export class SSEServerTransport {
         try {
             await this.handleMessage(JSON.parse(body));
         }
-        catch (error) {
+        catch (_d) {
             res.writeHead(400).end(`Invalid message: ${body}`);
             return;
         }
@@ -86,7 +86,7 @@ export class SSEServerTransport {
         }
         catch (error) {
             (_a = this.onerror) === null || _a === void 0 ? void 0 : _a.call(this, error);
-            return;
+            throw error;
         }
         (_b = this.onmessage) === null || _b === void 0 ? void 0 : _b.call(this, message);
     }
