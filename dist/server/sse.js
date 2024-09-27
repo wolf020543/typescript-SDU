@@ -45,7 +45,7 @@ export class SSEServerTransport {
      * This should be called when a POST request is made to send a message to the server.
      */
     async handlePostMessage(req, res) {
-        var _a, _b, _c, _d, _e;
+        var _a, _b, _c;
         if (!this._sseResponse) {
             const message = "SSE connection not established";
             res.writeHead(500).end(message);
@@ -67,18 +67,28 @@ export class SSEServerTransport {
             (_c = this.onerror) === null || _c === void 0 ? void 0 : _c.call(this, error);
             return;
         }
-        let message;
         try {
-            message = JSON.parse(body);
-            validateMessage(message);
+            await this.handleMessage(JSON.parse(body));
         }
-        catch (error) {
-            (_d = this.onerror) === null || _d === void 0 ? void 0 : _d.call(this, error);
+        catch (_d) {
             res.writeHead(400).end(`Invalid message: ${body}`);
             return;
         }
-        (_e = this.onmessage) === null || _e === void 0 ? void 0 : _e.call(this, message);
         res.writeHead(202).end("Accepted");
+    }
+    /**
+     * Handle a client message, regardless of how it arrived. This can be used to inform the server of messages that arrive via a means different than HTTP POST.
+     */
+    async handleMessage(message) {
+        var _a, _b;
+        try {
+            validateMessage(message);
+        }
+        catch (error) {
+            (_a = this.onerror) === null || _a === void 0 ? void 0 : _a.call(this, error);
+            throw error;
+        }
+        (_b = this.onmessage) === null || _b === void 0 ? void 0 : _b.call(this, message);
     }
     async close() {
         var _a, _b;

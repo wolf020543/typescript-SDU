@@ -29,6 +29,10 @@ export declare class SSEServerTransport implements Transport {
      * This should be called when a POST request is made to send a message to the server.
      */
     handlePostMessage(req: IncomingMessage, res: ServerResponse): Promise<void>;
+    /**
+     * Handle a client message, regardless of how it arrived. This can be used to inform the server of messages that arrive via a means different than HTTP POST.
+     */
+    handleMessage(message: JSONRPCMessage): Promise<void>;
     close(): Promise<void>;
     send(message: JSONRPCMessage): Promise<void>;
     /**
