@@ -819,3 +819,102 @@ export class McpError extends Error {
     super(`MCP error ${code}: ${message}`);
   }
 }
+
+/* JSON-RPC types */
+export type ProgressToken = z.infer<typeof ProgressTokenSchema>;
+export type Request = z.infer<typeof RequestSchema>;
+export type Notification = z.infer<typeof NotificationSchema>;
+export type Result = z.infer<typeof ResultSchema>;
+export type RequestId = z.infer<typeof RequestIdSchema>;
+export type JSONRPCRequest = z.infer<typeof JSONRPCRequestSchema>;
+export type JSONRPCNotification = z.infer<typeof JSONRPCNotificationSchema>;
+export type JSONRPCResponse = z.infer<typeof JSONRPCResponseSchema>;
+export type JSONRPCError = z.infer<typeof JSONRPCErrorSchema>;
+export type JSONRPCMessage = z.infer<typeof JSONRPCMessageSchema>;
+
+/* Empty result */
+export type EmptyResult = z.infer<typeof EmptyResultSchema>;
+
+/* Initialization */
+export type TextContent = z.infer<typeof TextContentSchema>;
+export type ImageContent = z.infer<typeof ImageContentSchema>;
+export type SamplingMessage = z.infer<typeof SamplingMessageSchema>;
+export type Implementation = z.infer<typeof ImplementationSchema>;
+export type ClientCapabilities = z.infer<typeof ClientCapabilitiesSchema>;
+export type InitializeRequest = z.infer<typeof InitializeRequestSchema>;
+export type ServerCapabilities = z.infer<typeof ServerCapabilitiesSchema>;
+export type InitializeResult = z.infer<typeof InitializeResultSchema>;
+export type InitializedNotification = z.infer<
+  typeof InitializedNotificationSchema
+>;
+
+/* Ping */
+export type PingRequest = z.infer<typeof PingRequestSchema>;
+
+/* Progress notifications */
+export type Progress = z.infer<typeof ProgressSchema>;
+export type ProgressNotification = z.infer<typeof ProgressNotificationSchema>;
+
+/* Resources */
+export type ResourceContents = z.infer<typeof ResourceContentsSchema>;
+export type TextResourceContents = z.infer<typeof TextResourceContentsSchema>;
+export type BlobResourceContents = z.infer<typeof BlobResourceContentsSchema>;
+export type Resource = z.infer<typeof ResourceSchema>;
+export type ResourceTemplate = z.infer<typeof ResourceTemplateSchema>;
+export type ListResourcesRequest = z.infer<typeof ListResourcesRequestSchema>;
+export type ListResourcesResult = z.infer<typeof ListResourcesResultSchema>;
+export type ReadResourceRequest = z.infer<typeof ReadResourceRequestSchema>;
+export type ReadResourceResult = z.infer<typeof ReadResourceResultSchema>;
+export type ResourceListChangedNotification = z.infer<
+  typeof ResourceListChangedNotificationSchema
+>;
+export type SubscribeRequest = z.infer<typeof SubscribeRequestSchema>;
+export type UnsubscribeRequest = z.infer<typeof UnsubscribeRequestSchema>;
+export type ResourceUpdatedNotification = z.infer<
+  typeof ResourceUpdatedNotificationSchema
+>;
+
+/* Prompts */
+export type PromptArgument = z.infer<typeof PromptArgumentSchema>;
+export type Prompt = z.infer<typeof PromptSchema>;
+export type ListPromptsRequest = z.infer<typeof ListPromptsRequestSchema>;
+export type ListPromptsResult = z.infer<typeof ListPromptsResultSchema>;
+export type GetPromptRequest = z.infer<typeof GetPromptRequestSchema>;
+export type GetPromptResult = z.infer<typeof GetPromptResultSchema>;
+
+/* Tools */
+export type Tool = z.infer<typeof ToolSchema>;
+export type ListToolsRequest = z.infer<typeof ListToolsRequestSchema>;
+export type ListToolsResult = z.infer<typeof ListToolsResultSchema>;
+export type CallToolResult = z.infer<typeof CallToolResultSchema>;
+export type CallToolRequest = z.infer<typeof CallToolRequestSchema>;
+export type ToolListChangedNotification = z.infer<
+  typeof ToolListChangedNotificationSchema
+>;
+
+/* Logging */
+export type LoggingLevel = z.infer<typeof LoggingLevelSchema>;
+export type SetLevelRequest = z.infer<typeof SetLevelRequestSchema>;
+export type LoggingMessageNotification = z.infer<
+  typeof LoggingMessageNotificationSchema
+>;
+
+/* Sampling */
+export type CreateMessageRequest = z.infer<typeof CreateMessageRequestSchema>;
+export type CreateMessageResult = z.infer<typeof CreateMessageResultSchema>;
+
+/* Autocomplete */
+export type ResourceReference = z.infer<typeof ResourceReferenceSchema>;
+export type PromptReference = z.infer<typeof PromptReferenceSchema>;
+export type CompleteRequest = z.infer<typeof CompleteRequestSchema>;
+export type CompleteResult = z.infer<typeof CompleteResultSchema>;
+
+/* Client messages */
+export type ClientRequest = z.infer<typeof ClientRequestSchema>;
+export type ClientNotification = z.infer<typeof ClientNotificationSchema>;
+export type ClientResult = z.infer<typeof ClientResultSchema>;
+
+/* Server messages */
+export type ServerRequest = z.infer<typeof ServerRequestSchema>;
+export type ServerNotification = z.infer<typeof ServerNotificationSchema>;
+export type ServerResult = z.infer<typeof ServerResultSchema>;
