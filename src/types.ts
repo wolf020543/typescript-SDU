@@ -1,13 +1,6 @@
 import { z } from "zod";
 
 /* JSON-RPC types */
-export const JSONRPCMessageSchema = z.union([
-  z.lazy(() => JSONRPCRequestSchema),
-  z.lazy(() => JSONRPCNotificationSchema),
-  z.lazy(() => JSONRPCResponseSchema),
-  z.lazy(() => JSONRPCErrorSchema)
-]);
-
 export const JSONRPC_VERSION = "2.0";
 
 /**
@@ -17,32 +10,44 @@ export const ProgressTokenSchema = z.union([z.string(), z.number().int()]);
 
 export const RequestSchema = z.object({
   method: z.string(),
-  params: z.optional(z.object({
-    _meta: z.optional(z.object({
-      /**
-       * If specified, the caller is requesting out-of-band progress notifications for this request (as represented by notifications/progress). The value of this parameter is an opaque token that will be attached to any subsequent notifications. The receiver is not obligated to provide these notifications.
-       */
-      progressToken: z.optional(ProgressTokenSchema)
-    })),
-  }).catchall(z.unknown()))
+  params: z.optional(
+    z
+      .object({
+        _meta: z.optional(
+          z.object({
+            /**
+             * If specified, the caller is requesting out-of-band progress notifications for this request (as represented by notifications/progress). The value of this parameter is an opaque token that will be attached to any subsequent notifications. The receiver is not obligated to provide these notifications.
+             */
+            progressToken: z.optional(ProgressTokenSchema),
+          }),
+        ),
+      })
+      .catchall(z.unknown()),
+  ),
 });
 
 export const NotificationSchema = z.object({
   method: z.string(),
-  params: z.optional(z.object({
-    /**
-     * This parameter name is reserved by MCP to allow clients and servers to attach additional metadata to their notifications.
-     */
-    _meta: z.optional(z.record(z.unknown()))
-  }).catchall(z.unknown()))
+  params: z.optional(
+    z
+      .object({
+        /**
+         * This parameter name is reserved by MCP to allow clients and servers to attach additional metadata to their notifications.
+         */
+        _meta: z.optional(z.record(z.unknown())),
+      })
+      .catchall(z.unknown()),
+  ),
 });
 
-export const ResultSchema = z.object({
-  /**
-   * This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses.
-   */
-  _meta: z.optional(z.record(z.unknown()))
-}).catchall(z.unknown());
+export const ResultSchema = z
+  .object({
+    /**
+     * This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses.
+     */
+    _meta: z.optional(z.record(z.unknown())),
+  })
+  .catchall(z.unknown());
 
 /**
  * A uniquely identifying ID for a request in JSON-RPC.
@@ -54,14 +59,14 @@ export const RequestIdSchema = z.union([z.string(), z.number().int()]);
  */
 export const JSONRPCRequestSchema = RequestSchema.extend({
   jsonrpc: z.literal(JSONRPC_VERSION),
-  id: RequestIdSchema
+  id: RequestIdSchema,
 });
 
 /**
  * A notification which does not expect a response.
  */
 export const JSONRPCNotificationSchema = NotificationSchema.extend({
-  jsonrpc: z.literal(JSONRPC_VERSION)
+  jsonrpc: z.literal(JSONRPC_VERSION),
 });
 
 /**
@@ -70,7 +75,7 @@ export const JSONRPCNotificationSchema = NotificationSchema.extend({
 export const JSONRPCResponseSchema = z.object({
   jsonrpc: z.literal(JSONRPC_VERSION),
   id: RequestIdSchema,
-  result: ResultSchema
+  result: ResultSchema,
 });
 
 // Standard JSON-RPC error codes
@@ -98,9 +103,16 @@ export const JSONRPCErrorSchema = z.object({
     /**
      * Additional information about the error. The value of this member is defined by the sender (e.g. detailed error information, nested errors etc.).
      */
-    data: z.optional(z.unknown())
-  })
+    data: z.optional(z.unknown()),
+  }),
 });
+
+export const JSONRPCMessageSchema = z.union([
+  JSONRPCRequestSchema,
+  JSONRPCNotificationSchema,
+  JSONRPCResponseSchema,
+  JSONRPCErrorSchema,
+]);
 
 /* Empty result */
 /**
@@ -110,38 +122,49 @@ export const EmptyResultSchema = ResultSchema;
 
 /* Initialization */
 export const PROTOCOL_VERSION = 1;
-/**
- * This request is sent from the client to the server when it first connects, asking it to begin initialization.
- */
-export const InitializeRequestSchema = RequestSchema.extend({
-  method: z.literal("initialize"),
-  params: z.object({
-    /**
-     * The latest version of the Model Context Protocol that the client supports. The client MAY decide to support older versions as well.
-     */
-    protocolVersion: z.literal(PROTOCOL_VERSION),
-    capabilities: z.lazy(() => ClientCapabilitiesSchema),
-    clientInfo: z.lazy(() => ImplementationSchema)
-  })
-});
 
 /**
- * After receiving an initialize request from the client, the server sends this response.
+ * Text provided to or from an LLM.
  */
-export const InitializeResultSchema = ResultSchema.extend({
+export const TextContentSchema = z.object({
+  type: z.literal("text"),
   /**
-   * The version of the Model Context Protocol that the server wants to use. This may not match the version that the client requested. If the client cannot support this version, it MUST disconnect.
+   * The text content of the message.
    */
-  protocolVersion: z.literal(PROTOCOL_VERSION),
-  capabilities: z.lazy(() => ServerCapabilitiesSchema),
-  serverInfo: z.lazy(() => ImplementationSchema)
+  text: z.string(),
 });
 
 /**
- * This notification is sent from the client to the server after initialization has finished.
+ * An image provided to or from an LLM.
  */
-export const InitializedNotificationSchema = NotificationSchema.extend({
-  method: z.literal("notifications/initialized")
+export const ImageContentSchema = z.object({
+  type: z.literal("image"),
+  /**
+   * The base64-encoded image data.
+   *
+   * @format byte
+   */
+  data: z.string(),
+  /**
+   * The MIME type of the image. Different providers may support different image types.
+   */
+  mimeType: z.string(),
+});
+
+/**
+ * Describes a message issued to or received from an LLM API.
+ */
+export const SamplingMessageSchema = z.object({
+  role: z.enum(["user", "assistant"]),
+  content: z.union([TextContentSchema, ImageContentSchema]),
+});
+
+/**
+ * Describes the name and version of an MCP implementation.
+ */
+export const ImplementationSchema = z.object({
+  name: z.string(),
+  version: z.string(),
 });
 
 /**
@@ -155,7 +178,22 @@ export const ClientCapabilitiesSchema = z.object({
   /**
    * Present if the client supports sampling from an LLM.
    */
-  sampling: z.optional(z.object({}))
+  sampling: z.optional(z.object({})),
+});
+
+/**
+ * This request is sent from the client to the server when it first connects, asking it to begin initialization.
+ */
+export const InitializeRequestSchema = RequestSchema.extend({
+  method: z.literal("initialize"),
+  params: z.object({
+    /**
+     * The latest version of the Model Context Protocol that the client supports. The client MAY decide to support older versions as well.
+     */
+    protocolVersion: z.literal(PROTOCOL_VERSION),
+    capabilities: ClientCapabilitiesSchema,
+    clientInfo: ImplementationSchema,
+  }),
 });
 
 /**
@@ -177,24 +215,37 @@ export const ServerCapabilitiesSchema = z.object({
   /**
    * Present if the server offers any resources to read.
    */
-  resources: z.optional(z.object({
-    /**
-     * Whether this server supports subscribing to resource updates.
-     */
-    subscribe: z.optional(z.boolean())
-  })),
+  resources: z.optional(
+    z.object({
+      /**
+       * Whether this server supports subscribing to resource updates.
+       */
+      subscribe: z.optional(z.boolean()),
+    }),
+  ),
   /**
    * Present if the server offers any tools to call.
    */
-  tools: z.optional(z.object({}))
+  tools: z.optional(z.object({})),
 });
 
 /**
- * Describes the name and version of an MCP implementation.
+ * After receiving an initialize request from the client, the server sends this response.
  */
-export const ImplementationSchema = z.object({
-  name: z.string(),
-  version: z.string()
+export const InitializeResultSchema = ResultSchema.extend({
+  /**
+   * The version of the Model Context Protocol that the server wants to use. This may not match the version that the client requested. If the client cannot support this version, it MUST disconnect.
+   */
+  protocolVersion: z.literal(PROTOCOL_VERSION),
+  capabilities: ServerCapabilitiesSchema,
+  serverInfo: ImplementationSchema,
+});
+
+/**
+ * This notification is sent from the client to the server after initialization has finished.
+ */
+export const InitializedNotificationSchema = NotificationSchema.extend({
+  method: z.literal("notifications/initialized"),
 });
 
 /* Ping */
@@ -202,7 +253,7 @@ export const ImplementationSchema = z.object({
  * A ping, issued by either the server or the client, to check that the other party is still alive. The receiver must promptly respond, or else may be disconnected.
  */
 export const PingRequestSchema = RequestSchema.extend({
-  method: z.literal("ping")
+  method: z.literal("ping"),
 });
 
 /* Progress notifications */
@@ -223,90 +274,39 @@ export const ProgressNotificationSchema = NotificationSchema.extend({
     /**
      * Total number of items to process (or total progress required), if known.
      */
-    total: z.optional(z.number())
-  })
+    total: z.optional(z.number()),
+  }),
 });
 
 /* Resources */
 /**
- * Sent from the client to request a list of resources the server has.
+ * The contents of a specific resource or sub-resource.
  */
-export const ListResourcesRequestSchema = RequestSchema.extend({
-  method: z.literal("resources/list")
+export const ResourceContentsSchema = z.object({
+  /**
+   * The URI of this resource.
+   */
+  uri: z.string().url(),
+  /**
+   * The MIME type of this resource, if known.
+   */
+  mimeType: z.optional(z.string()),
 });
 
-/**
- * The server's response to a resources/list request from the client.
- */
-export const ListResourcesResultSchema = ResultSchema.extend({
-  resourceTemplates: z.optional(z.array(z.lazy(() => ResourceTemplateSchema))),
-  resources: z.optional(z.array(z.lazy(() => ResourceSchema)))
+export const TextResourceContentsSchema = ResourceContentsSchema.extend({
+  /**
+   * The text of the item. This must only be set if the item can actually be represented as text (not binary data).
+   */
+  text: z.string(),
 });
 
-/**
- * Sent from the client to the server, to read a specific resource URI.
- */
-export const ReadResourceRequestSchema = RequestSchema.extend({
-  method: z.literal("resources/read"),
-  params: z.object({
-    /**
-     * The URI of the resource to read. The URI can use any protocol; it is up to the server how to interpret it.
-     */
-    uri: z.string().url()
-  })
-});
-
-/**
- * The server's response to a resources/read request from the client.
- */
-export const ReadResourceResultSchema = ResultSchema.extend({
-  contents: z.array(z.union([z.lazy(() => TextResourceContentsSchema), z.lazy(() => BlobResourceContentsSchema)]))
-});
-
-/**
- * An optional notification from the server to the client, informing it that the list of resources it can read from has changed. This may be issued by servers without any previous subscription from the client.
- */
-export const ResourceListChangedNotificationSchema = NotificationSchema.extend({
-  method: z.literal("notifications/resources/list_changed")
-});
-
-/**
- * Sent from the client to request resources/updated notifications from the server whenever a particular resource changes.
- */
-export const SubscribeRequestSchema = RequestSchema.extend({
-  method: z.literal("resources/subscribe"),
-  params: z.object({
-    /**
-     * The URI of the resource to subscribe to. The URI can use any protocol; it is up to the server how to interpret it.
-     */
-    uri: z.string().url()
-  })
-});
-
-/**
- * Sent from the client to request cancellation of resources/updated notifications from the server. This should follow a previous resources/subscribe request.
- */
-export const UnsubscribeRequestSchema = RequestSchema.extend({
-  method: z.literal("resources/unsubscribe"),
-  params: z.object({
-    /**
-     * The URI of the resource to unsubscribe from.
-     */
-    uri: z.string().url()
-  })
-});
-
-/**
- * A notification from the server to the client, informing it that a resource has changed and may need to be read again. This should only be sent if the client previously sent a resources/subscribe request.
- */
-export const ResourceUpdatedNotificationSchema = NotificationSchema.extend({
-  method: z.literal("notifications/resources/updated"),
-  params: z.object({
-    /**
-     * The URI of the resource that has been updated. This might be a sub-resource of the one that the client actually subscribed to.
-     */
-    uri: z.string().url()
-  })
+export const BlobResourceContentsSchema = ResourceContentsSchema.extend({
+  /**
+   * A base64-encoded string representing the binary data of the item.
+   *
+   * @format byte
+   */
+  blob: z.string(),
 });
 
 /**
@@ -335,7 +335,7 @@ export const ResourceSchema = z.object({
   /**
    * The MIME type of this resource, if known.
    */
-  mimeType: z.optional(z.string())
+  mimeType: z.optional(z.string()),
 });
 
 /**
@@ -366,80 +366,109 @@ export const ResourceTemplateSchema = z.object({
   /**
    * The MIME type for all resources that match this template. This should only be included if all resources matching this template have the same type.
    */
-  mimeType: z.optional(z.string())
+  mimeType: z.optional(z.string()),
 });
 
 /**
- * The contents of a specific resource or sub-resource.
+ * Sent from the client to request a list of resources the server has.
  */
-export const ResourceContentsSchema = z.object({
-  /**
-   * The URI of this resource.
-   */
-  uri: z.string().url(),
-  /**
-   * The MIME type of this resource, if known.
-   */
-  mimeType: z.optional(z.string())
+export const ListResourcesRequestSchema = RequestSchema.extend({
+  method: z.literal("resources/list"),
 });
 
-export const TextResourceContentsSchema = ResourceContentsSchema.extend({
-  /**
-   * The text of the item. This must only be set if the item can actually be represented as text (not binary data).
-   */
-  text: z.string()
+/**
+ * The server's response to a resources/list request from the client.
+ */
+export const ListResourcesResultSchema = ResultSchema.extend({
+  resourceTemplates: z.optional(z.array(ResourceTemplateSchema)),
+  resources: z.optional(z.array(ResourceSchema)),
 });
 
-export const BlobResourceContentsSchema = ResourceContentsSchema.extend({
-  /**
-   * A base64-encoded string representing the binary data of the item.
-   *
-   * @format byte
-   */
-  blob: z.string()
+/**
+ * Sent from the client to the server, to read a specific resource URI.
+ */
+export const ReadResourceRequestSchema = RequestSchema.extend({
+  method: z.literal("resources/read"),
+  params: z.object({
+    /**
+     * The URI of the resource to read. The URI can use any protocol; it is up to the server how to interpret it.
+     */
+    uri: z.string().url(),
+  }),
+});
+
+/**
+ * The server's response to a resources/read request from the client.
+ */
+export const ReadResourceResultSchema = ResultSchema.extend({
+  contents: z.array(
+    z.union([TextResourceContentsSchema, BlobResourceContentsSchema]),
+  ),
+});
+
+/**
+ * An optional notification from the server to the client, informing it that the list of resources it can read from has changed. This may be issued by servers without any previous subscription from the client.
+ */
+export const ResourceListChangedNotificationSchema = NotificationSchema.extend({
+  method: z.literal("notifications/resources/list_changed"),
+});
+
+/**
+ * Sent from the client to request resources/updated notifications from the server whenever a particular resource changes.
+ */
+export const SubscribeRequestSchema = RequestSchema.extend({
+  method: z.literal("resources/subscribe"),
+  params: z.object({
+    /**
+     * The URI of the resource to subscribe to. The URI can use any protocol; it is up to the server how to interpret it.
+     */
+    uri: z.string().url(),
+  }),
+});
+
+/**
+ * Sent from the client to request cancellation of resources/updated notifications from the server. This should follow a previous resources/subscribe request.
+ */
+export const UnsubscribeRequestSchema = RequestSchema.extend({
+  method: z.literal("resources/unsubscribe"),
+  params: z.object({
+    /**
+     * The URI of the resource to unsubscribe from.
+     */
+    uri: z.string().url(),
+  }),
+});
+
+/**
+ * A notification from the server to the client, informing it that a resource has changed and may need to be read again. This should only be sent if the client previously sent a resources/subscribe request.
+ */
+export const ResourceUpdatedNotificationSchema = NotificationSchema.extend({
+  method: z.literal("notifications/resources/updated"),
+  params: z.object({
+    /**
+     * The URI of the resource that has been updated. This might be a sub-resource of the one that the client actually subscribed to.
+     */
+    uri: z.string().url(),
+  }),
 });
 
 /* Prompts */
 /**
- * Sent from the client to request a list of prompts and prompt templates the server has.
+ * Describes an argument that a prompt can accept.
  */
-export const ListPromptsRequestSchema = RequestSchema.extend({
-  method: z.literal("prompts/list")
-});
-
-/**
- * The server's response to a prompts/list request from the client.
- */
-export const ListPromptsResultSchema = ResultSchema.extend({
-  prompts: z.array(z.lazy(() => PromptSchema))
-});
-
-/**
- * Used by the client to get a prompt provided by the server.
- */
-export const GetPromptRequestSchema = RequestSchema.extend({
-  method: z.literal("prompts/get"),
-  params: z.object({
-    /**
-     * The name of the prompt or prompt template.
-     */
-    name: z.string(),
-    /**
-     * Arguments to use for templating the prompt.
-     */
-    arguments: z.optional(z.record(z.string()))
-  })
-});
-
-/**
- * The server's response to a prompts/get request from the client.
- */
-export const GetPromptResultSchema = ResultSchema.extend({
+export const PromptArgumentSchema = z.object({
   /**
-   * An optional description for the prompt.
+   * The name of the argument.
+   */
+  name: z.string(),
+  /**
+   * A human-readable description of the argument.
    */
   description: z.optional(z.string()),
-  messages: z.array(z.lazy(() => SamplingMessageSchema))
+  /**
+   * Whether this argument must be provided.
+   */
+  required: z.optional(z.boolean()),
 });
 
 /**
@@ -457,67 +486,52 @@ export const PromptSchema = z.object({
   /**
    * A list of arguments to use for templating the prompt.
    */
-  arguments: z.optional(z.array(z.lazy(() => PromptArgumentSchema)))
+  arguments: z.optional(z.array(PromptArgumentSchema)),
 });
 
 /**
- * Describes an argument that a prompt can accept.
+ * Sent from the client to request a list of prompts and prompt templates the server has.
  */
-export const PromptArgumentSchema = z.object({
+export const ListPromptsRequestSchema = RequestSchema.extend({
+  method: z.literal("prompts/list"),
+});
+
+/**
+ * The server's response to a prompts/list request from the client.
+ */
+export const ListPromptsResultSchema = ResultSchema.extend({
+  prompts: z.array(PromptSchema),
+});
+
+/**
+ * Used by the client to get a prompt provided by the server.
+ */
+export const GetPromptRequestSchema = RequestSchema.extend({
+  method: z.literal("prompts/get"),
+  params: z.object({
+    /**
+     * The name of the prompt or prompt template.
+     */
+    name: z.string(),
+    /**
+     * Arguments to use for templating the prompt.
+     */
+    arguments: z.optional(z.record(z.string())),
+  }),
+});
+
+/**
+ * The server's response to a prompts/get request from the client.
+ */
+export const GetPromptResultSchema = ResultSchema.extend({
   /**
-   * The name of the argument.
-   */
-  name: z.string(),
-  /**
-   * A human-readable description of the argument.
+   * An optional description for the prompt.
    */
   description: z.optional(z.string()),
-  /**
-   * Whether this argument must be provided.
-   */
-  required: z.optional(z.boolean())
+  messages: z.array(SamplingMessageSchema),
 });
 
 /* Tools */
-/**
- * Sent from the client to request a list of tools the server has.
- */
-export const ListToolsRequestSchema = RequestSchema.extend({
-  method: z.literal("tools/list")
-});
-
-/**
- * The server's response to a tools/list request from the client.
- */
-export const ListToolsResultSchema = ResultSchema.extend({
-  tools: z.array(z.lazy(() => ToolSchema))
-});
-
-/**
- * The server's response to a tool call.
- */
-export const CallToolResultSchema = ResultSchema.extend({
-  toolResult: z.unknown()
-});
-
-/**
- * Used by the client to invoke a tool provided by the server.
- */
-export const CallToolRequestSchema = RequestSchema.extend({
-  method: z.literal("tools/call"),
-  params: z.object({
-    name: z.string(),
-    arguments: z.optional(z.record(z.unknown()))
-  })
-});
-
-/**
- * An optional notification from the server to the client, informing it that the list of tools it offers has changed. This may be issued by servers without any previous subscription from the client.
- */
-export const ToolListChangedNotificationSchema = NotificationSchema.extend({
-  method: z.literal("notifications/tools/list_changed")
-});
-
 /**
  * Definition for a tool the client can call.
  */
@@ -535,11 +549,55 @@ export const ToolSchema = z.object({
    */
   inputSchema: z.object({
     type: z.literal("object"),
-    properties: z.optional(z.record(z.object({})))
-  })
+    properties: z.optional(z.record(z.object({}))),
+  }),
+});
+
+/**
+ * Sent from the client to request a list of tools the server has.
+ */
+export const ListToolsRequestSchema = RequestSchema.extend({
+  method: z.literal("tools/list"),
+});
+
+/**
+ * The server's response to a tools/list request from the client.
+ */
+export const ListToolsResultSchema = ResultSchema.extend({
+  tools: z.array(ToolSchema),
+});
+
+/**
+ * The server's response to a tool call.
+ */
+export const CallToolResultSchema = ResultSchema.extend({
+  toolResult: z.unknown(),
+});
+
+/**
+ * Used by the client to invoke a tool provided by the server.
+ */
+export const CallToolRequestSchema = RequestSchema.extend({
+  method: z.literal("tools/call"),
+  params: z.object({
+    name: z.string(),
+    arguments: z.optional(z.record(z.unknown())),
+  }),
+});
+
+/**
+ * An optional notification from the server to the client, informing it that the list of tools it offers has changed. This may be issued by servers without any previous subscription from the client.
+ */
+export const ToolListChangedNotificationSchema = NotificationSchema.extend({
+  method: z.literal("notifications/tools/list_changed"),
 });
 
 /* Logging */
+/**
+ * The severity of a log message.
+ */
+export const LoggingLevelSchema = z.enum(["debug", "info", "warning", "error"]);
+
 /**
  * A request from the client to the server, to enable or adjust logging.
  */
@@ -549,8 +607,8 @@ export const SetLevelRequestSchema = RequestSchema.extend({
     /**
      * The level of logging that the client wants to receive from the server. The server should send all logs at this level and higher (i.e., more severe) to the client as notifications/logging/message.
      */
-    level: z.lazy(() => LoggingLevelSchema)
-  })
+    level: LoggingLevelSchema,
+  }),
 });
 
 /**
@@ -562,7 +620,7 @@ export const LoggingMessageNotificationSchema = NotificationSchema.extend({
     /**
      * The severity of this log message.
      */
-    level: z.lazy(() => LoggingLevelSchema),
+    level: LoggingLevelSchema,
     /**
      * An optional name of the logger issuing this message.
      */
@@ -570,14 +628,9 @@ export const LoggingMessageNotificationSchema = NotificationSchema.extend({
     /**
      * The data to be logged, such as a string message or an object. Any JSON serializable type is allowed here.
      */
-    data: z.unknown()
-  })
+    data: z.unknown(),
+  }),
 });
-
-/**
- * The severity of a log message.
- */
-export const LoggingLevelSchema = z.enum(["debug", "info", "warning", "error"]);
 
 /* Sampling */
 /**
@@ -586,7 +639,7 @@ export const LoggingLevelSchema = z.enum(["debug", "info", "warning", "error"]);
 export const CreateMessageRequestSchema = RequestSchema.extend({
   method: z.literal("sampling/createMessage"),
   params: z.object({
-    messages: z.array(z.lazy(() => SamplingMessageSchema)),
+    messages: z.array(SamplingMessageSchema),
     /**
      * An optional system prompt the server wants to use for sampling. The client MAY modify or omit this prompt.
      */
@@ -604,8 +657,8 @@ export const CreateMessageRequestSchema = RequestSchema.extend({
     /**
      * Optional metadata to pass through to the LLM provider. The format of this metadata is provider-specific.
      */
-    metadata: z.optional(z.object({}))
-  })
+    metadata: z.optional(z.object({})),
+  }),
 });
 
 /**
@@ -621,53 +674,41 @@ export const CreateMessageResultSchema = ResultSchema.extend({
    */
   stopReason: z.enum(["endTurn", "stopSequence", "maxTokens"]),
   role: z.enum(["user", "assistant"]),
-  content: z.union([z.lazy(() => TextContentSchema), z.lazy(() => ImageContentSchema)])
-});
-
-/**
- * Describes a message issued to or received from an LLM API.
- */
-export const SamplingMessageSchema = z.object({
-  role: z.enum(["user", "assistant"]),
-  content: z.union([z.lazy(() => TextContentSchema), z.lazy(() => ImageContentSchema)])
-});
-
-/**
- * Text provided to or from an LLM.
- */
-export const TextContentSchema = z.object({
-  type: z.literal("text"),
-  /**
-   * The text content of the message.
-   */
-  text: z.string()
-});
-
-/**
- * An image provided to or from an LLM.
- */
-export const ImageContentSchema = z.object({
-  type: z.literal("image"),
-  /**
-   * The base64-encoded image data.
-   *
-   * @format byte
-   */
-  data: z.string(),
-  /**
-   * The MIME type of the image. Different providers may support different image types.
-   */
-  mimeType: z.string()
+  content: z.union([TextContentSchema, ImageContentSchema]),
 });
 
 /* Autocomplete */
+/**
+ * A reference to a resource or resource template definition.
+ */
+export const ResourceReferenceSchema = z.object({
+  type: z.literal("ref/resource"),
+  /**
+   * The URI or URI template of the resource.
+   *
+   * @format uri-template
+   */
+  uri: z.string(),
+});
+
+/**
+ * Identifies a prompt.
+ */
+export const PromptReferenceSchema = z.object({
+  type: z.literal("ref/prompt"),
+  /**
+   * The name of the prompt or prompt template
+   */
+  name: z.string(),
+});
+
 /**
  * A request from the client to the server, to ask for completion options.
  */
 export const CompleteRequestSchema = RequestSchema.extend({
   method: z.literal("completion/complete"),
   params: z.object({
-    ref: z.union([z.lazy(() => PromptReferenceSchema), z.lazy(() => ResourceReferenceSchema)]),
+    ref: z.union([PromptReferenceSchema, ResourceReferenceSchema]),
     /**
      * The argument's information
      */
@@ -679,9 +720,9 @@ export const CompleteRequestSchema = RequestSchema.extend({
       /**
        * The value of the argument to use for completion matching.
        */
-      value: z.string()
-    })
-  })
+      value: z.string(),
+    }),
+  }),
 });
 
 /**
@@ -700,32 +741,8 @@ export const CompleteResultSchema = ResultSchema.extend({
     /**
      * Indicates whether there are additional completion options beyond those provided in the current response, even if the exact total is unknown.
      */
-    hasMore: z.optional(z.boolean())
-  })
-});
-
-/**
- * A reference to a resource or resource template definition.
- */
-export const ResourceReferenceSchema = z.object({
-  type: z.literal("ref/resource"),
-  /**
-   * The URI or URI template of the resource.
-   *
-   * @format uri-template
-   */
-  uri: z.string()
-});
-
-/**
- * Identifies a prompt.
- */
-export const PromptReferenceSchema = z.object({
-  type: z.literal("ref/prompt"),
-  /**
-   * The name of the prompt or prompt template
-   */
-  name: z.string()
+    hasMore: z.optional(z.boolean()),
+  }),
 });
 
 /* Client messages */
@@ -741,21 +758,30 @@ export const ClientRequestSchema = z.union([
   SubscribeRequestSchema,
   UnsubscribeRequestSchema,
   CallToolRequestSchema,
-  ListToolsRequestSchema
+  ListToolsRequestSchema,
 ]);
 
-export const ClientNotificationSchema = z.union([ProgressNotificationSchema, InitializedNotificationSchema]);
-export const ClientResultSchema = z.union([EmptyResultSchema, CreateMessageResultSchema]);
+export const ClientNotificationSchema = z.union([
+  ProgressNotificationSchema,
+  InitializedNotificationSchema,
+]);
+export const ClientResultSchema = z.union([
+  EmptyResultSchema,
+  CreateMessageResultSchema,
+]);
 
 /* Server messages */
-export const ServerRequestSchema = z.union([PingRequestSchema, CreateMessageRequestSchema]);
+export const ServerRequestSchema = z.union([
+  PingRequestSchema,
+  CreateMessageRequestSchema,
+]);
 
 export const ServerNotificationSchema = z.union([
   ProgressNotificationSchema,
   LoggingMessageNotificationSchema,
   ResourceUpdatedNotificationSchema,
   ResourceListChangedNotificationSchema,
-  ToolListChangedNotificationSchema
+  ToolListChangedNotificationSchema,
 ]);
 
 export const ServerResultSchema = z.union([
@@ -767,7 +793,7 @@ export const ServerResultSchema = z.union([
   ListResourcesResultSchema,
   ReadResourceResultSchema,
   CallToolResultSchema,
-  ListToolsResultSchema
+  ListToolsResultSchema,
 ]);
 
 export const CONNECTION_CLOSED_ERROR = -1;
@@ -787,6 +813,8 @@ export type Progress = Pick<
   "progress" | "total"
 >;
 
-export const PROGRESS_NOTIFICATION_METHOD: z.infer<typeof ProgressNotificationSchema>["method"] =
-  "notifications/progress";
-export const PING_REQUEST_METHOD: z.infer<typeof PingRequestSchema>["method"] = "ping";
+export const PROGRESS_NOTIFICATION_METHOD: z.infer<
+  typeof ProgressNotificationSchema
+>["method"] = "notifications/progress";
+export const PING_REQUEST_METHOD: z.infer<typeof PingRequestSchema>["method"] =
+  "ping";
