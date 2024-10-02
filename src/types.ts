@@ -13,7 +13,7 @@ export const JSONRPC_VERSION = "2.0";
 /**
  * A progress token, used to associate progress notifications with the original request.
  */
-export const ProgressTokenSchema = z.union([z.string(), z.number()]);
+export const ProgressTokenSchema = z.union([z.string(), z.number().int()]);
 
 export const RequestSchema = z.object({
   method: z.string(),
@@ -47,7 +47,7 @@ export const ResultSchema = z.object({
 /**
  * A uniquely identifying ID for a request in JSON-RPC.
  */
-export const RequestIdSchema = z.union([z.string(), z.number()]);
+export const RequestIdSchema = z.union([z.string(), z.number().int()]);
 
 /**
  * A request that expects a response.
@@ -90,7 +90,7 @@ export const JSONRPCErrorSchema = z.object({
     /**
      * The error type that occurred.
      */
-    code: z.number(),
+    code: z.number().int(),
     /**
      * A short description of the error. The message SHOULD be limited to a concise single sentence.
      */
@@ -218,14 +218,10 @@ export const ProgressNotificationSchema = NotificationSchema.extend({
     progressToken: ProgressTokenSchema,
     /**
      * The progress thus far. This should increase every time progress is made, even if the total is unknown.
-     *
-     * @TJS-type number
      */
     progress: z.number(),
     /**
      * Total number of items to process (or total progress required), if known.
-     *
-     * @TJS-type number
      */
     total: z.optional(z.number())
   })
@@ -599,14 +595,11 @@ export const CreateMessageRequestSchema = RequestSchema.extend({
      * A request to include context from one or more MCP servers (including the caller), to be attached to the prompt. The client MAY ignore this request.
      */
     includeContext: z.optional(z.enum(["none", "thisServer", "allServers"])),
-    /**
-     * @TJS-type number
-     */
     temperature: z.optional(z.number()),
     /**
      * The maximum number of tokens to sample, as requested by the server. The client MAY choose to sample fewer tokens than requested.
      */
-    maxTokens: z.number(),
+    maxTokens: z.number().int(),
     stopSequences: z.optional(z.array(z.string())),
     /**
      * Optional metadata to pass through to the LLM provider. The format of this metadata is provider-specific.
@@ -703,7 +696,7 @@ export const CompleteResultSchema = ResultSchema.extend({
     /**
      * The total number of completion options available. This can exceed the number of values actually sent in the response.
      */
-    total: z.optional(z.number()),
+    total: z.optional(z.number().int()),
     /**
      * Indicates whether there are additional completion options beyond those provided in the current response, even if the exact total is unknown.
      */
