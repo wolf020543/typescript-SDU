@@ -1,6 +1,5 @@
-import { validateMessage } from "../shared/message.js";
 import { Transport } from "../shared/transport.js";
-import { JSONRPCMessage } from "../types.js";
+import { JSONRPCMessage, JSONRPCMessageSchema } from "../types.js";
 
 /**
  * Client transport for SSE: this will connect to a server using Server-Sent Events for receiving
@@ -57,8 +56,7 @@ export class SSEClientTransport implements Transport {
         const messageEvent = event as MessageEvent;
         let message: JSONRPCMessage;
         try {
-          message = JSON.parse(messageEvent.data);
-          validateMessage(message);
+          message = JSONRPCMessageSchema.parse(JSON.parse(messageEvent.data));
         } catch (error) {
           this.onerror?.(error as Error);
           return;
