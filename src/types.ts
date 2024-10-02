@@ -255,10 +255,8 @@ export const ReadResourceRequestSchema = RequestSchema.extend({
   params: z.object({
     /**
      * The URI of the resource to read. The URI can use any protocol; it is up to the server how to interpret it.
-     *
-     * @format uri
      */
-    uri: z.string().uri()
+    uri: z.string().url()
   })
 });
 
@@ -284,10 +282,8 @@ export const SubscribeRequestSchema = RequestSchema.extend({
   params: z.object({
     /**
      * The URI of the resource to subscribe to. The URI can use any protocol; it is up to the server how to interpret it.
-     *
-     * @format uri
      */
-    uri: z.string().uri()
+    uri: z.string().url()
   })
 });
 
@@ -299,10 +295,8 @@ export const UnsubscribeRequestSchema = RequestSchema.extend({
   params: z.object({
     /**
      * The URI of the resource to unsubscribe from.
-     *
-     * @format uri
      */
-    uri: z.string().uri()
+    uri: z.string().url()
   })
 });
 
@@ -314,10 +308,8 @@ export const ResourceUpdatedNotificationSchema = NotificationSchema.extend({
   params: z.object({
     /**
      * The URI of the resource that has been updated. This might be a sub-resource of the one that the client actually subscribed to.
-     *
-     * @format uri
      */
-    uri: z.string().uri()
+    uri: z.string().url()
   })
 });
 
@@ -327,10 +319,8 @@ export const ResourceUpdatedNotificationSchema = NotificationSchema.extend({
 export const ResourceSchema = z.object({
   /**
    * The URI of this resource.
-   *
-   * @format uri
    */
-  uri: z.string().uri(),
+  uri: z.string().url(),
 
   /**
    * A human-readable name for this resource.
@@ -389,10 +379,8 @@ export const ResourceTemplateSchema = z.object({
 export const ResourceContentsSchema = z.object({
   /**
    * The URI of this resource.
-   *
-   * @format uri
    */
-  uri: z.string().uri(),
+  uri: z.string().url(),
   /**
    * The MIME type of this resource, if known.
    */
