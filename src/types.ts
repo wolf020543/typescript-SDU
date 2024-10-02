@@ -263,24 +263,27 @@ export const PingRequestSchema = RequestSchema.extend({
 });
 
 /* Progress notifications */
+export const ProgressSchema = z.object({
+  /**
+   * The progress thus far. This should increase every time progress is made, even if the total is unknown.
+   */
+  progress: z.number(),
+  /**
+   * Total number of items to process (or total progress required), if known.
+   */
+  total: z.optional(z.number()),
+});
+
 /**
  * An out-of-band notification used to inform the receiver of a progress update for a long-running request.
  */
 export const ProgressNotificationSchema = NotificationSchema.extend({
   method: z.literal("notifications/progress"),
-  params: z.object({
+  params: ProgressSchema.extend({
     /**
      * The progress token which was given in the initial request, used to associate this notification with the request that is proceeding.
      */
     progressToken: ProgressTokenSchema,
-    /**
-     * The progress thus far. This should increase every time progress is made, even if the total is unknown.
-     */
-    progress: z.number(),
-    /**
-     * Total number of items to process (or total progress required), if known.
-     */
-    total: z.optional(z.number()),
   }),
 });
 
@@ -810,14 +813,3 @@ export class McpError extends Error {
     super(`MCP error ${code}: ${message}`);
   }
 }
-
-export type Progress = Pick<
-  z.infer<typeof ProgressNotificationSchema>["params"],
-  "progress" | "total"
->;
-
-export const PROGRESS_NOTIFICATION_METHOD: z.infer<
-  typeof ProgressNotificationSchema
->["method"] = "notifications/progress";
-export const PING_REQUEST_METHOD: z.infer<typeof PingRequestSchema>["method"] =
-  "ping";

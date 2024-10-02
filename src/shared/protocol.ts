@@ -8,10 +8,10 @@ import {
   McpError,
   METHOD_NOT_FOUND,
   Notification,
-  PING_REQUEST_METHOD,
+  PingRequestSchema,
   Progress,
-  PROGRESS_NOTIFICATION_METHOD,
   ProgressNotification,
+  ProgressNotificationSchema,
   Request,
   Result,
 } from "../types.js";
@@ -78,14 +78,14 @@ export class Protocol<
 
   constructor() {
     this.setNotificationHandler(
-      PROGRESS_NOTIFICATION_METHOD,
+      ProgressNotificationSchema.shape.method.value,
       (notification) => {
         this._onprogress(notification as unknown as ProgressNotification);
       },
     );
 
     this.setRequestHandler(
-      PING_REQUEST_METHOD,
+      PingRequestSchema.shape.method.value,
       // Automatic pong by default.
       (_request) => ({}) as SendResultT,
     );
