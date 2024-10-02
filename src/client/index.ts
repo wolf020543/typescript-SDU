@@ -5,12 +5,9 @@ import {
   ClientRequest,
   ClientResult,
   Implementation,
-  InitializeResult,
+  InitializeResultSchema,
   PROTOCOL_VERSION,
   ServerCapabilities,
-  ServerNotification,
-  ServerRequest,
-  ServerResult,
 } from "../types.js";
 
 /**
@@ -19,9 +16,6 @@ import {
  * The client will automatically begin the initialization flow with the server when connect() is called.
  */
 export class Client extends Protocol<
-  ServerRequest,
-  ServerNotification,
-  ServerResult,
   ClientRequest,
   ClientNotification,
   ClientResult
@@ -39,14 +33,17 @@ export class Client extends Protocol<
   override async connect(transport: Transport): Promise<void> {
     await super.connect(transport);
 
-    const result = (await this.request({
-      method: "initialize",
-      params: {
-        protocolVersion: 1,
-        capabilities: {},
-        clientInfo: this._clientInfo,
+    const result = await this.request(
+      {
+        method: "initialize",
+        params: {
+          protocolVersion: 1,
+          capabilities: {},
+          clientInfo: this._clientInfo,
+        },
       },
-    })) as InitializeResult;
+      InitializeResultSchema,
+    );
 
     if (result === undefined) {
       throw new Error(`Server sent invalid initialize result: ${result}`);

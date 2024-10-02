@@ -1,3 +1,4 @@
+import { AnyZodObject, ZodLiteral, ZodObject, z } from "zod";
 import {
   ErrorCode,
   JSONRPCError,
@@ -25,9 +26,6 @@ export type ProgressCallback = (progress: Progress) => void;
  * features like request/response linking, notifications, and progress.
  */
 export class Protocol<
-  ReceiveRequestT extends Request,
-  ReceiveNotificationT extends Notification,
-  ReceiveResultT extends Result,
   SendRequestT extends Request,
   SendNotificationT extends Notification,
   SendResultT extends Result,
@@ -36,15 +34,15 @@ export class Protocol<
   private _requestMessageId = 0;
   private _requestHandlers: Map<
     string,
-    (request: ReceiveRequestT) => Promise<SendResultT>
+    (request: JSONRPCRequest) => Promise<SendResultT>
   > = new Map();
   private _notificationHandlers: Map<
     string,
-    (notification: ReceiveNotificationT) => Promise<void>
+    (notification: JSONRPCNotification) => Promise<void>
   > = new Map();
   private _responseHandlers: Map<
     number,
-    (response: ReceiveResultT | Error) => void
+    (response: JSONRPCResponse | Error) => void
   > = new Map();
   private _progressHandlers: Map<number, ProgressCallback> = new Map();
 
@@ -65,25 +63,20 @@ export class Protocol<
   /**
    * A handler to invoke for any request types that do not have their own handler installed.
    */
-  fallbackRequestHandler?: (request: ReceiveRequestT) => Promise<SendResultT>;
+  fallbackRequestHandler?: (request: Request) => Promise<SendResultT>;
 
   /**
    * A handler to invoke for any notification types that do not have their own handler installed.
    */
-  fallbackNotificationHandler?: (
-    notification: ReceiveNotificationT,
-  ) => Promise<void>;
+  fallbackNotificationHandler?: (notification: Notification) => Promise<void>;
 
   constructor() {
-    this.setNotificationHandler(
-      ProgressNotificationSchema.shape.method.value,
-      (notification) => {
-        this._onprogress(notification as unknown as ProgressNotification);
-      },
-    );
+    this.setNotificationHandler(ProgressNotificationSchema, (notification) => {
+      this._onprogress(notification as unknown as ProgressNotification);
+    });
 
     this.setRequestHandler(
-      PingRequestSchema.shape.method.value,
+      PingRequestSchema,
       // Automatic pong by default.
       (_request) => ({}) as SendResultT,
     );
@@ -106,11 +99,11 @@ export class Protocol<
 
     this._transport.onmessage = (message) => {
       if (!("method" in message)) {
-        this._onresponse(message as JSONRPCResponse | JSONRPCError);
+        this._onresponse(message);
       } else if ("id" in message) {
-        this._onrequest(message as JSONRPCRequest);
+        this._onrequest(message);
       } else {
-        this._onnotification(message as JSONRPCNotification);
+        this._onnotification(message);
       }
     };
   }
@@ -142,7 +135,7 @@ export class Protocol<
       return;
     }
 
-    handler(notification as unknown as ReceiveNotificationT).catch((error) =>
+    handler(notification).catch((error) =>
       this._onerror(
         new Error(`Uncaught error in notification handler: ${error}`),
       ),
@@ -171,7 +164,7 @@ export class Protocol<
       return;
     }
 
-    handler(request as unknown as ReceiveRequestT)
+    handler(request)
       .then(
         (result) => {
           this._transport?.send({
@@ -228,7 +221,7 @@ export class Protocol<
     this._responseHandlers.delete(Number(messageId));
     this._progressHandlers.delete(Number(messageId));
     if ("result" in response) {
-      handler(response.result as ReceiveResultT);
+      handler(response);
     } else {
       const error = new McpError(
         response.error.code,
@@ -255,11 +248,11 @@ export class Protocol<
    *
    * Do not use this method to emit notifications! Use notification() instead.
    */
-  // TODO: This could infer a better response type based on the method
-  request(
+  request<T extends AnyZodObject>(
     request: SendRequestT,
+    resultSchema: T,
     onprogress?: ProgressCallback,
-  ): Promise<ReceiveResultT> {
+  ): Promise<z.infer<T>> {
     return new Promise((resolve, reject) => {
       if (!this._transport) {
         reject(new Error("Not connected"));
@@ -283,9 +276,14 @@ export class Protocol<
 
       this._responseHandlers.set(messageId, (response) => {
         if (response instanceof Error) {
-          reject(response);
-        } else {
-          resolve(response);
+          return reject(response);
+        }
+
+        try {
+          const result = resultSchema.parse(response.result);
+          resolve(result);
+        } catch (error) {
+          reject(error);
         }
       });
 
@@ -314,13 +312,16 @@ export class Protocol<
    *
    * Note that this will replace any previous request handler for the same method.
    */
-  // TODO: This could infer a better request type based on the method.
-  setRequestHandler(
-    method: string,
-    handler: (request: ReceiveRequestT) => SendResultT | Promise<SendResultT>,
+  setRequestHandler<
+    T extends ZodObject<{
+      method: ZodLiteral<string>;
+    }>,
+  >(
+    requestSchema: T,
+    handler: (request: z.infer<T>) => SendResultT | Promise<SendResultT>,
   ): void {
-    this._requestHandlers.set(method, (request) =>
-      Promise.resolve(handler(request)),
+    this._requestHandlers.set(requestSchema.shape.method.value, (request) =>
+      Promise.resolve(handler(requestSchema.parse(request))),
     );
   }
 
@@ -336,13 +337,18 @@ export class Protocol<
    *
    * Note that this will replace any previous notification handler for the same method.
    */
-  // TODO: This could infer a better notification type based on the method.
-  setNotificationHandler<T extends ReceiveNotificationT>(
-    method: string,
-    handler: (notification: T) => void | Promise<void>,
+  setNotificationHandler<
+    T extends ZodObject<{
+      method: ZodLiteral<string>;
+    }>,
+  >(
+    notificationSchema: T,
+    handler: (notification: z.infer<T>) => void | Promise<void>,
   ): void {
-    this._notificationHandlers.set(method, (notification) =>
-      Promise.resolve(handler(notification as T)),
+    this._notificationHandlers.set(
+      notificationSchema.shape.method.value,
+      (notification) =>
+        Promise.resolve(handler(notificationSchema.parse(notification))),
     );
   }
 
