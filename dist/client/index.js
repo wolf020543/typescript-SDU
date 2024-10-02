@@ -1,5 +1,5 @@
 import { Protocol } from "../shared/protocol.js";
-import { PROTOCOL_VERSION, } from "../types/index.js";
+import { InitializeResultSchema, PROTOCOL_VERSION, } from "../types.js";
 /**
  * An MCP client on top of a pluggable transport.
  *
@@ -15,14 +15,14 @@ export class Client extends Protocol {
     }
     async connect(transport) {
         await super.connect(transport);
-        const result = (await this.request({
+        const result = await this.request({
             method: "initialize",
             params: {
                 protocolVersion: 1,
                 capabilities: {},
                 clientInfo: this._clientInfo,
             },
-        }));
+        }, InitializeResultSchema);
         if (result === undefined) {
             throw new Error(`Server sent invalid initialize result: ${result}`);
         }

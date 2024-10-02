@@ -1,4 +1,4 @@
-import { JSONRPCMessage } from "../types/index.js";
+import { JSONRPCMessage } from "../types.js";
 import { Transport } from "../shared/transport.js";
 export type StdioServerParameters = {
     /**

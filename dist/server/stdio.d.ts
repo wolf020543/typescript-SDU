@@ -1,5 +1,5 @@
 import { Readable, Writable } from "node:stream";
-import { JSONRPCMessage } from "../types/index.js";
+import { JSONRPCMessage } from "../types.js";
 import { Transport } from "../shared/transport.js";
 /**
  * Server transport for stdio: this communicates with a MCP client by reading from the current process' stdin and writing to stdout.

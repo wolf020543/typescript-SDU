@@ -1,4 +1,4 @@
-import { validateMessage } from "../shared/message.js";
+import { JSONRPCMessageSchema } from "../types.js";
 /**
  * Client transport for SSE: this will connect to a server using Server-Sent Events for receiving
  * messages and make separate POST requests for sending messages.
@@ -41,8 +41,7 @@ export class SSEClientTransport {
                 const messageEvent = event;
                 let message;
                 try {
-                    message = JSON.parse(messageEvent.data);
-                    validateMessage(message);
+                    message = JSONRPCMessageSchema.parse(JSON.parse(messageEvent.data));
                 }
                 catch (error) {
                     (_a = this.onerror) === null || _a === void 0 ? void 0 : _a.call(this, error);

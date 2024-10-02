@@ -1,5 +1,5 @@
 import { Protocol } from "../shared/protocol.js";
-import { PROTOCOL_VERSION, } from "../types/index.js";
+import { InitializedNotificationSchema, InitializeRequestSchema, PROTOCOL_VERSION, } from "../types.js";
 /**
  * An MCP server on top of a pluggable transport.
  *
@@ -12,8 +12,8 @@ export class Server extends Protocol {
     constructor(_serverInfo) {
         super();
         this._serverInfo = _serverInfo;
-        this.setRequestHandler("initialize", (request) => this._oninitialize(request));
-        this.setNotificationHandler("notification/initialized", () => { var _a; return (_a = this.oninitialized) === null || _a === void 0 ? void 0 : _a.call(this); });
+        this.setRequestHandler(InitializeRequestSchema, (request) => this._oninitialize(request));
+        this.setNotificationHandler(InitializedNotificationSchema, () => { var _a; return (_a = this.oninitialized) === null || _a === void 0 ? void 0 : _a.call(this); });
     }
     async _oninitialize(request) {
         if (request.params.protocolVersion !== PROTOCOL_VERSION) {

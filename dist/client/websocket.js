@@ -1,4 +1,4 @@
-import { validateMessage } from "../shared/message.js";
+import { JSONRPCMessageSchema } from "../types.js";
 const SUBPROTOCOL = "mcp";
 /**
  * Client transport for WebSocket: this will connect to a server over the WebSocket protocol.
@@ -26,8 +26,7 @@ export class WebSocketClientTransport {
                 var _a, _b;
                 let message;
                 try {
-                    message = JSON.parse(event.data);
-                    validateMessage(message);
+                    message = JSONRPCMessageSchema.parse(JSON.parse(event.data));
                 }
                 catch (error) {
                     (_a = this.onerror) === null || _a === void 0 ? void 0 : _a.call(this, error);
