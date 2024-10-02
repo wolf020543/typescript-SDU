@@ -23,8 +23,6 @@
     "build": "tsc",
     "lint": "eslint src/",
     "test": "jest",
-    "update-spec": "git subtree pull --prefix=packages/mcp-spec https://github.com/modelcontextprotocol/specification.git main --squash",
-    "regenerate": "cp packages/mcp-spec/schema/schema.ts src/types/schema.ts",
     "start": "yarn server",
     "server": "tsx watch --clear-screen=false src/cli.ts server",
     "client": "tsx src/cli.ts client"
