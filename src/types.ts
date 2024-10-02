@@ -59,17 +59,23 @@ export const RequestIdSchema = z.union([z.string(), z.number().int()]);
 /**
  * A request that expects a response.
  */
-export const JSONRPCRequestSchema = RequestSchema.extend({
-  jsonrpc: z.literal(JSONRPC_VERSION),
-  id: RequestIdSchema,
-}).strict();
+export const JSONRPCRequestSchema = z
+  .object({
+    jsonrpc: z.literal(JSONRPC_VERSION),
+    id: RequestIdSchema,
+  })
+  .merge(RequestSchema)
+  .strict();
 
 /**
  * A notification which does not expect a response.
  */
-export const JSONRPCNotificationSchema = NotificationSchema.extend({
-  jsonrpc: z.literal(JSONRPC_VERSION),
-}).strict();
+export const JSONRPCNotificationSchema = z
+  .object({
+    jsonrpc: z.literal(JSONRPC_VERSION),
+  })
+  .merge(NotificationSchema)
+  .strict();
 
 /**
  * A successful (non-error) response to a request.

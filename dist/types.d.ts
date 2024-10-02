@@ -158,6 +158,9 @@ export declare const RequestIdSchema: z.ZodUnion<[z.ZodString, z.ZodNumber]>;
  * A request that expects a response.
  */
 export declare const JSONRPCRequestSchema: z.ZodObject<z.objectUtil.extendShape<{
+    jsonrpc: z.ZodLiteral<"2.0">;
+    id: z.ZodUnion<[z.ZodString, z.ZodNumber]>;
+}, {
     method: z.ZodString;
     params: z.ZodOptional<z.ZodObject<{
         _meta: z.ZodOptional<z.ZodObject<{
@@ -211,9 +214,6 @@ export declare const JSONRPCRequestSchema: z.ZodObject<z.objectUtil.extendShape<
             progressToken: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodNumber]>>;
         }, z.ZodTypeAny, "passthrough">>>;
     }, z.ZodTypeAny, "passthrough">>>;
-}, {
-    jsonrpc: z.ZodLiteral<"2.0">;
-    id: z.ZodUnion<[z.ZodString, z.ZodNumber]>;
 }>, "strict", z.ZodTypeAny, {
     method: string;
     jsonrpc: "2.0";
@@ -263,6 +263,8 @@ export declare const JSONRPCRequestSchema: z.ZodObject<z.objectUtil.extendShape<
  * A notification which does not expect a response.
  */
 export declare const JSONRPCNotificationSchema: z.ZodObject<z.objectUtil.extendShape<{
+    jsonrpc: z.ZodLiteral<"2.0">;
+}, {
     method: z.ZodString;
     params: z.ZodOptional<z.ZodObject<{
         /**
@@ -280,8 +282,6 @@ export declare const JSONRPCNotificationSchema: z.ZodObject<z.objectUtil.extendS
          */
         _meta: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
     }, z.ZodTypeAny, "passthrough">>>;
-}, {
-    jsonrpc: z.ZodLiteral<"2.0">;
 }>, "strict", z.ZodTypeAny, {
     method: string;
     jsonrpc: "2.0";
@@ -397,6 +397,9 @@ export declare const JSONRPCErrorSchema: z.ZodObject<{
     };
 }>;
 export declare const JSONRPCMessageSchema: z.ZodUnion<[z.ZodObject<z.objectUtil.extendShape<{
+    jsonrpc: z.ZodLiteral<"2.0">;
+    id: z.ZodUnion<[z.ZodString, z.ZodNumber]>;
+}, {
     method: z.ZodString;
     params: z.ZodOptional<z.ZodObject<{
         _meta: z.ZodOptional<z.ZodObject<{
@@ -450,9 +453,6 @@ export declare const JSONRPCMessageSchema: z.ZodUnion<[z.ZodObject<z.objectUtil.
             progressToken: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodNumber]>>;
         }, z.ZodTypeAny, "passthrough">>>;
     }, z.ZodTypeAny, "passthrough">>>;
-}, {
-    jsonrpc: z.ZodLiteral<"2.0">;
-    id: z.ZodUnion<[z.ZodString, z.ZodNumber]>;
 }>, "strict", z.ZodTypeAny, {
     method: string;
     jsonrpc: "2.0";
@@ -498,6 +498,8 @@ export declare const JSONRPCMessageSchema: z.ZodUnion<[z.ZodObject<z.objectUtil.
         }, z.ZodTypeAny, "passthrough">>>;
     }, z.ZodTypeAny, "passthrough"> | undefined;
 }>, z.ZodObject<z.objectUtil.extendShape<{
+    jsonrpc: z.ZodLiteral<"2.0">;
+}, {
     method: z.ZodString;
     params: z.ZodOptional<z.ZodObject<{
         /**
@@ -515,8 +517,6 @@ export declare const JSONRPCMessageSchema: z.ZodUnion<[z.ZodObject<z.objectUtil.
          */
         _meta: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
     }, z.ZodTypeAny, "passthrough">>>;
-}, {
-    jsonrpc: z.ZodLiteral<"2.0">;
 }>, "strict", z.ZodTypeAny, {
     method: string;
     jsonrpc: "2.0";
