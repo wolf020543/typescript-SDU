@@ -11,7 +11,7 @@ import {
   ServerNotification,
   ServerRequest,
   ServerResult,
-} from "../types/index.js";
+} from "../types.js";
 
 /**
  * An MCP client on top of a pluggable transport.

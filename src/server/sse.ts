@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { IncomingMessage, ServerResponse } from "node:http";
 import { validateMessage } from "../shared/message.js";
 import { Transport } from "../shared/transport.js";
-import { JSONRPCMessage } from "../types/index.js";
+import { JSONRPCMessage } from "../types.js";
 import getRawBody from "raw-body";
 import contentType from "content-type";
 

@@ -1,4 +1,4 @@
-import { JSONRPCMessage } from "../types/index.js";
+import { JSONRPCMessage } from "../types.js";
 
 // Throws an exception if the message is invalid or unsupported.
 export function validateMessage(message: JSONRPCMessage): void {

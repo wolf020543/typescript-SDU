@@ -14,7 +14,7 @@ import {
   ProgressNotification,
   Request,
   Result,
-} from "../types/index.js";
+} from "../types.js";
 import { Transport } from "./transport.js";
 
 /**

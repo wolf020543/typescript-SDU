@@ -1,6 +1,6 @@
 import { validateMessage } from "../shared/message.js";
 import { Transport } from "../shared/transport.js";
-import { JSONRPCMessage } from "../types/index.js";
+import { JSONRPCMessage } from "../types.js";
 
 /**
  * Client transport for SSE: this will connect to a server using Server-Sent Events for receiving
