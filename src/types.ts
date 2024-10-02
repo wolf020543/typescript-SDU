@@ -14,15 +14,17 @@ export const RequestSchema = z.object({
     z
       .object({
         _meta: z.optional(
-          z.object({
-            /**
-             * If specified, the caller is requesting out-of-band progress notifications for this request (as represented by notifications/progress). The value of this parameter is an opaque token that will be attached to any subsequent notifications. The receiver is not obligated to provide these notifications.
-             */
-            progressToken: z.optional(ProgressTokenSchema),
-          }),
+          z
+            .object({
+              /**
+               * If specified, the caller is requesting out-of-band progress notifications for this request (as represented by notifications/progress). The value of this parameter is an opaque token that will be attached to any subsequent notifications. The receiver is not obligated to provide these notifications.
+               */
+              progressToken: z.optional(ProgressTokenSchema),
+            })
+            .passthrough(),
         ),
       })
-      .catchall(z.unknown()),
+      .passthrough(),
   ),
 });
 
@@ -34,9 +36,9 @@ export const NotificationSchema = z.object({
         /**
          * This parameter name is reserved by MCP to allow clients and servers to attach additional metadata to their notifications.
          */
-        _meta: z.optional(z.record(z.unknown())),
+        _meta: z.optional(z.object({}).passthrough()),
       })
-      .catchall(z.unknown()),
+      .passthrough(),
   ),
 });
 
@@ -45,9 +47,9 @@ export const ResultSchema = z
     /**
      * This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses.
      */
-    _meta: z.optional(z.record(z.unknown())),
+    _meta: z.optional(z.object({}).passthrough()),
   })
-  .catchall(z.unknown());
+  .passthrough();
 
 /**
  * A uniquely identifying ID for a request in JSON-RPC.
@@ -60,23 +62,25 @@ export const RequestIdSchema = z.union([z.string(), z.number().int()]);
 export const JSONRPCRequestSchema = RequestSchema.extend({
   jsonrpc: z.literal(JSONRPC_VERSION),
   id: RequestIdSchema,
-});
+}).strict();
 
 /**
  * A notification which does not expect a response.
  */
 export const JSONRPCNotificationSchema = NotificationSchema.extend({
   jsonrpc: z.literal(JSONRPC_VERSION),
-});
+}).strict();
 
 /**
  * A successful (non-error) response to a request.
  */
-export const JSONRPCResponseSchema = z.object({
-  jsonrpc: z.literal(JSONRPC_VERSION),
-  id: RequestIdSchema,
-  result: ResultSchema,
-});
+export const JSONRPCResponseSchema = z
+  .object({
+    jsonrpc: z.literal(JSONRPC_VERSION),
+    id: RequestIdSchema,
+    result: ResultSchema,
+  })
+  .strict();
 
 // Standard JSON-RPC error codes
 export const PARSE_ERROR = -32700;
@@ -88,24 +92,26 @@ export const INTERNAL_ERROR = -32603;
 /**
  * A response to a request that indicates an error occurred.
  */
-export const JSONRPCErrorSchema = z.object({
-  jsonrpc: z.literal(JSONRPC_VERSION),
-  id: RequestIdSchema,
-  error: z.object({
-    /**
-     * The error type that occurred.
-     */
-    code: z.number().int(),
-    /**
-     * A short description of the error. The message SHOULD be limited to a concise single sentence.
-     */
-    message: z.string(),
-    /**
-     * Additional information about the error. The value of this member is defined by the sender (e.g. detailed error information, nested errors etc.).
-     */
-    data: z.optional(z.unknown()),
-  }),
-});
+export const JSONRPCErrorSchema = z
+  .object({
+    jsonrpc: z.literal(JSONRPC_VERSION),
+    id: RequestIdSchema,
+    error: z.object({
+      /**
+       * The error type that occurred.
+       */
+      code: z.number().int(),
+      /**
+       * A short description of the error. The message SHOULD be limited to a concise single sentence.
+       */
+      message: z.string(),
+      /**
+       * Additional information about the error. The value of this member is defined by the sender (e.g. detailed error information, nested errors etc.).
+       */
+      data: z.optional(z.unknown()),
+    }),
+  })
+  .strict();
 
 export const JSONRPCMessageSchema = z.union([
   JSONRPCRequestSchema,
@@ -118,7 +124,7 @@ export const JSONRPCMessageSchema = z.union([
 /**
  * A response that indicates success but carries no data.
  */
-export const EmptyResultSchema = ResultSchema;
+export const EmptyResultSchema = ResultSchema.strict();
 
 /* Initialization */
 export const PROTOCOL_VERSION = 1;
@@ -141,10 +147,8 @@ export const ImageContentSchema = z.object({
   type: z.literal("image"),
   /**
    * The base64-encoded image data.
-   *
-   * @format byte
    */
-  data: z.string(),
+  data: z.string().base64(),
   /**
    * The MIME type of the image. Different providers may support different image types.
    */
@@ -174,11 +178,11 @@ export const ClientCapabilitiesSchema = z.object({
   /**
    * Experimental, non-standard capabilities that the client supports.
    */
-  experimental: z.optional(z.record(z.object({}))),
+  experimental: z.optional(z.object({}).passthrough()),
   /**
    * Present if the client supports sampling from an LLM.
    */
-  sampling: z.optional(z.object({})),
+  sampling: z.optional(z.object({}).passthrough()),
 });
 
 /**
@@ -203,30 +207,32 @@ export const ServerCapabilitiesSchema = z.object({
   /**
    * Experimental, non-standard capabilities that the server supports.
    */
-  experimental: z.optional(z.record(z.object({}))),
+  experimental: z.optional(z.object({}).passthrough()),
   /**
    * Present if the server supports sending log messages to the client.
    */
-  logging: z.optional(z.object({})),
+  logging: z.optional(z.object({}).passthrough()),
   /**
    * Present if the server offers any prompt templates.
    */
-  prompts: z.optional(z.object({})),
+  prompts: z.optional(z.object({}).passthrough()),
   /**
    * Present if the server offers any resources to read.
    */
   resources: z.optional(
-    z.object({
-      /**
-       * Whether this server supports subscribing to resource updates.
-       */
-      subscribe: z.optional(z.boolean()),
-    }),
+    z
+      .object({
+        /**
+         * Whether this server supports subscribing to resource updates.
+         */
+        subscribe: z.optional(z.boolean()),
+      })
+      .passthrough(),
   ),
   /**
    * Present if the server offers any tools to call.
    */
-  tools: z.optional(z.object({})),
+  tools: z.optional(z.object({}).passthrough()),
 });
 
 /**
@@ -303,10 +309,8 @@ export const TextResourceContentsSchema = ResourceContentsSchema.extend({
 export const BlobResourceContentsSchema = ResourceContentsSchema.extend({
   /**
    * A base64-encoded string representing the binary data of the item.
-   *
-   * @format byte
    */
-  blob: z.string(),
+  blob: z.string().base64(),
 });
 
 /**
@@ -344,8 +348,6 @@ export const ResourceSchema = z.object({
 export const ResourceTemplateSchema = z.object({
   /**
    * A URI template (according to RFC 6570) that can be used to construct resource URIs.
-   *
-   * @format uri-template
    */
   uriTemplate: z.string(),
 
@@ -549,7 +551,7 @@ export const ToolSchema = z.object({
    */
   inputSchema: z.object({
     type: z.literal("object"),
-    properties: z.optional(z.record(z.object({}))),
+    properties: z.optional(z.object({}).passthrough()),
   }),
 });
 
@@ -657,7 +659,7 @@ export const CreateMessageRequestSchema = RequestSchema.extend({
     /**
      * Optional metadata to pass through to the LLM provider. The format of this metadata is provider-specific.
      */
-    metadata: z.optional(z.object({})),
+    metadata: z.optional(z.object({}).passthrough()),
   }),
 });
 
@@ -674,7 +676,10 @@ export const CreateMessageResultSchema = ResultSchema.extend({
    */
   stopReason: z.enum(["endTurn", "stopSequence", "maxTokens"]),
   role: z.enum(["user", "assistant"]),
-  content: z.union([TextContentSchema, ImageContentSchema]),
+  content: z.discriminatedUnion("type", [
+    TextContentSchema,
+    ImageContentSchema,
+  ]),
 });
 
 /* Autocomplete */
@@ -685,8 +690,6 @@ export const ResourceReferenceSchema = z.object({
   type: z.literal("ref/resource"),
   /**
    * The URI or URI template of the resource.
-   *
-   * @format uri-template
    */
   uri: z.string(),
 });
