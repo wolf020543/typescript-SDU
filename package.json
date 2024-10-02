@@ -29,7 +29,8 @@
   },
   "dependencies": {
     "content-type": "^1.0.5",
-    "raw-body": "^3.0.0"
+    "raw-body": "^3.0.0",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@eslint/js": "^9.8.0",
