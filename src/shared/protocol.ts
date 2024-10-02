@@ -1,12 +1,10 @@
 import {
-  CONNECTION_CLOSED_ERROR,
-  INTERNAL_ERROR,
+  ErrorCode,
   JSONRPCError,
   JSONRPCNotification,
   JSONRPCRequest,
   JSONRPCResponse,
   McpError,
-  METHOD_NOT_FOUND,
   Notification,
   PingRequestSchema,
   Progress,
@@ -124,7 +122,7 @@ export class Protocol<
     this._transport = undefined;
     this.onclose?.();
 
-    const error = new McpError(CONNECTION_CLOSED_ERROR, "Connection closed");
+    const error = new McpError(ErrorCode.ConnectionClosed, "Connection closed");
     for (const handler of responseHandlers.values()) {
       handler(error);
     }
@@ -161,7 +159,7 @@ export class Protocol<
           jsonrpc: "2.0",
           id: request.id,
           error: {
-            code: METHOD_NOT_FOUND,
+            code: ErrorCode.MethodNotFound,
             message: "Method not found",
           },
         })
@@ -189,7 +187,7 @@ export class Protocol<
             error: {
               code: error["code"]
                 ? Math.floor(Number(error["code"]))
-                : INTERNAL_ERROR,
+                : ErrorCode.InternalError,
               message: error.message ?? "Internal error",
             },
           });

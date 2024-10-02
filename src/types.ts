@@ -82,12 +82,20 @@ export const JSONRPCResponseSchema = z
   })
   .strict();
 
-// Standard JSON-RPC error codes
-export const PARSE_ERROR = -32700;
-export const INVALID_REQUEST = -32600;
-export const METHOD_NOT_FOUND = -32601;
-export const INVALID_PARAMS = -32602;
-export const INTERNAL_ERROR = -32603;
+/**
+ * An incomplete set of error codes that may appear in JSON-RPC responses.
+ */
+export enum ErrorCode {
+  // SDK error codes
+  ConnectionClosed = -1,
+
+  // Standard JSON-RPC error codes
+  ParseError = -32700,
+  InvalidRequest = -32600,
+  MethodNotFound = -32601,
+  InvalidParams = -32602,
+  InternalError = -32603,
+}
 
 /**
  * A response to a request that indicates an error occurred.
@@ -801,8 +809,6 @@ export const ServerResultSchema = z.union([
   CallToolResultSchema,
   ListToolsResultSchema,
 ]);
-
-export const CONNECTION_CLOSED_ERROR = -1;
 
 export class McpError extends Error {
   constructor(
