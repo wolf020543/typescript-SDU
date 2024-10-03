@@ -1,4 +1,5 @@
-import { Notification, Progress, Request, Result } from "../types/index.js";
+import { AnyZodObject, ZodLiteral, ZodObject, z } from "zod";
+import { Notification, Progress, Request, Result } from "../types.js";
 import { Transport } from "./transport.js";
 /**
  * Callback for progress notifications.
@@ -8,7 +9,7 @@ export type ProgressCallback = (progress: Progress) => void;
  * Implements MCP protocol framing on top of a pluggable transport, including
  * features like request/response linking, notifications, and progress.
  */
-export declare class Protocol<ReceiveRequestT extends Request, ReceiveNotificationT extends Notification, ReceiveResultT extends Result, SendRequestT extends Request, SendNotificationT extends Notification, SendResultT extends Result> {
+export declare class Protocol<SendRequestT extends Request, SendNotificationT extends Notification, SendResultT extends Result> {
     private _transport?;
     private _requestMessageId;
     private _requestHandlers;
@@ -30,11 +31,11 @@ export declare class Protocol<ReceiveRequestT extends Request, ReceiveNotificati
     /**
      * A handler to invoke for any request types that do not have their own handler installed.
      */
-    fallbackRequestHandler?: (request: ReceiveRequestT) => Promise<SendResultT>;
+    fallbackRequestHandler?: (request: Request) => Promise<SendResultT>;
     /**
      * A handler to invoke for any notification types that do not have their own handler installed.
      */
-    fallbackNotificationHandler?: (notification: ReceiveNotificationT) => Promise<void>;
+    fallbackNotificationHandler?: (notification: Notification) => Promise<void>;
     constructor();
     /**
      * Attaches to the given transport and starts listening for messages.
@@ -58,7 +59,7 @@ export declare class Protocol<ReceiveRequestT extends Request, ReceiveNotificati
      *
      * Do not use this method to emit notifications! Use notification() instead.
      */
-    request(request: SendRequestT, onprogress?: ProgressCallback): Promise<ReceiveResultT>;
+    request<T extends AnyZodObject>(request: SendRequestT, resultSchema: T, onprogress?: ProgressCallback): Promise<z.infer<T>>;
     /**
      * Emits a notification, which is a one-way message that does not expect a response.
      */
@@ -68,7 +69,9 @@ export declare class Protocol<ReceiveRequestT extends Request, ReceiveNotificati
      *
      * Note that this will replace any previous request handler for the same method.
      */
-    setRequestHandler(method: string, handler: (request: ReceiveRequestT) => SendResultT | Promise<SendResultT>): void;
+    setRequestHandler<T extends ZodObject<{
+        method: ZodLiteral<string>;
+    }>>(requestSchema: T, handler: (request: z.infer<T>) => SendResultT | Promise<SendResultT>): void;
     /**
      * Removes the request handler for the given method.
      */
@@ -78,7 +81,9 @@ export declare class Protocol<ReceiveRequestT extends Request, ReceiveNotificati
      *
      * Note that this will replace any previous notification handler for the same method.
      */
-    setNotificationHandler<T extends ReceiveNotificationT>(method: string, handler: (notification: T) => void | Promise<void>): void;
+    setNotificationHandler<T extends ZodObject<{
+        method: ZodLiteral<string>;
+    }>>(notificationSchema: T, handler: (notification: z.infer<T>) => void | Promise<void>): void;
     /**
      * Removes the notification handler for the given method.
      */

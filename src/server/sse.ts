@@ -1,8 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { IncomingMessage, ServerResponse } from "node:http";
-import { validateMessage } from "../shared/message.js";
 import { Transport } from "../shared/transport.js";
-import { JSONRPCMessage } from "../types/index.js";
+import { JSONRPCMessage, JSONRPCMessageSchema } from "../types.js";
 import getRawBody from "raw-body";
 import contentType from "content-type";
 
@@ -101,15 +100,16 @@ export class SSEServerTransport implements Transport {
   /**
    * Handle a client message, regardless of how it arrived. This can be used to inform the server of messages that arrive via a means different than HTTP POST.
    */
-  async handleMessage(message: JSONRPCMessage): Promise<void> {
+  async handleMessage(message: unknown): Promise<void> {
+    let parsedMessage: JSONRPCMessage;
     try {
-      validateMessage(message);
+      parsedMessage = JSONRPCMessageSchema.parse(message);
     } catch (error) {
       this.onerror?.(error as Error);
       throw error;
     }
 
-    this.onmessage?.(message);
+    this.onmessage?.(parsedMessage);
   }
 
   async close(): Promise<void> {

@@ -1,4 +1,4 @@
-import { JSONRPCMessage } from "../types/index.js";
+import { JSONRPCMessage } from "../types.js";
 /**
  * Describes the minimal contract for a MCP transport that a client or server can communicate over.
  */

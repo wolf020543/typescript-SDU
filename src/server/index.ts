@@ -1,17 +1,16 @@
 import { Protocol } from "../shared/protocol.js";
 import {
   ClientCapabilities,
-  ClientNotification,
-  ClientRequest,
-  ClientResult,
   Implementation,
+  InitializedNotificationSchema,
   InitializeRequest,
+  InitializeRequestSchema,
   InitializeResult,
   PROTOCOL_VERSION,
   ServerNotification,
   ServerRequest,
   ServerResult,
-} from "../types/index.js";
+} from "../types.js";
 
 /**
  * An MCP server on top of a pluggable transport.
@@ -19,9 +18,6 @@ import {
  * This server will automatically respond to the initialization flow as initiated from the client.
  */
 export class Server extends Protocol<
-  ClientRequest,
-  ClientNotification,
-  ClientResult,
   ServerRequest,
   ServerNotification,
   ServerResult
@@ -40,10 +36,10 @@ export class Server extends Protocol<
   constructor(private _serverInfo: Implementation) {
     super();
 
-    this.setRequestHandler("initialize", (request) =>
-      this._oninitialize(request as InitializeRequest),
+    this.setRequestHandler(InitializeRequestSchema, (request) =>
+      this._oninitialize(request),
     );
-    this.setNotificationHandler("notification/initialized", () =>
+    this.setNotificationHandler(InitializedNotificationSchema, () =>
       this.oninitialized?.(),
     );
   }

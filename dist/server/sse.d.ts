@@ -1,6 +1,6 @@
 import { IncomingMessage, ServerResponse } from "node:http";
 import { Transport } from "../shared/transport.js";
-import { JSONRPCMessage } from "../types/index.js";
+import { JSONRPCMessage } from "../types.js";
 /**
  * Server transport for SSE: this will send messages over an SSE connection and receive messages from HTTP POST requests.
  *
@@ -32,7 +32,7 @@ export declare class SSEServerTransport implements Transport {
     /**
      * Handle a client message, regardless of how it arrived. This can be used to inform the server of messages that arrive via a means different than HTTP POST.
      */
-    handleMessage(message: JSONRPCMessage): Promise<void>;
+    handleMessage(message: unknown): Promise<void>;
     close(): Promise<void>;
     send(message: JSONRPCMessage): Promise<void>;
     /**

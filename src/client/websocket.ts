@@ -1,6 +1,5 @@
-import { validateMessage } from "../shared/message.js";
 import { Transport } from "../shared/transport.js";
-import { JSONRPCMessage } from "../types/index.js";
+import { JSONRPCMessage, JSONRPCMessageSchema } from "../types.js";
 
 const SUBPROTOCOL = "mcp";
 
@@ -38,8 +37,7 @@ export class WebSocketClientTransport implements Transport {
       this._socket.onmessage = (event: MessageEvent) => {
         let message: JSONRPCMessage;
         try {
-          message = JSON.parse(event.data);
-          validateMessage(message);
+          message = JSONRPCMessageSchema.parse(JSON.parse(event.data));
         } catch (error) {
           this.onerror?.(error as Error);
           return;

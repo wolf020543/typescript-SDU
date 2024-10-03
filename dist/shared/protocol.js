@@ -1,4 +1,4 @@
-import { CONNECTION_CLOSED_ERROR, INTERNAL_ERROR, McpError, METHOD_NOT_FOUND, PING_REQUEST_METHOD, PROGRESS_NOTIFICATION_METHOD, } from "../types/index.js";
+import { ErrorCode, McpError, PingRequestSchema, ProgressNotificationSchema, } from "../types.js";
 /**
  * Implements MCP protocol framing on top of a pluggable transport, including
  * features like request/response linking, notifications, and progress.
@@ -10,10 +10,10 @@ export class Protocol {
         this._notificationHandlers = new Map();
         this._responseHandlers = new Map();
         this._progressHandlers = new Map();
-        this.setNotificationHandler(PROGRESS_NOTIFICATION_METHOD, (notification) => {
+        this.setNotificationHandler(ProgressNotificationSchema, (notification) => {
             this._onprogress(notification);
         });
-        this.setRequestHandler(PING_REQUEST_METHOD, 
+        this.setRequestHandler(PingRequestSchema, 
         // Automatic pong by default.
         (_request) => ({}));
     }
@@ -49,7 +49,7 @@ export class Protocol {
         this._progressHandlers.clear();
         this._transport = undefined;
         (_a = this.onclose) === null || _a === void 0 ? void 0 : _a.call(this);
-        const error = new McpError(CONNECTION_CLOSED_ERROR, "Connection closed");
+        const error = new McpError(ErrorCode.ConnectionClosed, "Connection closed");
         for (const handler of responseHandlers.values()) {
             handler(error);
         }
@@ -75,7 +75,7 @@ export class Protocol {
                 jsonrpc: "2.0",
                 id: request.id,
                 error: {
-                    code: METHOD_NOT_FOUND,
+                    code: ErrorCode.MethodNotFound,
                     message: "Method not found",
                 },
             }).catch((error) => this._onerror(new Error(`Failed to send an error response: ${error}`)));
@@ -97,7 +97,7 @@ export class Protocol {
                 error: {
                     code: error["code"]
                         ? Math.floor(Number(error["code"]))
-                        : INTERNAL_ERROR,
+                        : ErrorCode.InternalError,
                     message: (_b = error.message) !== null && _b !== void 0 ? _b : "Internal error",
                 },
             });
@@ -123,7 +123,7 @@ export class Protocol {
         this._responseHandlers.delete(Number(messageId));
         this._progressHandlers.delete(Number(messageId));
         if ("result" in response) {
-            handler(response.result);
+            handler(response);
         }
         else {
             const error = new McpError(response.error.code, response.error.message, response.error.data);
@@ -145,8 +145,7 @@ export class Protocol {
      *
      * Do not use this method to emit notifications! Use notification() instead.
      */
-    // TODO: This could infer a better response type based on the method
-    request(request, onprogress) {
+    request(request, resultSchema, onprogress) {
         return new Promise((resolve, reject) => {
             if (!this._transport) {
                 reject(new Error("Not connected"));
@@ -167,10 +166,14 @@ export class Protocol {
             }
             this._responseHandlers.set(messageId, (response) => {
                 if (response instanceof Error) {
-                    reject(response);
+                    return reject(response);
                 }
-                else {
-                    resolve(response);
+                try {
+                    const result = resultSchema.parse(response.result);
+                    resolve(result);
+                }
+                catch (error) {
+                    reject(error);
                 }
             });
             this._transport.send(jsonrpcRequest).catch(reject);
@@ -194,9 +197,8 @@ export class Protocol {
      *
      * Note that this will replace any previous request handler for the same method.
      */
-    // TODO: This could infer a better request type based on the method.
-    setRequestHandler(method, handler) {
-        this._requestHandlers.set(method, (request) => Promise.resolve(handler(request)));
+    setRequestHandler(requestSchema, handler) {
+        this._requestHandlers.set(requestSchema.shape.method.value, (request) => Promise.resolve(handler(requestSchema.parse(request))));
     }
     /**
      * Removes the request handler for the given method.
@@ -209,9 +211,8 @@ export class Protocol {
      *
      * Note that this will replace any previous notification handler for the same method.
      */
-    // TODO: This could infer a better notification type based on the method.
-    setNotificationHandler(method, handler) {
-        this._notificationHandlers.set(method, (notification) => Promise.resolve(handler(notification)));
+    setNotificationHandler(notificationSchema, handler) {
+        this._notificationHandlers.set(notificationSchema.shape.method.value, (notification) => Promise.resolve(handler(notificationSchema.parse(notification))));
     }
     /**
      * Removes the notification handler for the given method.

@@ -1,11 +1,11 @@
 import { Protocol } from "../shared/protocol.js";
-import { ClientCapabilities, ClientNotification, ClientRequest, ClientResult, Implementation, ServerNotification, ServerRequest, ServerResult } from "../types/index.js";
+import { ClientCapabilities, Implementation, ServerNotification, ServerRequest, ServerResult } from "../types.js";
 /**
  * An MCP server on top of a pluggable transport.
  *
  * This server will automatically respond to the initialization flow as initiated from the client.
  */
-export declare class Server extends Protocol<ClientRequest, ClientNotification, ClientResult, ServerRequest, ServerNotification, ServerResult> {
+export declare class Server extends Protocol<ServerRequest, ServerNotification, ServerResult> {
     private _serverInfo;
     private _clientCapabilities?;
     private _clientVersion?;

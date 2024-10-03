@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { validateMessage } from "../shared/message.js";
+import { JSONRPCMessageSchema } from "../types.js";
 import getRawBody from "raw-body";
 import contentType from "content-type";
 const MAXIMUM_MESSAGE_SIZE = "4mb";
@@ -81,14 +81,15 @@ export class SSEServerTransport {
      */
     async handleMessage(message) {
         var _a, _b;
+        let parsedMessage;
         try {
-            validateMessage(message);
+            parsedMessage = JSONRPCMessageSchema.parse(message);
         }
         catch (error) {
             (_a = this.onerror) === null || _a === void 0 ? void 0 : _a.call(this, error);
             throw error;
         }
-        (_b = this.onmessage) === null || _b === void 0 ? void 0 : _b.call(this, message);
+        (_b = this.onmessage) === null || _b === void 0 ? void 0 : _b.call(this, parsedMessage);
     }
     async close() {
         var _a, _b;

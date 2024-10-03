@@ -1,5 +1,4 @@
-import { JSONRPCMessage } from "../types/index.js";
-import { validateMessage } from "./message.js";
+import { JSONRPCMessage, JSONRPCMessageSchema } from "../types.js";
 
 /**
  * Buffers a continuous stdio stream into discrete JSON-RPC messages.
@@ -32,9 +31,7 @@ export class ReadBuffer {
 }
 
 export function deserializeMessage(line: string): JSONRPCMessage {
-  const message = JSON.parse(line) as JSONRPCMessage;
-  validateMessage(message);
-  return message;
+  return JSONRPCMessageSchema.parse(JSON.parse(line));
 }
 
 export function serializeMessage(message: JSONRPCMessage): string {
