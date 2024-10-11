@@ -1,9 +1,14 @@
 import { z } from "zod";
+export declare const PROTOCOL_VERSION = "2024-10-07";
 export declare const JSONRPC_VERSION = "2.0";
 /**
  * A progress token, used to associate progress notifications with the original request.
  */
 export declare const ProgressTokenSchema: z.ZodUnion<[z.ZodString, z.ZodNumber]>;
+/**
+ * An opaque token used to represent a cursor for pagination.
+ */
+export declare const CursorSchema: z.ZodString;
 export declare const RequestSchema: z.ZodObject<{
     method: z.ZodString;
     params: z.ZodOptional<z.ZodObject<{
@@ -625,7 +630,6 @@ export declare const EmptyResultSchema: z.ZodObject<{
 }, {
     _meta?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
 }>;
-export declare const PROTOCOL_VERSION = 1;
 /**
  * Text provided to or from an LLM.
  */
@@ -816,7 +820,7 @@ export declare const InitializeRequestSchema: z.ZodObject<z.objectUtil.extendSha
         /**
          * The latest version of the Model Context Protocol that the client supports. The client MAY decide to support older versions as well.
          */
-        protocolVersion: z.ZodNumber;
+        protocolVersion: z.ZodUnion<[z.ZodString, z.ZodNumber]>;
         capabilities: z.ZodObject<{
             /**
              * Experimental, non-standard capabilities that the client supports.
@@ -844,7 +848,7 @@ export declare const InitializeRequestSchema: z.ZodObject<z.objectUtil.extendSha
             version: string;
         }>;
     }, "strip", z.ZodTypeAny, {
-        protocolVersion: number;
+        protocolVersion: string | number;
         capabilities: {
             experimental?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
             sampling?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
@@ -854,7 +858,7 @@ export declare const InitializeRequestSchema: z.ZodObject<z.objectUtil.extendSha
             version: string;
         };
     }, {
-        protocolVersion: number;
+        protocolVersion: string | number;
         capabilities: {
             experimental?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
             sampling?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
@@ -866,7 +870,7 @@ export declare const InitializeRequestSchema: z.ZodObject<z.objectUtil.extendSha
     }>;
 }>, "strip", z.ZodTypeAny, {
     params: {
-        protocolVersion: number;
+        protocolVersion: string | number;
         capabilities: {
             experimental?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
             sampling?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
@@ -879,7 +883,7 @@ export declare const InitializeRequestSchema: z.ZodObject<z.objectUtil.extendSha
     method: "initialize";
 }, {
     params: {
-        protocolVersion: number;
+        protocolVersion: string | number;
         capabilities: {
             experimental?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
             sampling?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
@@ -906,7 +910,22 @@ export declare const ServerCapabilitiesSchema: z.ZodObject<{
     /**
      * Present if the server offers any prompt templates.
      */
-    prompts: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+    prompts: z.ZodOptional<z.ZodObject<{
+        /**
+         * Whether this server supports notifications for changes to the prompt list.
+         */
+        listChanged: z.ZodOptional<z.ZodBoolean>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        /**
+         * Whether this server supports notifications for changes to the prompt list.
+         */
+        listChanged: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        /**
+         * Whether this server supports notifications for changes to the prompt list.
+         */
+        listChanged: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">>>;
     /**
      * Present if the server offers any resources to read.
      */
@@ -915,43 +934,98 @@ export declare const ServerCapabilitiesSchema: z.ZodObject<{
          * Whether this server supports subscribing to resource updates.
          */
         subscribe: z.ZodOptional<z.ZodBoolean>;
+        /**
+         * Whether this server supports notifications for changes to the resource list.
+         */
+        listChanged: z.ZodOptional<z.ZodBoolean>;
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
         /**
          * Whether this server supports subscribing to resource updates.
          */
         subscribe: z.ZodOptional<z.ZodBoolean>;
+        /**
+         * Whether this server supports notifications for changes to the resource list.
+         */
+        listChanged: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
         /**
          * Whether this server supports subscribing to resource updates.
          */
         subscribe: z.ZodOptional<z.ZodBoolean>;
+        /**
+         * Whether this server supports notifications for changes to the resource list.
+         */
+        listChanged: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">>>;
     /**
      * Present if the server offers any tools to call.
      */
-    tools: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+    tools: z.ZodOptional<z.ZodObject<{
+        /**
+         * Whether this server supports notifications for changes to the tool list.
+         */
+        listChanged: z.ZodOptional<z.ZodBoolean>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        /**
+         * Whether this server supports notifications for changes to the tool list.
+         */
+        listChanged: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        /**
+         * Whether this server supports notifications for changes to the tool list.
+         */
+        listChanged: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">>>;
 }, "strip", z.ZodTypeAny, {
     experimental?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
     logging?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-    prompts?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
+    prompts?: z.objectOutputType<{
+        /**
+         * Whether this server supports notifications for changes to the prompt list.
+         */
+        listChanged: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough"> | undefined;
     resources?: z.objectOutputType<{
         /**
          * Whether this server supports subscribing to resource updates.
          */
         subscribe: z.ZodOptional<z.ZodBoolean>;
+        /**
+         * Whether this server supports notifications for changes to the resource list.
+         */
+        listChanged: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough"> | undefined;
-    tools?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
+    tools?: z.objectOutputType<{
+        /**
+         * Whether this server supports notifications for changes to the tool list.
+         */
+        listChanged: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough"> | undefined;
 }, {
     experimental?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
     logging?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-    prompts?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
+    prompts?: z.objectInputType<{
+        /**
+         * Whether this server supports notifications for changes to the prompt list.
+         */
+        listChanged: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough"> | undefined;
     resources?: z.objectInputType<{
         /**
          * Whether this server supports subscribing to resource updates.
          */
         subscribe: z.ZodOptional<z.ZodBoolean>;
+        /**
+         * Whether this server supports notifications for changes to the resource list.
+         */
+        listChanged: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough"> | undefined;
-    tools?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
+    tools?: z.objectInputType<{
+        /**
+         * Whether this server supports notifications for changes to the tool list.
+         */
+        listChanged: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough"> | undefined;
 }>;
 /**
  * After receiving an initialize request from the client, the server sends this response.
@@ -965,7 +1039,7 @@ export declare const InitializeResultSchema: z.ZodObject<z.objectUtil.extendShap
     /**
      * The version of the Model Context Protocol that the server wants to use. This may not match the version that the client requested. If the client cannot support this version, it MUST disconnect.
      */
-    protocolVersion: z.ZodNumber;
+    protocolVersion: z.ZodUnion<[z.ZodString, z.ZodNumber]>;
     capabilities: z.ZodObject<{
         /**
          * Experimental, non-standard capabilities that the server supports.
@@ -978,7 +1052,22 @@ export declare const InitializeResultSchema: z.ZodObject<z.objectUtil.extendShap
         /**
          * Present if the server offers any prompt templates.
          */
-        prompts: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        prompts: z.ZodOptional<z.ZodObject<{
+            /**
+             * Whether this server supports notifications for changes to the prompt list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * Whether this server supports notifications for changes to the prompt list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * Whether this server supports notifications for changes to the prompt list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">>>;
         /**
          * Present if the server offers any resources to read.
          */
@@ -987,43 +1076,98 @@ export declare const InitializeResultSchema: z.ZodObject<z.objectUtil.extendShap
              * Whether this server supports subscribing to resource updates.
              */
             subscribe: z.ZodOptional<z.ZodBoolean>;
+            /**
+             * Whether this server supports notifications for changes to the resource list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
             /**
              * Whether this server supports subscribing to resource updates.
              */
             subscribe: z.ZodOptional<z.ZodBoolean>;
+            /**
+             * Whether this server supports notifications for changes to the resource list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
             /**
              * Whether this server supports subscribing to resource updates.
              */
             subscribe: z.ZodOptional<z.ZodBoolean>;
+            /**
+             * Whether this server supports notifications for changes to the resource list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
         }, z.ZodTypeAny, "passthrough">>>;
         /**
          * Present if the server offers any tools to call.
          */
-        tools: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        tools: z.ZodOptional<z.ZodObject<{
+            /**
+             * Whether this server supports notifications for changes to the tool list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * Whether this server supports notifications for changes to the tool list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * Whether this server supports notifications for changes to the tool list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">>>;
     }, "strip", z.ZodTypeAny, {
         experimental?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
         logging?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        prompts?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
+        prompts?: z.objectOutputType<{
+            /**
+             * Whether this server supports notifications for changes to the prompt list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough"> | undefined;
         resources?: z.objectOutputType<{
             /**
              * Whether this server supports subscribing to resource updates.
              */
             subscribe: z.ZodOptional<z.ZodBoolean>;
+            /**
+             * Whether this server supports notifications for changes to the resource list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
-        tools?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
+        tools?: z.objectOutputType<{
+            /**
+             * Whether this server supports notifications for changes to the tool list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough"> | undefined;
     }, {
         experimental?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
         logging?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        prompts?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
+        prompts?: z.objectInputType<{
+            /**
+             * Whether this server supports notifications for changes to the prompt list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough"> | undefined;
         resources?: z.objectInputType<{
             /**
              * Whether this server supports subscribing to resource updates.
              */
             subscribe: z.ZodOptional<z.ZodBoolean>;
+            /**
+             * Whether this server supports notifications for changes to the resource list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
-        tools?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
+        tools?: z.objectInputType<{
+            /**
+             * Whether this server supports notifications for changes to the tool list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough"> | undefined;
     }>;
     serverInfo: z.ZodObject<{
         name: z.ZodString;
@@ -1044,7 +1188,7 @@ export declare const InitializeResultSchema: z.ZodObject<z.objectUtil.extendShap
     /**
      * The version of the Model Context Protocol that the server wants to use. This may not match the version that the client requested. If the client cannot support this version, it MUST disconnect.
      */
-    protocolVersion: z.ZodNumber;
+    protocolVersion: z.ZodUnion<[z.ZodString, z.ZodNumber]>;
     capabilities: z.ZodObject<{
         /**
          * Experimental, non-standard capabilities that the server supports.
@@ -1057,7 +1201,22 @@ export declare const InitializeResultSchema: z.ZodObject<z.objectUtil.extendShap
         /**
          * Present if the server offers any prompt templates.
          */
-        prompts: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        prompts: z.ZodOptional<z.ZodObject<{
+            /**
+             * Whether this server supports notifications for changes to the prompt list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * Whether this server supports notifications for changes to the prompt list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * Whether this server supports notifications for changes to the prompt list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">>>;
         /**
          * Present if the server offers any resources to read.
          */
@@ -1066,43 +1225,98 @@ export declare const InitializeResultSchema: z.ZodObject<z.objectUtil.extendShap
              * Whether this server supports subscribing to resource updates.
              */
             subscribe: z.ZodOptional<z.ZodBoolean>;
+            /**
+             * Whether this server supports notifications for changes to the resource list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
             /**
              * Whether this server supports subscribing to resource updates.
              */
             subscribe: z.ZodOptional<z.ZodBoolean>;
+            /**
+             * Whether this server supports notifications for changes to the resource list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
             /**
              * Whether this server supports subscribing to resource updates.
              */
             subscribe: z.ZodOptional<z.ZodBoolean>;
+            /**
+             * Whether this server supports notifications for changes to the resource list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
         }, z.ZodTypeAny, "passthrough">>>;
         /**
          * Present if the server offers any tools to call.
          */
-        tools: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        tools: z.ZodOptional<z.ZodObject<{
+            /**
+             * Whether this server supports notifications for changes to the tool list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * Whether this server supports notifications for changes to the tool list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * Whether this server supports notifications for changes to the tool list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">>>;
     }, "strip", z.ZodTypeAny, {
         experimental?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
         logging?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        prompts?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
+        prompts?: z.objectOutputType<{
+            /**
+             * Whether this server supports notifications for changes to the prompt list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough"> | undefined;
         resources?: z.objectOutputType<{
             /**
              * Whether this server supports subscribing to resource updates.
              */
             subscribe: z.ZodOptional<z.ZodBoolean>;
+            /**
+             * Whether this server supports notifications for changes to the resource list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
-        tools?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
+        tools?: z.objectOutputType<{
+            /**
+             * Whether this server supports notifications for changes to the tool list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough"> | undefined;
     }, {
         experimental?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
         logging?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        prompts?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
+        prompts?: z.objectInputType<{
+            /**
+             * Whether this server supports notifications for changes to the prompt list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough"> | undefined;
         resources?: z.objectInputType<{
             /**
              * Whether this server supports subscribing to resource updates.
              */
             subscribe: z.ZodOptional<z.ZodBoolean>;
+            /**
+             * Whether this server supports notifications for changes to the resource list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
-        tools?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
+        tools?: z.objectInputType<{
+            /**
+             * Whether this server supports notifications for changes to the tool list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough"> | undefined;
     }>;
     serverInfo: z.ZodObject<{
         name: z.ZodString;
@@ -1123,7 +1337,7 @@ export declare const InitializeResultSchema: z.ZodObject<z.objectUtil.extendShap
     /**
      * The version of the Model Context Protocol that the server wants to use. This may not match the version that the client requested. If the client cannot support this version, it MUST disconnect.
      */
-    protocolVersion: z.ZodNumber;
+    protocolVersion: z.ZodUnion<[z.ZodString, z.ZodNumber]>;
     capabilities: z.ZodObject<{
         /**
          * Experimental, non-standard capabilities that the server supports.
@@ -1136,7 +1350,22 @@ export declare const InitializeResultSchema: z.ZodObject<z.objectUtil.extendShap
         /**
          * Present if the server offers any prompt templates.
          */
-        prompts: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        prompts: z.ZodOptional<z.ZodObject<{
+            /**
+             * Whether this server supports notifications for changes to the prompt list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * Whether this server supports notifications for changes to the prompt list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * Whether this server supports notifications for changes to the prompt list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">>>;
         /**
          * Present if the server offers any resources to read.
          */
@@ -1145,43 +1374,98 @@ export declare const InitializeResultSchema: z.ZodObject<z.objectUtil.extendShap
              * Whether this server supports subscribing to resource updates.
              */
             subscribe: z.ZodOptional<z.ZodBoolean>;
+            /**
+             * Whether this server supports notifications for changes to the resource list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
             /**
              * Whether this server supports subscribing to resource updates.
              */
             subscribe: z.ZodOptional<z.ZodBoolean>;
+            /**
+             * Whether this server supports notifications for changes to the resource list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
             /**
              * Whether this server supports subscribing to resource updates.
              */
             subscribe: z.ZodOptional<z.ZodBoolean>;
+            /**
+             * Whether this server supports notifications for changes to the resource list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
         }, z.ZodTypeAny, "passthrough">>>;
         /**
          * Present if the server offers any tools to call.
          */
-        tools: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        tools: z.ZodOptional<z.ZodObject<{
+            /**
+             * Whether this server supports notifications for changes to the tool list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * Whether this server supports notifications for changes to the tool list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * Whether this server supports notifications for changes to the tool list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">>>;
     }, "strip", z.ZodTypeAny, {
         experimental?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
         logging?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        prompts?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
+        prompts?: z.objectOutputType<{
+            /**
+             * Whether this server supports notifications for changes to the prompt list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough"> | undefined;
         resources?: z.objectOutputType<{
             /**
              * Whether this server supports subscribing to resource updates.
              */
             subscribe: z.ZodOptional<z.ZodBoolean>;
+            /**
+             * Whether this server supports notifications for changes to the resource list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
-        tools?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
+        tools?: z.objectOutputType<{
+            /**
+             * Whether this server supports notifications for changes to the tool list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough"> | undefined;
     }, {
         experimental?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
         logging?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        prompts?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
+        prompts?: z.objectInputType<{
+            /**
+             * Whether this server supports notifications for changes to the prompt list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough"> | undefined;
         resources?: z.objectInputType<{
             /**
              * Whether this server supports subscribing to resource updates.
              */
             subscribe: z.ZodOptional<z.ZodBoolean>;
+            /**
+             * Whether this server supports notifications for changes to the resource list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
-        tools?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
+        tools?: z.objectInputType<{
+            /**
+             * Whether this server supports notifications for changes to the tool list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough"> | undefined;
     }>;
     serverInfo: z.ZodObject<{
         name: z.ZodString;
@@ -1411,6 +1695,117 @@ export declare const ProgressNotificationSchema: z.ZodObject<z.objectUtil.extend
     };
     method: "notifications/progress";
 }>;
+export declare const PaginatedRequestSchema: z.ZodObject<z.objectUtil.extendShape<{
+    method: z.ZodString;
+    params: z.ZodOptional<z.ZodObject<{
+        _meta: z.ZodOptional<z.ZodObject<{
+            /**
+             * If specified, the caller is requesting out-of-band progress notifications for this request (as represented by notifications/progress). The value of this parameter is an opaque token that will be attached to any subsequent notifications. The receiver is not obligated to provide these notifications.
+             */
+            progressToken: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodNumber]>>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * If specified, the caller is requesting out-of-band progress notifications for this request (as represented by notifications/progress). The value of this parameter is an opaque token that will be attached to any subsequent notifications. The receiver is not obligated to provide these notifications.
+             */
+            progressToken: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodNumber]>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * If specified, the caller is requesting out-of-band progress notifications for this request (as represented by notifications/progress). The value of this parameter is an opaque token that will be attached to any subsequent notifications. The receiver is not obligated to provide these notifications.
+             */
+            progressToken: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodNumber]>>;
+        }, z.ZodTypeAny, "passthrough">>>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        _meta: z.ZodOptional<z.ZodObject<{
+            /**
+             * If specified, the caller is requesting out-of-band progress notifications for this request (as represented by notifications/progress). The value of this parameter is an opaque token that will be attached to any subsequent notifications. The receiver is not obligated to provide these notifications.
+             */
+            progressToken: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodNumber]>>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * If specified, the caller is requesting out-of-band progress notifications for this request (as represented by notifications/progress). The value of this parameter is an opaque token that will be attached to any subsequent notifications. The receiver is not obligated to provide these notifications.
+             */
+            progressToken: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodNumber]>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * If specified, the caller is requesting out-of-band progress notifications for this request (as represented by notifications/progress). The value of this parameter is an opaque token that will be attached to any subsequent notifications. The receiver is not obligated to provide these notifications.
+             */
+            progressToken: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodNumber]>>;
+        }, z.ZodTypeAny, "passthrough">>>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        _meta: z.ZodOptional<z.ZodObject<{
+            /**
+             * If specified, the caller is requesting out-of-band progress notifications for this request (as represented by notifications/progress). The value of this parameter is an opaque token that will be attached to any subsequent notifications. The receiver is not obligated to provide these notifications.
+             */
+            progressToken: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodNumber]>>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * If specified, the caller is requesting out-of-band progress notifications for this request (as represented by notifications/progress). The value of this parameter is an opaque token that will be attached to any subsequent notifications. The receiver is not obligated to provide these notifications.
+             */
+            progressToken: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodNumber]>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * If specified, the caller is requesting out-of-band progress notifications for this request (as represented by notifications/progress). The value of this parameter is an opaque token that will be attached to any subsequent notifications. The receiver is not obligated to provide these notifications.
+             */
+            progressToken: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodNumber]>>;
+        }, z.ZodTypeAny, "passthrough">>>;
+    }, z.ZodTypeAny, "passthrough">>>;
+}, {
+    params: z.ZodOptional<z.ZodObject<{
+        /**
+         * An opaque token representing the current pagination position.
+         * If provided, the server should return results starting after this cursor.
+         */
+        cursor: z.ZodOptional<z.ZodString>;
+    }, "strip", z.ZodTypeAny, {
+        cursor?: string | undefined;
+    }, {
+        cursor?: string | undefined;
+    }>>;
+}>, "strip", z.ZodTypeAny, {
+    method: string;
+    params?: {
+        cursor?: string | undefined;
+    } | undefined;
+}, {
+    method: string;
+    params?: {
+        cursor?: string | undefined;
+    } | undefined;
+}>;
+export declare const PaginatedResultSchema: z.ZodObject<z.objectUtil.extendShape<{
+    /**
+     * This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses.
+     */
+    _meta: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+}, {
+    /**
+     * An opaque token representing the pagination position after the last returned result.
+     * If present, there may be more results available.
+     */
+    nextCursor: z.ZodOptional<z.ZodString>;
+}>, "passthrough", z.ZodTypeAny, z.objectOutputType<z.objectUtil.extendShape<{
+    /**
+     * This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses.
+     */
+    _meta: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+}, {
+    /**
+     * An opaque token representing the pagination position after the last returned result.
+     * If present, there may be more results available.
+     */
+    nextCursor: z.ZodOptional<z.ZodString>;
+}>, z.ZodTypeAny, "passthrough">, z.objectInputType<z.objectUtil.extendShape<{
+    /**
+     * This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses.
+     */
+    _meta: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+}, {
+    /**
+     * An opaque token representing the pagination position after the last returned result.
+     * If present, there may be more results available.
+     */
+    nextCursor: z.ZodOptional<z.ZodString>;
+}>, z.ZodTypeAny, "passthrough">>;
 /**
  * The contents of a specific resource or sub-resource.
  */
@@ -1549,7 +1944,7 @@ export declare const ResourceTemplateSchema: z.ZodObject<{
 /**
  * Sent from the client to request a list of resources the server has.
  */
-export declare const ListResourcesRequestSchema: z.ZodObject<z.objectUtil.extendShape<{
+export declare const ListResourcesRequestSchema: z.ZodObject<z.objectUtil.extendShape<z.objectUtil.extendShape<{
     method: z.ZodString;
     params: z.ZodOptional<z.ZodObject<{
         _meta: z.ZodOptional<z.ZodObject<{
@@ -1604,90 +1999,46 @@ export declare const ListResourcesRequestSchema: z.ZodObject<z.objectUtil.extend
         }, z.ZodTypeAny, "passthrough">>>;
     }, z.ZodTypeAny, "passthrough">>>;
 }, {
+    params: z.ZodOptional<z.ZodObject<{
+        /**
+         * An opaque token representing the current pagination position.
+         * If provided, the server should return results starting after this cursor.
+         */
+        cursor: z.ZodOptional<z.ZodString>;
+    }, "strip", z.ZodTypeAny, {
+        cursor?: string | undefined;
+    }, {
+        cursor?: string | undefined;
+    }>>;
+}>, {
     method: z.ZodLiteral<"resources/list">;
 }>, "strip", z.ZodTypeAny, {
     method: "resources/list";
-    params?: z.objectOutputType<{
-        _meta: z.ZodOptional<z.ZodObject<{
-            /**
-             * If specified, the caller is requesting out-of-band progress notifications for this request (as represented by notifications/progress). The value of this parameter is an opaque token that will be attached to any subsequent notifications. The receiver is not obligated to provide these notifications.
-             */
-            progressToken: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodNumber]>>;
-        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-            /**
-             * If specified, the caller is requesting out-of-band progress notifications for this request (as represented by notifications/progress). The value of this parameter is an opaque token that will be attached to any subsequent notifications. The receiver is not obligated to provide these notifications.
-             */
-            progressToken: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodNumber]>>;
-        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-            /**
-             * If specified, the caller is requesting out-of-band progress notifications for this request (as represented by notifications/progress). The value of this parameter is an opaque token that will be attached to any subsequent notifications. The receiver is not obligated to provide these notifications.
-             */
-            progressToken: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodNumber]>>;
-        }, z.ZodTypeAny, "passthrough">>>;
-    }, z.ZodTypeAny, "passthrough"> | undefined;
+    params?: {
+        cursor?: string | undefined;
+    } | undefined;
 }, {
     method: "resources/list";
-    params?: z.objectInputType<{
-        _meta: z.ZodOptional<z.ZodObject<{
-            /**
-             * If specified, the caller is requesting out-of-band progress notifications for this request (as represented by notifications/progress). The value of this parameter is an opaque token that will be attached to any subsequent notifications. The receiver is not obligated to provide these notifications.
-             */
-            progressToken: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodNumber]>>;
-        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-            /**
-             * If specified, the caller is requesting out-of-band progress notifications for this request (as represented by notifications/progress). The value of this parameter is an opaque token that will be attached to any subsequent notifications. The receiver is not obligated to provide these notifications.
-             */
-            progressToken: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodNumber]>>;
-        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-            /**
-             * If specified, the caller is requesting out-of-band progress notifications for this request (as represented by notifications/progress). The value of this parameter is an opaque token that will be attached to any subsequent notifications. The receiver is not obligated to provide these notifications.
-             */
-            progressToken: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodNumber]>>;
-        }, z.ZodTypeAny, "passthrough">>>;
-    }, z.ZodTypeAny, "passthrough"> | undefined;
+    params?: {
+        cursor?: string | undefined;
+    } | undefined;
 }>;
 /**
  * The server's response to a resources/list request from the client.
  */
-export declare const ListResourcesResultSchema: z.ZodObject<z.objectUtil.extendShape<{
+export declare const ListResourcesResultSchema: z.ZodObject<z.objectUtil.extendShape<z.objectUtil.extendShape<{
     /**
      * This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses.
      */
     _meta: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
 }, {
-    resourceTemplates: z.ZodOptional<z.ZodArray<z.ZodObject<{
-        /**
-         * A URI template (according to RFC 6570) that can be used to construct resource URIs.
-         */
-        uriTemplate: z.ZodString;
-        /**
-         * A human-readable name for the type of resource this template refers to.
-         *
-         * This can be used by clients to populate UI elements.
-         */
-        name: z.ZodString;
-        /**
-         * A description of what this template is for.
-         *
-         * This can be used by clients to improve the LLM's understanding of available resources. It can be thought of like a "hint" to the model.
-         */
-        description: z.ZodOptional<z.ZodString>;
-        /**
-         * The MIME type for all resources that match this template. This should only be included if all resources matching this template have the same type.
-         */
-        mimeType: z.ZodOptional<z.ZodString>;
-    }, "strip", z.ZodTypeAny, {
-        name: string;
-        uriTemplate: string;
-        mimeType?: string | undefined;
-        description?: string | undefined;
-    }, {
-        name: string;
-        uriTemplate: string;
-        mimeType?: string | undefined;
-        description?: string | undefined;
-    }>, "many">>;
-    resources: z.ZodOptional<z.ZodArray<z.ZodObject<{
+    /**
+     * An opaque token representing the pagination position after the last returned result.
+     * If present, there may be more results available.
+     */
+    nextCursor: z.ZodOptional<z.ZodString>;
+}>, {
+    resources: z.ZodArray<z.ZodObject<{
         /**
          * The URI of this resource.
          */
@@ -1718,46 +2069,20 @@ export declare const ListResourcesResultSchema: z.ZodObject<z.objectUtil.extendS
         uri: string;
         mimeType?: string | undefined;
         description?: string | undefined;
-    }>, "many">>;
-}>, "passthrough", z.ZodTypeAny, z.objectOutputType<z.objectUtil.extendShape<{
+    }>, "many">;
+}>, "passthrough", z.ZodTypeAny, z.objectOutputType<z.objectUtil.extendShape<z.objectUtil.extendShape<{
     /**
      * This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses.
      */
     _meta: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
 }, {
-    resourceTemplates: z.ZodOptional<z.ZodArray<z.ZodObject<{
-        /**
-         * A URI template (according to RFC 6570) that can be used to construct resource URIs.
-         */
-        uriTemplate: z.ZodString;
-        /**
-         * A human-readable name for the type of resource this template refers to.
-         *
-         * This can be used by clients to populate UI elements.
-         */
-        name: z.ZodString;
-        /**
-         * A description of what this template is for.
-         *
-         * This can be used by clients to improve the LLM's understanding of available resources. It can be thought of like a "hint" to the model.
-         */
-        description: z.ZodOptional<z.ZodString>;
-        /**
-         * The MIME type for all resources that match this template. This should only be included if all resources matching this template have the same type.
-         */
-        mimeType: z.ZodOptional<z.ZodString>;
-    }, "strip", z.ZodTypeAny, {
-        name: string;
-        uriTemplate: string;
-        mimeType?: string | undefined;
-        description?: string | undefined;
-    }, {
-        name: string;
-        uriTemplate: string;
-        mimeType?: string | undefined;
-        description?: string | undefined;
-    }>, "many">>;
-    resources: z.ZodOptional<z.ZodArray<z.ZodObject<{
+    /**
+     * An opaque token representing the pagination position after the last returned result.
+     * If present, there may be more results available.
+     */
+    nextCursor: z.ZodOptional<z.ZodString>;
+}>, {
+    resources: z.ZodArray<z.ZodObject<{
         /**
          * The URI of this resource.
          */
@@ -1788,46 +2113,20 @@ export declare const ListResourcesResultSchema: z.ZodObject<z.objectUtil.extendS
         uri: string;
         mimeType?: string | undefined;
         description?: string | undefined;
-    }>, "many">>;
-}>, z.ZodTypeAny, "passthrough">, z.objectInputType<z.objectUtil.extendShape<{
+    }>, "many">;
+}>, z.ZodTypeAny, "passthrough">, z.objectInputType<z.objectUtil.extendShape<z.objectUtil.extendShape<{
     /**
      * This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses.
      */
     _meta: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
 }, {
-    resourceTemplates: z.ZodOptional<z.ZodArray<z.ZodObject<{
-        /**
-         * A URI template (according to RFC 6570) that can be used to construct resource URIs.
-         */
-        uriTemplate: z.ZodString;
-        /**
-         * A human-readable name for the type of resource this template refers to.
-         *
-         * This can be used by clients to populate UI elements.
-         */
-        name: z.ZodString;
-        /**
-         * A description of what this template is for.
-         *
-         * This can be used by clients to improve the LLM's understanding of available resources. It can be thought of like a "hint" to the model.
-         */
-        description: z.ZodOptional<z.ZodString>;
-        /**
-         * The MIME type for all resources that match this template. This should only be included if all resources matching this template have the same type.
-         */
-        mimeType: z.ZodOptional<z.ZodString>;
-    }, "strip", z.ZodTypeAny, {
-        name: string;
-        uriTemplate: string;
-        mimeType?: string | undefined;
-        description?: string | undefined;
-    }, {
-        name: string;
-        uriTemplate: string;
-        mimeType?: string | undefined;
-        description?: string | undefined;
-    }>, "many">>;
-    resources: z.ZodOptional<z.ZodArray<z.ZodObject<{
+    /**
+     * An opaque token representing the pagination position after the last returned result.
+     * If present, there may be more results available.
+     */
+    nextCursor: z.ZodOptional<z.ZodString>;
+}>, {
+    resources: z.ZodArray<z.ZodObject<{
         /**
          * The URI of this resource.
          */
@@ -1858,7 +2157,225 @@ export declare const ListResourcesResultSchema: z.ZodObject<z.objectUtil.extendS
         uri: string;
         mimeType?: string | undefined;
         description?: string | undefined;
-    }>, "many">>;
+    }>, "many">;
+}>, z.ZodTypeAny, "passthrough">>;
+/**
+ * Sent from the client to request a list of resource templates the server has.
+ */
+export declare const ListResourceTemplatesRequestSchema: z.ZodObject<z.objectUtil.extendShape<z.objectUtil.extendShape<{
+    method: z.ZodString;
+    params: z.ZodOptional<z.ZodObject<{
+        _meta: z.ZodOptional<z.ZodObject<{
+            /**
+             * If specified, the caller is requesting out-of-band progress notifications for this request (as represented by notifications/progress). The value of this parameter is an opaque token that will be attached to any subsequent notifications. The receiver is not obligated to provide these notifications.
+             */
+            progressToken: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodNumber]>>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * If specified, the caller is requesting out-of-band progress notifications for this request (as represented by notifications/progress). The value of this parameter is an opaque token that will be attached to any subsequent notifications. The receiver is not obligated to provide these notifications.
+             */
+            progressToken: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodNumber]>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * If specified, the caller is requesting out-of-band progress notifications for this request (as represented by notifications/progress). The value of this parameter is an opaque token that will be attached to any subsequent notifications. The receiver is not obligated to provide these notifications.
+             */
+            progressToken: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodNumber]>>;
+        }, z.ZodTypeAny, "passthrough">>>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        _meta: z.ZodOptional<z.ZodObject<{
+            /**
+             * If specified, the caller is requesting out-of-band progress notifications for this request (as represented by notifications/progress). The value of this parameter is an opaque token that will be attached to any subsequent notifications. The receiver is not obligated to provide these notifications.
+             */
+            progressToken: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodNumber]>>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * If specified, the caller is requesting out-of-band progress notifications for this request (as represented by notifications/progress). The value of this parameter is an opaque token that will be attached to any subsequent notifications. The receiver is not obligated to provide these notifications.
+             */
+            progressToken: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodNumber]>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * If specified, the caller is requesting out-of-band progress notifications for this request (as represented by notifications/progress). The value of this parameter is an opaque token that will be attached to any subsequent notifications. The receiver is not obligated to provide these notifications.
+             */
+            progressToken: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodNumber]>>;
+        }, z.ZodTypeAny, "passthrough">>>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        _meta: z.ZodOptional<z.ZodObject<{
+            /**
+             * If specified, the caller is requesting out-of-band progress notifications for this request (as represented by notifications/progress). The value of this parameter is an opaque token that will be attached to any subsequent notifications. The receiver is not obligated to provide these notifications.
+             */
+            progressToken: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodNumber]>>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * If specified, the caller is requesting out-of-band progress notifications for this request (as represented by notifications/progress). The value of this parameter is an opaque token that will be attached to any subsequent notifications. The receiver is not obligated to provide these notifications.
+             */
+            progressToken: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodNumber]>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * If specified, the caller is requesting out-of-band progress notifications for this request (as represented by notifications/progress). The value of this parameter is an opaque token that will be attached to any subsequent notifications. The receiver is not obligated to provide these notifications.
+             */
+            progressToken: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodNumber]>>;
+        }, z.ZodTypeAny, "passthrough">>>;
+    }, z.ZodTypeAny, "passthrough">>>;
+}, {
+    params: z.ZodOptional<z.ZodObject<{
+        /**
+         * An opaque token representing the current pagination position.
+         * If provided, the server should return results starting after this cursor.
+         */
+        cursor: z.ZodOptional<z.ZodString>;
+    }, "strip", z.ZodTypeAny, {
+        cursor?: string | undefined;
+    }, {
+        cursor?: string | undefined;
+    }>>;
+}>, {
+    method: z.ZodLiteral<"resources/templates/list">;
+}>, "strip", z.ZodTypeAny, {
+    method: "resources/templates/list";
+    params?: {
+        cursor?: string | undefined;
+    } | undefined;
+}, {
+    method: "resources/templates/list";
+    params?: {
+        cursor?: string | undefined;
+    } | undefined;
+}>;
+/**
+ * The server's response to a resources/templates/list request from the client.
+ */
+export declare const ListResourceTemplatesResultSchema: z.ZodObject<z.objectUtil.extendShape<z.objectUtil.extendShape<{
+    /**
+     * This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses.
+     */
+    _meta: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+}, {
+    /**
+     * An opaque token representing the pagination position after the last returned result.
+     * If present, there may be more results available.
+     */
+    nextCursor: z.ZodOptional<z.ZodString>;
+}>, {
+    resourceTemplates: z.ZodArray<z.ZodObject<{
+        /**
+         * A URI template (according to RFC 6570) that can be used to construct resource URIs.
+         */
+        uriTemplate: z.ZodString;
+        /**
+         * A human-readable name for the type of resource this template refers to.
+         *
+         * This can be used by clients to populate UI elements.
+         */
+        name: z.ZodString;
+        /**
+         * A description of what this template is for.
+         *
+         * This can be used by clients to improve the LLM's understanding of available resources. It can be thought of like a "hint" to the model.
+         */
+        description: z.ZodOptional<z.ZodString>;
+        /**
+         * The MIME type for all resources that match this template. This should only be included if all resources matching this template have the same type.
+         */
+        mimeType: z.ZodOptional<z.ZodString>;
+    }, "strip", z.ZodTypeAny, {
+        name: string;
+        uriTemplate: string;
+        mimeType?: string | undefined;
+        description?: string | undefined;
+    }, {
+        name: string;
+        uriTemplate: string;
+        mimeType?: string | undefined;
+        description?: string | undefined;
+    }>, "many">;
+}>, "passthrough", z.ZodTypeAny, z.objectOutputType<z.objectUtil.extendShape<z.objectUtil.extendShape<{
+    /**
+     * This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses.
+     */
+    _meta: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+}, {
+    /**
+     * An opaque token representing the pagination position after the last returned result.
+     * If present, there may be more results available.
+     */
+    nextCursor: z.ZodOptional<z.ZodString>;
+}>, {
+    resourceTemplates: z.ZodArray<z.ZodObject<{
+        /**
+         * A URI template (according to RFC 6570) that can be used to construct resource URIs.
+         */
+        uriTemplate: z.ZodString;
+        /**
+         * A human-readable name for the type of resource this template refers to.
+         *
+         * This can be used by clients to populate UI elements.
+         */
+        name: z.ZodString;
+        /**
+         * A description of what this template is for.
+         *
+         * This can be used by clients to improve the LLM's understanding of available resources. It can be thought of like a "hint" to the model.
+         */
+        description: z.ZodOptional<z.ZodString>;
+        /**
+         * The MIME type for all resources that match this template. This should only be included if all resources matching this template have the same type.
+         */
+        mimeType: z.ZodOptional<z.ZodString>;
+    }, "strip", z.ZodTypeAny, {
+        name: string;
+        uriTemplate: string;
+        mimeType?: string | undefined;
+        description?: string | undefined;
+    }, {
+        name: string;
+        uriTemplate: string;
+        mimeType?: string | undefined;
+        description?: string | undefined;
+    }>, "many">;
+}>, z.ZodTypeAny, "passthrough">, z.objectInputType<z.objectUtil.extendShape<z.objectUtil.extendShape<{
+    /**
+     * This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses.
+     */
+    _meta: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+}, {
+    /**
+     * An opaque token representing the pagination position after the last returned result.
+     * If present, there may be more results available.
+     */
+    nextCursor: z.ZodOptional<z.ZodString>;
+}>, {
+    resourceTemplates: z.ZodArray<z.ZodObject<{
+        /**
+         * A URI template (according to RFC 6570) that can be used to construct resource URIs.
+         */
+        uriTemplate: z.ZodString;
+        /**
+         * A human-readable name for the type of resource this template refers to.
+         *
+         * This can be used by clients to populate UI elements.
+         */
+        name: z.ZodString;
+        /**
+         * A description of what this template is for.
+         *
+         * This can be used by clients to improve the LLM's understanding of available resources. It can be thought of like a "hint" to the model.
+         */
+        description: z.ZodOptional<z.ZodString>;
+        /**
+         * The MIME type for all resources that match this template. This should only be included if all resources matching this template have the same type.
+         */
+        mimeType: z.ZodOptional<z.ZodString>;
+    }, "strip", z.ZodTypeAny, {
+        name: string;
+        uriTemplate: string;
+        mimeType?: string | undefined;
+        description?: string | undefined;
+    }, {
+        name: string;
+        uriTemplate: string;
+        mimeType?: string | undefined;
+        description?: string | undefined;
+    }>, "many">;
 }>, z.ZodTypeAny, "passthrough">>;
 /**
  * Sent from the client to the server, to read a specific resource URI.
@@ -2423,7 +2940,7 @@ export declare const PromptSchema: z.ZodObject<{
 /**
  * Sent from the client to request a list of prompts and prompt templates the server has.
  */
-export declare const ListPromptsRequestSchema: z.ZodObject<z.objectUtil.extendShape<{
+export declare const ListPromptsRequestSchema: z.ZodObject<z.objectUtil.extendShape<z.objectUtil.extendShape<{
     method: z.ZodString;
     params: z.ZodOptional<z.ZodObject<{
         _meta: z.ZodOptional<z.ZodObject<{
@@ -2478,57 +2995,45 @@ export declare const ListPromptsRequestSchema: z.ZodObject<z.objectUtil.extendSh
         }, z.ZodTypeAny, "passthrough">>>;
     }, z.ZodTypeAny, "passthrough">>>;
 }, {
+    params: z.ZodOptional<z.ZodObject<{
+        /**
+         * An opaque token representing the current pagination position.
+         * If provided, the server should return results starting after this cursor.
+         */
+        cursor: z.ZodOptional<z.ZodString>;
+    }, "strip", z.ZodTypeAny, {
+        cursor?: string | undefined;
+    }, {
+        cursor?: string | undefined;
+    }>>;
+}>, {
     method: z.ZodLiteral<"prompts/list">;
 }>, "strip", z.ZodTypeAny, {
     method: "prompts/list";
-    params?: z.objectOutputType<{
-        _meta: z.ZodOptional<z.ZodObject<{
-            /**
-             * If specified, the caller is requesting out-of-band progress notifications for this request (as represented by notifications/progress). The value of this parameter is an opaque token that will be attached to any subsequent notifications. The receiver is not obligated to provide these notifications.
-             */
-            progressToken: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodNumber]>>;
-        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-            /**
-             * If specified, the caller is requesting out-of-band progress notifications for this request (as represented by notifications/progress). The value of this parameter is an opaque token that will be attached to any subsequent notifications. The receiver is not obligated to provide these notifications.
-             */
-            progressToken: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodNumber]>>;
-        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-            /**
-             * If specified, the caller is requesting out-of-band progress notifications for this request (as represented by notifications/progress). The value of this parameter is an opaque token that will be attached to any subsequent notifications. The receiver is not obligated to provide these notifications.
-             */
-            progressToken: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodNumber]>>;
-        }, z.ZodTypeAny, "passthrough">>>;
-    }, z.ZodTypeAny, "passthrough"> | undefined;
+    params?: {
+        cursor?: string | undefined;
+    } | undefined;
 }, {
     method: "prompts/list";
-    params?: z.objectInputType<{
-        _meta: z.ZodOptional<z.ZodObject<{
-            /**
-             * If specified, the caller is requesting out-of-band progress notifications for this request (as represented by notifications/progress). The value of this parameter is an opaque token that will be attached to any subsequent notifications. The receiver is not obligated to provide these notifications.
-             */
-            progressToken: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodNumber]>>;
-        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-            /**
-             * If specified, the caller is requesting out-of-band progress notifications for this request (as represented by notifications/progress). The value of this parameter is an opaque token that will be attached to any subsequent notifications. The receiver is not obligated to provide these notifications.
-             */
-            progressToken: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodNumber]>>;
-        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-            /**
-             * If specified, the caller is requesting out-of-band progress notifications for this request (as represented by notifications/progress). The value of this parameter is an opaque token that will be attached to any subsequent notifications. The receiver is not obligated to provide these notifications.
-             */
-            progressToken: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodNumber]>>;
-        }, z.ZodTypeAny, "passthrough">>>;
-    }, z.ZodTypeAny, "passthrough"> | undefined;
+    params?: {
+        cursor?: string | undefined;
+    } | undefined;
 }>;
 /**
  * The server's response to a prompts/list request from the client.
  */
-export declare const ListPromptsResultSchema: z.ZodObject<z.objectUtil.extendShape<{
+export declare const ListPromptsResultSchema: z.ZodObject<z.objectUtil.extendShape<z.objectUtil.extendShape<{
     /**
      * This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses.
      */
     _meta: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
 }, {
+    /**
+     * An opaque token representing the pagination position after the last returned result.
+     * If present, there may be more results available.
+     */
+    nextCursor: z.ZodOptional<z.ZodString>;
+}>, {
     prompts: z.ZodArray<z.ZodObject<{
         /**
          * The name of the prompt or prompt template.
@@ -2580,12 +3085,18 @@ export declare const ListPromptsResultSchema: z.ZodObject<z.objectUtil.extendSha
             required?: boolean | undefined;
         }[] | undefined;
     }>, "many">;
-}>, "passthrough", z.ZodTypeAny, z.objectOutputType<z.objectUtil.extendShape<{
+}>, "passthrough", z.ZodTypeAny, z.objectOutputType<z.objectUtil.extendShape<z.objectUtil.extendShape<{
     /**
      * This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses.
      */
     _meta: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
 }, {
+    /**
+     * An opaque token representing the pagination position after the last returned result.
+     * If present, there may be more results available.
+     */
+    nextCursor: z.ZodOptional<z.ZodString>;
+}>, {
     prompts: z.ZodArray<z.ZodObject<{
         /**
          * The name of the prompt or prompt template.
@@ -2637,12 +3148,18 @@ export declare const ListPromptsResultSchema: z.ZodObject<z.objectUtil.extendSha
             required?: boolean | undefined;
         }[] | undefined;
     }>, "many">;
-}>, z.ZodTypeAny, "passthrough">, z.objectInputType<z.objectUtil.extendShape<{
+}>, z.ZodTypeAny, "passthrough">, z.objectInputType<z.objectUtil.extendShape<z.objectUtil.extendShape<{
     /**
      * This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses.
      */
     _meta: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
 }, {
+    /**
+     * An opaque token representing the pagination position after the last returned result.
+     * If present, there may be more results available.
+     */
+    nextCursor: z.ZodOptional<z.ZodString>;
+}>, {
     prompts: z.ZodArray<z.ZodObject<{
         /**
          * The name of the prompt or prompt template.
@@ -2980,6 +3497,46 @@ export declare const GetPromptResultSchema: z.ZodObject<z.objectUtil.extendShape
     }>, "many">;
 }>, z.ZodTypeAny, "passthrough">>;
 /**
+ * An optional notification from the server to the client, informing it that the list of prompts it offers has changed. This may be issued by servers without any previous subscription from the client.
+ */
+export declare const PromptListChangedNotificationSchema: z.ZodObject<z.objectUtil.extendShape<{
+    method: z.ZodString;
+    params: z.ZodOptional<z.ZodObject<{
+        /**
+         * This parameter name is reserved by MCP to allow clients and servers to attach additional metadata to their notifications.
+         */
+        _meta: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        /**
+         * This parameter name is reserved by MCP to allow clients and servers to attach additional metadata to their notifications.
+         */
+        _meta: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        /**
+         * This parameter name is reserved by MCP to allow clients and servers to attach additional metadata to their notifications.
+         */
+        _meta: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+    }, z.ZodTypeAny, "passthrough">>>;
+}, {
+    method: z.ZodLiteral<"notifications/prompts/list_changed">;
+}>, "strip", z.ZodTypeAny, {
+    method: "notifications/prompts/list_changed";
+    params?: z.objectOutputType<{
+        /**
+         * This parameter name is reserved by MCP to allow clients and servers to attach additional metadata to their notifications.
+         */
+        _meta: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+    }, z.ZodTypeAny, "passthrough"> | undefined;
+}, {
+    method: "notifications/prompts/list_changed";
+    params?: z.objectInputType<{
+        /**
+         * This parameter name is reserved by MCP to allow clients and servers to attach additional metadata to their notifications.
+         */
+        _meta: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+    }, z.ZodTypeAny, "passthrough"> | undefined;
+}>;
+/**
  * Definition for a tool the client can call.
  */
 export declare const ToolSchema: z.ZodObject<{
@@ -3022,7 +3579,7 @@ export declare const ToolSchema: z.ZodObject<{
 /**
  * Sent from the client to request a list of tools the server has.
  */
-export declare const ListToolsRequestSchema: z.ZodObject<z.objectUtil.extendShape<{
+export declare const ListToolsRequestSchema: z.ZodObject<z.objectUtil.extendShape<z.objectUtil.extendShape<{
     method: z.ZodString;
     params: z.ZodOptional<z.ZodObject<{
         _meta: z.ZodOptional<z.ZodObject<{
@@ -3077,57 +3634,45 @@ export declare const ListToolsRequestSchema: z.ZodObject<z.objectUtil.extendShap
         }, z.ZodTypeAny, "passthrough">>>;
     }, z.ZodTypeAny, "passthrough">>>;
 }, {
+    params: z.ZodOptional<z.ZodObject<{
+        /**
+         * An opaque token representing the current pagination position.
+         * If provided, the server should return results starting after this cursor.
+         */
+        cursor: z.ZodOptional<z.ZodString>;
+    }, "strip", z.ZodTypeAny, {
+        cursor?: string | undefined;
+    }, {
+        cursor?: string | undefined;
+    }>>;
+}>, {
     method: z.ZodLiteral<"tools/list">;
 }>, "strip", z.ZodTypeAny, {
     method: "tools/list";
-    params?: z.objectOutputType<{
-        _meta: z.ZodOptional<z.ZodObject<{
-            /**
-             * If specified, the caller is requesting out-of-band progress notifications for this request (as represented by notifications/progress). The value of this parameter is an opaque token that will be attached to any subsequent notifications. The receiver is not obligated to provide these notifications.
-             */
-            progressToken: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodNumber]>>;
-        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-            /**
-             * If specified, the caller is requesting out-of-band progress notifications for this request (as represented by notifications/progress). The value of this parameter is an opaque token that will be attached to any subsequent notifications. The receiver is not obligated to provide these notifications.
-             */
-            progressToken: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodNumber]>>;
-        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-            /**
-             * If specified, the caller is requesting out-of-band progress notifications for this request (as represented by notifications/progress). The value of this parameter is an opaque token that will be attached to any subsequent notifications. The receiver is not obligated to provide these notifications.
-             */
-            progressToken: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodNumber]>>;
-        }, z.ZodTypeAny, "passthrough">>>;
-    }, z.ZodTypeAny, "passthrough"> | undefined;
+    params?: {
+        cursor?: string | undefined;
+    } | undefined;
 }, {
     method: "tools/list";
-    params?: z.objectInputType<{
-        _meta: z.ZodOptional<z.ZodObject<{
-            /**
-             * If specified, the caller is requesting out-of-band progress notifications for this request (as represented by notifications/progress). The value of this parameter is an opaque token that will be attached to any subsequent notifications. The receiver is not obligated to provide these notifications.
-             */
-            progressToken: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodNumber]>>;
-        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-            /**
-             * If specified, the caller is requesting out-of-band progress notifications for this request (as represented by notifications/progress). The value of this parameter is an opaque token that will be attached to any subsequent notifications. The receiver is not obligated to provide these notifications.
-             */
-            progressToken: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodNumber]>>;
-        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-            /**
-             * If specified, the caller is requesting out-of-band progress notifications for this request (as represented by notifications/progress). The value of this parameter is an opaque token that will be attached to any subsequent notifications. The receiver is not obligated to provide these notifications.
-             */
-            progressToken: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodNumber]>>;
-        }, z.ZodTypeAny, "passthrough">>>;
-    }, z.ZodTypeAny, "passthrough"> | undefined;
+    params?: {
+        cursor?: string | undefined;
+    } | undefined;
 }>;
 /**
  * The server's response to a tools/list request from the client.
  */
-export declare const ListToolsResultSchema: z.ZodObject<z.objectUtil.extendShape<{
+export declare const ListToolsResultSchema: z.ZodObject<z.objectUtil.extendShape<z.objectUtil.extendShape<{
     /**
      * This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses.
      */
     _meta: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
 }, {
+    /**
+     * An opaque token representing the pagination position after the last returned result.
+     * If present, there may be more results available.
+     */
+    nextCursor: z.ZodOptional<z.ZodString>;
+}>, {
     tools: z.ZodArray<z.ZodObject<{
         /**
          * The name of the tool.
@@ -3165,12 +3710,18 @@ export declare const ListToolsResultSchema: z.ZodObject<z.objectUtil.extendShape
         };
         description?: string | undefined;
     }>, "many">;
-}>, "passthrough", z.ZodTypeAny, z.objectOutputType<z.objectUtil.extendShape<{
+}>, "passthrough", z.ZodTypeAny, z.objectOutputType<z.objectUtil.extendShape<z.objectUtil.extendShape<{
     /**
      * This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses.
      */
     _meta: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
 }, {
+    /**
+     * An opaque token representing the pagination position after the last returned result.
+     * If present, there may be more results available.
+     */
+    nextCursor: z.ZodOptional<z.ZodString>;
+}>, {
     tools: z.ZodArray<z.ZodObject<{
         /**
          * The name of the tool.
@@ -3208,12 +3759,18 @@ export declare const ListToolsResultSchema: z.ZodObject<z.objectUtil.extendShape
         };
         description?: string | undefined;
     }>, "many">;
-}>, z.ZodTypeAny, "passthrough">, z.objectInputType<z.objectUtil.extendShape<{
+}>, z.ZodTypeAny, "passthrough">, z.objectInputType<z.objectUtil.extendShape<z.objectUtil.extendShape<{
     /**
      * This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses.
      */
     _meta: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
 }, {
+    /**
+     * An opaque token representing the pagination position after the last returned result.
+     * If present, there may be more results available.
+     */
+    nextCursor: z.ZodOptional<z.ZodString>;
+}>, {
     tools: z.ZodArray<z.ZodObject<{
         /**
          * The name of the tool.
@@ -4333,7 +4890,7 @@ export declare const ClientRequestSchema: z.ZodUnion<[z.ZodObject<z.objectUtil.e
         /**
          * The latest version of the Model Context Protocol that the client supports. The client MAY decide to support older versions as well.
          */
-        protocolVersion: z.ZodNumber;
+        protocolVersion: z.ZodUnion<[z.ZodString, z.ZodNumber]>;
         capabilities: z.ZodObject<{
             /**
              * Experimental, non-standard capabilities that the client supports.
@@ -4361,7 +4918,7 @@ export declare const ClientRequestSchema: z.ZodUnion<[z.ZodObject<z.objectUtil.e
             version: string;
         }>;
     }, "strip", z.ZodTypeAny, {
-        protocolVersion: number;
+        protocolVersion: string | number;
         capabilities: {
             experimental?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
             sampling?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
@@ -4371,7 +4928,7 @@ export declare const ClientRequestSchema: z.ZodUnion<[z.ZodObject<z.objectUtil.e
             version: string;
         };
     }, {
-        protocolVersion: number;
+        protocolVersion: string | number;
         capabilities: {
             experimental?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
             sampling?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
@@ -4383,7 +4940,7 @@ export declare const ClientRequestSchema: z.ZodUnion<[z.ZodObject<z.objectUtil.e
     }>;
 }>, "strip", z.ZodTypeAny, {
     params: {
-        protocolVersion: number;
+        protocolVersion: string | number;
         capabilities: {
             experimental?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
             sampling?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
@@ -4396,7 +4953,7 @@ export declare const ClientRequestSchema: z.ZodUnion<[z.ZodObject<z.objectUtil.e
     method: "initialize";
 }, {
     params: {
-        protocolVersion: number;
+        protocolVersion: string | number;
         capabilities: {
             experimental?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
             sampling?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
@@ -4723,7 +5280,7 @@ export declare const ClientRequestSchema: z.ZodUnion<[z.ZodObject<z.objectUtil.e
         arguments?: Record<string, string> | undefined;
     };
     method: "prompts/get";
-}>, z.ZodObject<z.objectUtil.extendShape<{
+}>, z.ZodObject<z.objectUtil.extendShape<z.objectUtil.extendShape<{
     method: z.ZodString;
     params: z.ZodOptional<z.ZodObject<{
         _meta: z.ZodOptional<z.ZodObject<{
@@ -4778,48 +5335,30 @@ export declare const ClientRequestSchema: z.ZodUnion<[z.ZodObject<z.objectUtil.e
         }, z.ZodTypeAny, "passthrough">>>;
     }, z.ZodTypeAny, "passthrough">>>;
 }, {
+    params: z.ZodOptional<z.ZodObject<{
+        /**
+         * An opaque token representing the current pagination position.
+         * If provided, the server should return results starting after this cursor.
+         */
+        cursor: z.ZodOptional<z.ZodString>;
+    }, "strip", z.ZodTypeAny, {
+        cursor?: string | undefined;
+    }, {
+        cursor?: string | undefined;
+    }>>;
+}>, {
     method: z.ZodLiteral<"prompts/list">;
 }>, "strip", z.ZodTypeAny, {
     method: "prompts/list";
-    params?: z.objectOutputType<{
-        _meta: z.ZodOptional<z.ZodObject<{
-            /**
-             * If specified, the caller is requesting out-of-band progress notifications for this request (as represented by notifications/progress). The value of this parameter is an opaque token that will be attached to any subsequent notifications. The receiver is not obligated to provide these notifications.
-             */
-            progressToken: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodNumber]>>;
-        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-            /**
-             * If specified, the caller is requesting out-of-band progress notifications for this request (as represented by notifications/progress). The value of this parameter is an opaque token that will be attached to any subsequent notifications. The receiver is not obligated to provide these notifications.
-             */
-            progressToken: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodNumber]>>;
-        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-            /**
-             * If specified, the caller is requesting out-of-band progress notifications for this request (as represented by notifications/progress). The value of this parameter is an opaque token that will be attached to any subsequent notifications. The receiver is not obligated to provide these notifications.
-             */
-            progressToken: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodNumber]>>;
-        }, z.ZodTypeAny, "passthrough">>>;
-    }, z.ZodTypeAny, "passthrough"> | undefined;
+    params?: {
+        cursor?: string | undefined;
+    } | undefined;
 }, {
     method: "prompts/list";
-    params?: z.objectInputType<{
-        _meta: z.ZodOptional<z.ZodObject<{
-            /**
-             * If specified, the caller is requesting out-of-band progress notifications for this request (as represented by notifications/progress). The value of this parameter is an opaque token that will be attached to any subsequent notifications. The receiver is not obligated to provide these notifications.
-             */
-            progressToken: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodNumber]>>;
-        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-            /**
-             * If specified, the caller is requesting out-of-band progress notifications for this request (as represented by notifications/progress). The value of this parameter is an opaque token that will be attached to any subsequent notifications. The receiver is not obligated to provide these notifications.
-             */
-            progressToken: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodNumber]>>;
-        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-            /**
-             * If specified, the caller is requesting out-of-band progress notifications for this request (as represented by notifications/progress). The value of this parameter is an opaque token that will be attached to any subsequent notifications. The receiver is not obligated to provide these notifications.
-             */
-            progressToken: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodNumber]>>;
-        }, z.ZodTypeAny, "passthrough">>>;
-    }, z.ZodTypeAny, "passthrough"> | undefined;
-}>, z.ZodObject<z.objectUtil.extendShape<{
+    params?: {
+        cursor?: string | undefined;
+    } | undefined;
+}>, z.ZodObject<z.objectUtil.extendShape<z.objectUtil.extendShape<{
     method: z.ZodString;
     params: z.ZodOptional<z.ZodObject<{
         _meta: z.ZodOptional<z.ZodObject<{
@@ -4874,47 +5413,29 @@ export declare const ClientRequestSchema: z.ZodUnion<[z.ZodObject<z.objectUtil.e
         }, z.ZodTypeAny, "passthrough">>>;
     }, z.ZodTypeAny, "passthrough">>>;
 }, {
+    params: z.ZodOptional<z.ZodObject<{
+        /**
+         * An opaque token representing the current pagination position.
+         * If provided, the server should return results starting after this cursor.
+         */
+        cursor: z.ZodOptional<z.ZodString>;
+    }, "strip", z.ZodTypeAny, {
+        cursor?: string | undefined;
+    }, {
+        cursor?: string | undefined;
+    }>>;
+}>, {
     method: z.ZodLiteral<"resources/list">;
 }>, "strip", z.ZodTypeAny, {
     method: "resources/list";
-    params?: z.objectOutputType<{
-        _meta: z.ZodOptional<z.ZodObject<{
-            /**
-             * If specified, the caller is requesting out-of-band progress notifications for this request (as represented by notifications/progress). The value of this parameter is an opaque token that will be attached to any subsequent notifications. The receiver is not obligated to provide these notifications.
-             */
-            progressToken: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodNumber]>>;
-        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-            /**
-             * If specified, the caller is requesting out-of-band progress notifications for this request (as represented by notifications/progress). The value of this parameter is an opaque token that will be attached to any subsequent notifications. The receiver is not obligated to provide these notifications.
-             */
-            progressToken: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodNumber]>>;
-        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-            /**
-             * If specified, the caller is requesting out-of-band progress notifications for this request (as represented by notifications/progress). The value of this parameter is an opaque token that will be attached to any subsequent notifications. The receiver is not obligated to provide these notifications.
-             */
-            progressToken: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodNumber]>>;
-        }, z.ZodTypeAny, "passthrough">>>;
-    }, z.ZodTypeAny, "passthrough"> | undefined;
+    params?: {
+        cursor?: string | undefined;
+    } | undefined;
 }, {
     method: "resources/list";
-    params?: z.objectInputType<{
-        _meta: z.ZodOptional<z.ZodObject<{
-            /**
-             * If specified, the caller is requesting out-of-band progress notifications for this request (as represented by notifications/progress). The value of this parameter is an opaque token that will be attached to any subsequent notifications. The receiver is not obligated to provide these notifications.
-             */
-            progressToken: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodNumber]>>;
-        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-            /**
-             * If specified, the caller is requesting out-of-band progress notifications for this request (as represented by notifications/progress). The value of this parameter is an opaque token that will be attached to any subsequent notifications. The receiver is not obligated to provide these notifications.
-             */
-            progressToken: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodNumber]>>;
-        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-            /**
-             * If specified, the caller is requesting out-of-band progress notifications for this request (as represented by notifications/progress). The value of this parameter is an opaque token that will be attached to any subsequent notifications. The receiver is not obligated to provide these notifications.
-             */
-            progressToken: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodNumber]>>;
-        }, z.ZodTypeAny, "passthrough">>>;
-    }, z.ZodTypeAny, "passthrough"> | undefined;
+    params?: {
+        cursor?: string | undefined;
+    } | undefined;
 }>, z.ZodObject<z.objectUtil.extendShape<{
     method: z.ZodString;
     params: z.ZodOptional<z.ZodObject<{
@@ -5221,7 +5742,7 @@ export declare const ClientRequestSchema: z.ZodUnion<[z.ZodObject<z.objectUtil.e
         arguments?: Record<string, unknown> | undefined;
     };
     method: "tools/call";
-}>, z.ZodObject<z.objectUtil.extendShape<{
+}>, z.ZodObject<z.objectUtil.extendShape<z.objectUtil.extendShape<{
     method: z.ZodString;
     params: z.ZodOptional<z.ZodObject<{
         _meta: z.ZodOptional<z.ZodObject<{
@@ -5276,47 +5797,29 @@ export declare const ClientRequestSchema: z.ZodUnion<[z.ZodObject<z.objectUtil.e
         }, z.ZodTypeAny, "passthrough">>>;
     }, z.ZodTypeAny, "passthrough">>>;
 }, {
+    params: z.ZodOptional<z.ZodObject<{
+        /**
+         * An opaque token representing the current pagination position.
+         * If provided, the server should return results starting after this cursor.
+         */
+        cursor: z.ZodOptional<z.ZodString>;
+    }, "strip", z.ZodTypeAny, {
+        cursor?: string | undefined;
+    }, {
+        cursor?: string | undefined;
+    }>>;
+}>, {
     method: z.ZodLiteral<"tools/list">;
 }>, "strip", z.ZodTypeAny, {
     method: "tools/list";
-    params?: z.objectOutputType<{
-        _meta: z.ZodOptional<z.ZodObject<{
-            /**
-             * If specified, the caller is requesting out-of-band progress notifications for this request (as represented by notifications/progress). The value of this parameter is an opaque token that will be attached to any subsequent notifications. The receiver is not obligated to provide these notifications.
-             */
-            progressToken: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodNumber]>>;
-        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-            /**
-             * If specified, the caller is requesting out-of-band progress notifications for this request (as represented by notifications/progress). The value of this parameter is an opaque token that will be attached to any subsequent notifications. The receiver is not obligated to provide these notifications.
-             */
-            progressToken: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodNumber]>>;
-        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-            /**
-             * If specified, the caller is requesting out-of-band progress notifications for this request (as represented by notifications/progress). The value of this parameter is an opaque token that will be attached to any subsequent notifications. The receiver is not obligated to provide these notifications.
-             */
-            progressToken: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodNumber]>>;
-        }, z.ZodTypeAny, "passthrough">>>;
-    }, z.ZodTypeAny, "passthrough"> | undefined;
+    params?: {
+        cursor?: string | undefined;
+    } | undefined;
 }, {
     method: "tools/list";
-    params?: z.objectInputType<{
-        _meta: z.ZodOptional<z.ZodObject<{
-            /**
-             * If specified, the caller is requesting out-of-band progress notifications for this request (as represented by notifications/progress). The value of this parameter is an opaque token that will be attached to any subsequent notifications. The receiver is not obligated to provide these notifications.
-             */
-            progressToken: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodNumber]>>;
-        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-            /**
-             * If specified, the caller is requesting out-of-band progress notifications for this request (as represented by notifications/progress). The value of this parameter is an opaque token that will be attached to any subsequent notifications. The receiver is not obligated to provide these notifications.
-             */
-            progressToken: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodNumber]>>;
-        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-            /**
-             * If specified, the caller is requesting out-of-band progress notifications for this request (as represented by notifications/progress). The value of this parameter is an opaque token that will be attached to any subsequent notifications. The receiver is not obligated to provide these notifications.
-             */
-            progressToken: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodNumber]>>;
-        }, z.ZodTypeAny, "passthrough">>>;
-    }, z.ZodTypeAny, "passthrough"> | undefined;
+    params?: {
+        cursor?: string | undefined;
+    } | undefined;
 }>]>;
 export declare const ClientNotificationSchema: z.ZodUnion<[z.ZodObject<z.objectUtil.extendShape<{
     method: z.ZodString;
@@ -6090,6 +6593,42 @@ export declare const ServerNotificationSchema: z.ZodUnion<[z.ZodObject<z.objectU
          */
         _meta: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
     }, z.ZodTypeAny, "passthrough"> | undefined;
+}>, z.ZodObject<z.objectUtil.extendShape<{
+    method: z.ZodString;
+    params: z.ZodOptional<z.ZodObject<{
+        /**
+         * This parameter name is reserved by MCP to allow clients and servers to attach additional metadata to their notifications.
+         */
+        _meta: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        /**
+         * This parameter name is reserved by MCP to allow clients and servers to attach additional metadata to their notifications.
+         */
+        _meta: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        /**
+         * This parameter name is reserved by MCP to allow clients and servers to attach additional metadata to their notifications.
+         */
+        _meta: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+    }, z.ZodTypeAny, "passthrough">>>;
+}, {
+    method: z.ZodLiteral<"notifications/prompts/list_changed">;
+}>, "strip", z.ZodTypeAny, {
+    method: "notifications/prompts/list_changed";
+    params?: z.objectOutputType<{
+        /**
+         * This parameter name is reserved by MCP to allow clients and servers to attach additional metadata to their notifications.
+         */
+        _meta: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+    }, z.ZodTypeAny, "passthrough"> | undefined;
+}, {
+    method: "notifications/prompts/list_changed";
+    params?: z.objectInputType<{
+        /**
+         * This parameter name is reserved by MCP to allow clients and servers to attach additional metadata to their notifications.
+         */
+        _meta: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+    }, z.ZodTypeAny, "passthrough"> | undefined;
 }>]>;
 export declare const ServerResultSchema: z.ZodUnion<[z.ZodObject<{
     /**
@@ -6109,7 +6648,7 @@ export declare const ServerResultSchema: z.ZodUnion<[z.ZodObject<{
     /**
      * The version of the Model Context Protocol that the server wants to use. This may not match the version that the client requested. If the client cannot support this version, it MUST disconnect.
      */
-    protocolVersion: z.ZodNumber;
+    protocolVersion: z.ZodUnion<[z.ZodString, z.ZodNumber]>;
     capabilities: z.ZodObject<{
         /**
          * Experimental, non-standard capabilities that the server supports.
@@ -6122,7 +6661,22 @@ export declare const ServerResultSchema: z.ZodUnion<[z.ZodObject<{
         /**
          * Present if the server offers any prompt templates.
          */
-        prompts: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        prompts: z.ZodOptional<z.ZodObject<{
+            /**
+             * Whether this server supports notifications for changes to the prompt list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * Whether this server supports notifications for changes to the prompt list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * Whether this server supports notifications for changes to the prompt list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">>>;
         /**
          * Present if the server offers any resources to read.
          */
@@ -6131,43 +6685,98 @@ export declare const ServerResultSchema: z.ZodUnion<[z.ZodObject<{
              * Whether this server supports subscribing to resource updates.
              */
             subscribe: z.ZodOptional<z.ZodBoolean>;
+            /**
+             * Whether this server supports notifications for changes to the resource list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
             /**
              * Whether this server supports subscribing to resource updates.
              */
             subscribe: z.ZodOptional<z.ZodBoolean>;
+            /**
+             * Whether this server supports notifications for changes to the resource list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
             /**
              * Whether this server supports subscribing to resource updates.
              */
             subscribe: z.ZodOptional<z.ZodBoolean>;
+            /**
+             * Whether this server supports notifications for changes to the resource list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
         }, z.ZodTypeAny, "passthrough">>>;
         /**
          * Present if the server offers any tools to call.
          */
-        tools: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        tools: z.ZodOptional<z.ZodObject<{
+            /**
+             * Whether this server supports notifications for changes to the tool list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * Whether this server supports notifications for changes to the tool list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * Whether this server supports notifications for changes to the tool list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">>>;
     }, "strip", z.ZodTypeAny, {
         experimental?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
         logging?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        prompts?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
+        prompts?: z.objectOutputType<{
+            /**
+             * Whether this server supports notifications for changes to the prompt list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough"> | undefined;
         resources?: z.objectOutputType<{
             /**
              * Whether this server supports subscribing to resource updates.
              */
             subscribe: z.ZodOptional<z.ZodBoolean>;
+            /**
+             * Whether this server supports notifications for changes to the resource list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
-        tools?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
+        tools?: z.objectOutputType<{
+            /**
+             * Whether this server supports notifications for changes to the tool list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough"> | undefined;
     }, {
         experimental?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
         logging?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        prompts?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
+        prompts?: z.objectInputType<{
+            /**
+             * Whether this server supports notifications for changes to the prompt list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough"> | undefined;
         resources?: z.objectInputType<{
             /**
              * Whether this server supports subscribing to resource updates.
              */
             subscribe: z.ZodOptional<z.ZodBoolean>;
+            /**
+             * Whether this server supports notifications for changes to the resource list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
-        tools?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
+        tools?: z.objectInputType<{
+            /**
+             * Whether this server supports notifications for changes to the tool list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough"> | undefined;
     }>;
     serverInfo: z.ZodObject<{
         name: z.ZodString;
@@ -6188,7 +6797,7 @@ export declare const ServerResultSchema: z.ZodUnion<[z.ZodObject<{
     /**
      * The version of the Model Context Protocol that the server wants to use. This may not match the version that the client requested. If the client cannot support this version, it MUST disconnect.
      */
-    protocolVersion: z.ZodNumber;
+    protocolVersion: z.ZodUnion<[z.ZodString, z.ZodNumber]>;
     capabilities: z.ZodObject<{
         /**
          * Experimental, non-standard capabilities that the server supports.
@@ -6201,7 +6810,22 @@ export declare const ServerResultSchema: z.ZodUnion<[z.ZodObject<{
         /**
          * Present if the server offers any prompt templates.
          */
-        prompts: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        prompts: z.ZodOptional<z.ZodObject<{
+            /**
+             * Whether this server supports notifications for changes to the prompt list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * Whether this server supports notifications for changes to the prompt list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * Whether this server supports notifications for changes to the prompt list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">>>;
         /**
          * Present if the server offers any resources to read.
          */
@@ -6210,43 +6834,98 @@ export declare const ServerResultSchema: z.ZodUnion<[z.ZodObject<{
              * Whether this server supports subscribing to resource updates.
              */
             subscribe: z.ZodOptional<z.ZodBoolean>;
+            /**
+             * Whether this server supports notifications for changes to the resource list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
             /**
              * Whether this server supports subscribing to resource updates.
              */
             subscribe: z.ZodOptional<z.ZodBoolean>;
+            /**
+             * Whether this server supports notifications for changes to the resource list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
             /**
              * Whether this server supports subscribing to resource updates.
              */
             subscribe: z.ZodOptional<z.ZodBoolean>;
+            /**
+             * Whether this server supports notifications for changes to the resource list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
         }, z.ZodTypeAny, "passthrough">>>;
         /**
          * Present if the server offers any tools to call.
          */
-        tools: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        tools: z.ZodOptional<z.ZodObject<{
+            /**
+             * Whether this server supports notifications for changes to the tool list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * Whether this server supports notifications for changes to the tool list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * Whether this server supports notifications for changes to the tool list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">>>;
     }, "strip", z.ZodTypeAny, {
         experimental?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
         logging?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        prompts?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
+        prompts?: z.objectOutputType<{
+            /**
+             * Whether this server supports notifications for changes to the prompt list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough"> | undefined;
         resources?: z.objectOutputType<{
             /**
              * Whether this server supports subscribing to resource updates.
              */
             subscribe: z.ZodOptional<z.ZodBoolean>;
+            /**
+             * Whether this server supports notifications for changes to the resource list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
-        tools?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
+        tools?: z.objectOutputType<{
+            /**
+             * Whether this server supports notifications for changes to the tool list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough"> | undefined;
     }, {
         experimental?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
         logging?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        prompts?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
+        prompts?: z.objectInputType<{
+            /**
+             * Whether this server supports notifications for changes to the prompt list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough"> | undefined;
         resources?: z.objectInputType<{
             /**
              * Whether this server supports subscribing to resource updates.
              */
             subscribe: z.ZodOptional<z.ZodBoolean>;
+            /**
+             * Whether this server supports notifications for changes to the resource list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
-        tools?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
+        tools?: z.objectInputType<{
+            /**
+             * Whether this server supports notifications for changes to the tool list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough"> | undefined;
     }>;
     serverInfo: z.ZodObject<{
         name: z.ZodString;
@@ -6267,7 +6946,7 @@ export declare const ServerResultSchema: z.ZodUnion<[z.ZodObject<{
     /**
      * The version of the Model Context Protocol that the server wants to use. This may not match the version that the client requested. If the client cannot support this version, it MUST disconnect.
      */
-    protocolVersion: z.ZodNumber;
+    protocolVersion: z.ZodUnion<[z.ZodString, z.ZodNumber]>;
     capabilities: z.ZodObject<{
         /**
          * Experimental, non-standard capabilities that the server supports.
@@ -6280,7 +6959,22 @@ export declare const ServerResultSchema: z.ZodUnion<[z.ZodObject<{
         /**
          * Present if the server offers any prompt templates.
          */
-        prompts: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        prompts: z.ZodOptional<z.ZodObject<{
+            /**
+             * Whether this server supports notifications for changes to the prompt list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * Whether this server supports notifications for changes to the prompt list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * Whether this server supports notifications for changes to the prompt list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">>>;
         /**
          * Present if the server offers any resources to read.
          */
@@ -6289,43 +6983,98 @@ export declare const ServerResultSchema: z.ZodUnion<[z.ZodObject<{
              * Whether this server supports subscribing to resource updates.
              */
             subscribe: z.ZodOptional<z.ZodBoolean>;
+            /**
+             * Whether this server supports notifications for changes to the resource list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
             /**
              * Whether this server supports subscribing to resource updates.
              */
             subscribe: z.ZodOptional<z.ZodBoolean>;
+            /**
+             * Whether this server supports notifications for changes to the resource list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
             /**
              * Whether this server supports subscribing to resource updates.
              */
             subscribe: z.ZodOptional<z.ZodBoolean>;
+            /**
+             * Whether this server supports notifications for changes to the resource list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
         }, z.ZodTypeAny, "passthrough">>>;
         /**
          * Present if the server offers any tools to call.
          */
-        tools: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        tools: z.ZodOptional<z.ZodObject<{
+            /**
+             * Whether this server supports notifications for changes to the tool list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * Whether this server supports notifications for changes to the tool list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * Whether this server supports notifications for changes to the tool list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">>>;
     }, "strip", z.ZodTypeAny, {
         experimental?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
         logging?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        prompts?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
+        prompts?: z.objectOutputType<{
+            /**
+             * Whether this server supports notifications for changes to the prompt list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough"> | undefined;
         resources?: z.objectOutputType<{
             /**
              * Whether this server supports subscribing to resource updates.
              */
             subscribe: z.ZodOptional<z.ZodBoolean>;
+            /**
+             * Whether this server supports notifications for changes to the resource list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
-        tools?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
+        tools?: z.objectOutputType<{
+            /**
+             * Whether this server supports notifications for changes to the tool list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough"> | undefined;
     }, {
         experimental?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
         logging?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        prompts?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
+        prompts?: z.objectInputType<{
+            /**
+             * Whether this server supports notifications for changes to the prompt list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough"> | undefined;
         resources?: z.objectInputType<{
             /**
              * Whether this server supports subscribing to resource updates.
              */
             subscribe: z.ZodOptional<z.ZodBoolean>;
+            /**
+             * Whether this server supports notifications for changes to the resource list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
-        tools?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
+        tools?: z.objectInputType<{
+            /**
+             * Whether this server supports notifications for changes to the tool list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough"> | undefined;
     }>;
     serverInfo: z.ZodObject<{
         name: z.ZodString;
@@ -6613,12 +7362,18 @@ export declare const ServerResultSchema: z.ZodUnion<[z.ZodObject<{
             mimeType: string;
         };
     }>, "many">;
-}>, z.ZodTypeAny, "passthrough">>, z.ZodObject<z.objectUtil.extendShape<{
+}>, z.ZodTypeAny, "passthrough">>, z.ZodObject<z.objectUtil.extendShape<z.objectUtil.extendShape<{
     /**
      * This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses.
      */
     _meta: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
 }, {
+    /**
+     * An opaque token representing the pagination position after the last returned result.
+     * If present, there may be more results available.
+     */
+    nextCursor: z.ZodOptional<z.ZodString>;
+}>, {
     prompts: z.ZodArray<z.ZodObject<{
         /**
          * The name of the prompt or prompt template.
@@ -6670,12 +7425,18 @@ export declare const ServerResultSchema: z.ZodUnion<[z.ZodObject<{
             required?: boolean | undefined;
         }[] | undefined;
     }>, "many">;
-}>, "passthrough", z.ZodTypeAny, z.objectOutputType<z.objectUtil.extendShape<{
+}>, "passthrough", z.ZodTypeAny, z.objectOutputType<z.objectUtil.extendShape<z.objectUtil.extendShape<{
     /**
      * This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses.
      */
     _meta: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
 }, {
+    /**
+     * An opaque token representing the pagination position after the last returned result.
+     * If present, there may be more results available.
+     */
+    nextCursor: z.ZodOptional<z.ZodString>;
+}>, {
     prompts: z.ZodArray<z.ZodObject<{
         /**
          * The name of the prompt or prompt template.
@@ -6727,12 +7488,18 @@ export declare const ServerResultSchema: z.ZodUnion<[z.ZodObject<{
             required?: boolean | undefined;
         }[] | undefined;
     }>, "many">;
-}>, z.ZodTypeAny, "passthrough">, z.objectInputType<z.objectUtil.extendShape<{
+}>, z.ZodTypeAny, "passthrough">, z.objectInputType<z.objectUtil.extendShape<z.objectUtil.extendShape<{
     /**
      * This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses.
      */
     _meta: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
 }, {
+    /**
+     * An opaque token representing the pagination position after the last returned result.
+     * If present, there may be more results available.
+     */
+    nextCursor: z.ZodOptional<z.ZodString>;
+}>, {
     prompts: z.ZodArray<z.ZodObject<{
         /**
          * The name of the prompt or prompt template.
@@ -6784,45 +7551,19 @@ export declare const ServerResultSchema: z.ZodUnion<[z.ZodObject<{
             required?: boolean | undefined;
         }[] | undefined;
     }>, "many">;
-}>, z.ZodTypeAny, "passthrough">>, z.ZodObject<z.objectUtil.extendShape<{
+}>, z.ZodTypeAny, "passthrough">>, z.ZodObject<z.objectUtil.extendShape<z.objectUtil.extendShape<{
     /**
      * This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses.
      */
     _meta: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
 }, {
-    resourceTemplates: z.ZodOptional<z.ZodArray<z.ZodObject<{
-        /**
-         * A URI template (according to RFC 6570) that can be used to construct resource URIs.
-         */
-        uriTemplate: z.ZodString;
-        /**
-         * A human-readable name for the type of resource this template refers to.
-         *
-         * This can be used by clients to populate UI elements.
-         */
-        name: z.ZodString;
-        /**
-         * A description of what this template is for.
-         *
-         * This can be used by clients to improve the LLM's understanding of available resources. It can be thought of like a "hint" to the model.
-         */
-        description: z.ZodOptional<z.ZodString>;
-        /**
-         * The MIME type for all resources that match this template. This should only be included if all resources matching this template have the same type.
-         */
-        mimeType: z.ZodOptional<z.ZodString>;
-    }, "strip", z.ZodTypeAny, {
-        name: string;
-        uriTemplate: string;
-        mimeType?: string | undefined;
-        description?: string | undefined;
-    }, {
-        name: string;
-        uriTemplate: string;
-        mimeType?: string | undefined;
-        description?: string | undefined;
-    }>, "many">>;
-    resources: z.ZodOptional<z.ZodArray<z.ZodObject<{
+    /**
+     * An opaque token representing the pagination position after the last returned result.
+     * If present, there may be more results available.
+     */
+    nextCursor: z.ZodOptional<z.ZodString>;
+}>, {
+    resources: z.ZodArray<z.ZodObject<{
         /**
          * The URI of this resource.
          */
@@ -6853,46 +7594,20 @@ export declare const ServerResultSchema: z.ZodUnion<[z.ZodObject<{
         uri: string;
         mimeType?: string | undefined;
         description?: string | undefined;
-    }>, "many">>;
-}>, "passthrough", z.ZodTypeAny, z.objectOutputType<z.objectUtil.extendShape<{
+    }>, "many">;
+}>, "passthrough", z.ZodTypeAny, z.objectOutputType<z.objectUtil.extendShape<z.objectUtil.extendShape<{
     /**
      * This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses.
      */
     _meta: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
 }, {
-    resourceTemplates: z.ZodOptional<z.ZodArray<z.ZodObject<{
-        /**
-         * A URI template (according to RFC 6570) that can be used to construct resource URIs.
-         */
-        uriTemplate: z.ZodString;
-        /**
-         * A human-readable name for the type of resource this template refers to.
-         *
-         * This can be used by clients to populate UI elements.
-         */
-        name: z.ZodString;
-        /**
-         * A description of what this template is for.
-         *
-         * This can be used by clients to improve the LLM's understanding of available resources. It can be thought of like a "hint" to the model.
-         */
-        description: z.ZodOptional<z.ZodString>;
-        /**
-         * The MIME type for all resources that match this template. This should only be included if all resources matching this template have the same type.
-         */
-        mimeType: z.ZodOptional<z.ZodString>;
-    }, "strip", z.ZodTypeAny, {
-        name: string;
-        uriTemplate: string;
-        mimeType?: string | undefined;
-        description?: string | undefined;
-    }, {
-        name: string;
-        uriTemplate: string;
-        mimeType?: string | undefined;
-        description?: string | undefined;
-    }>, "many">>;
-    resources: z.ZodOptional<z.ZodArray<z.ZodObject<{
+    /**
+     * An opaque token representing the pagination position after the last returned result.
+     * If present, there may be more results available.
+     */
+    nextCursor: z.ZodOptional<z.ZodString>;
+}>, {
+    resources: z.ZodArray<z.ZodObject<{
         /**
          * The URI of this resource.
          */
@@ -6923,46 +7638,20 @@ export declare const ServerResultSchema: z.ZodUnion<[z.ZodObject<{
         uri: string;
         mimeType?: string | undefined;
         description?: string | undefined;
-    }>, "many">>;
-}>, z.ZodTypeAny, "passthrough">, z.objectInputType<z.objectUtil.extendShape<{
+    }>, "many">;
+}>, z.ZodTypeAny, "passthrough">, z.objectInputType<z.objectUtil.extendShape<z.objectUtil.extendShape<{
     /**
      * This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses.
      */
     _meta: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
 }, {
-    resourceTemplates: z.ZodOptional<z.ZodArray<z.ZodObject<{
-        /**
-         * A URI template (according to RFC 6570) that can be used to construct resource URIs.
-         */
-        uriTemplate: z.ZodString;
-        /**
-         * A human-readable name for the type of resource this template refers to.
-         *
-         * This can be used by clients to populate UI elements.
-         */
-        name: z.ZodString;
-        /**
-         * A description of what this template is for.
-         *
-         * This can be used by clients to improve the LLM's understanding of available resources. It can be thought of like a "hint" to the model.
-         */
-        description: z.ZodOptional<z.ZodString>;
-        /**
-         * The MIME type for all resources that match this template. This should only be included if all resources matching this template have the same type.
-         */
-        mimeType: z.ZodOptional<z.ZodString>;
-    }, "strip", z.ZodTypeAny, {
-        name: string;
-        uriTemplate: string;
-        mimeType?: string | undefined;
-        description?: string | undefined;
-    }, {
-        name: string;
-        uriTemplate: string;
-        mimeType?: string | undefined;
-        description?: string | undefined;
-    }>, "many">>;
-    resources: z.ZodOptional<z.ZodArray<z.ZodObject<{
+    /**
+     * An opaque token representing the pagination position after the last returned result.
+     * If present, there may be more results available.
+     */
+    nextCursor: z.ZodOptional<z.ZodString>;
+}>, {
+    resources: z.ZodArray<z.ZodObject<{
         /**
          * The URI of this resource.
          */
@@ -6993,7 +7682,7 @@ export declare const ServerResultSchema: z.ZodUnion<[z.ZodObject<{
         uri: string;
         mimeType?: string | undefined;
         description?: string | undefined;
-    }>, "many">>;
+    }>, "many">;
 }>, z.ZodTypeAny, "passthrough">>, z.ZodObject<z.objectUtil.extendShape<{
     /**
      * This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses.
@@ -7168,12 +7857,18 @@ export declare const ServerResultSchema: z.ZodUnion<[z.ZodObject<{
     _meta: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
 }, {
     toolResult: z.ZodUnknown;
-}>, z.ZodTypeAny, "passthrough">>, z.ZodObject<z.objectUtil.extendShape<{
+}>, z.ZodTypeAny, "passthrough">>, z.ZodObject<z.objectUtil.extendShape<z.objectUtil.extendShape<{
     /**
      * This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses.
      */
     _meta: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
 }, {
+    /**
+     * An opaque token representing the pagination position after the last returned result.
+     * If present, there may be more results available.
+     */
+    nextCursor: z.ZodOptional<z.ZodString>;
+}>, {
     tools: z.ZodArray<z.ZodObject<{
         /**
          * The name of the tool.
@@ -7211,12 +7906,18 @@ export declare const ServerResultSchema: z.ZodUnion<[z.ZodObject<{
         };
         description?: string | undefined;
     }>, "many">;
-}>, "passthrough", z.ZodTypeAny, z.objectOutputType<z.objectUtil.extendShape<{
+}>, "passthrough", z.ZodTypeAny, z.objectOutputType<z.objectUtil.extendShape<z.objectUtil.extendShape<{
     /**
      * This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses.
      */
     _meta: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
 }, {
+    /**
+     * An opaque token representing the pagination position after the last returned result.
+     * If present, there may be more results available.
+     */
+    nextCursor: z.ZodOptional<z.ZodString>;
+}>, {
     tools: z.ZodArray<z.ZodObject<{
         /**
          * The name of the tool.
@@ -7254,12 +7955,18 @@ export declare const ServerResultSchema: z.ZodUnion<[z.ZodObject<{
         };
         description?: string | undefined;
     }>, "many">;
-}>, z.ZodTypeAny, "passthrough">, z.objectInputType<z.objectUtil.extendShape<{
+}>, z.ZodTypeAny, "passthrough">, z.objectInputType<z.objectUtil.extendShape<z.objectUtil.extendShape<{
     /**
      * This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses.
      */
     _meta: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
 }, {
+    /**
+     * An opaque token representing the pagination position after the last returned result.
+     * If present, there may be more results available.
+     */
+    nextCursor: z.ZodOptional<z.ZodString>;
+}>, {
     tools: z.ZodArray<z.ZodObject<{
         /**
          * The name of the tool.
@@ -7304,6 +8011,7 @@ export declare class McpError extends Error {
     constructor(code: number, message: string, data?: unknown);
 }
 export type ProgressToken = z.infer<typeof ProgressTokenSchema>;
+export type Cursor = z.infer<typeof CursorSchema>;
 export type Request = z.infer<typeof RequestSchema>;
 export type Notification = z.infer<typeof NotificationSchema>;
 export type Result = z.infer<typeof ResultSchema>;
@@ -7326,6 +8034,8 @@ export type InitializedNotification = z.infer<typeof InitializedNotificationSche
 export type PingRequest = z.infer<typeof PingRequestSchema>;
 export type Progress = z.infer<typeof ProgressSchema>;
 export type ProgressNotification = z.infer<typeof ProgressNotificationSchema>;
+export type PaginatedRequest = z.infer<typeof PaginatedRequestSchema>;
+export type PaginatedResult = z.infer<typeof PaginatedResultSchema>;
 export type ResourceContents = z.infer<typeof ResourceContentsSchema>;
 export type TextResourceContents = z.infer<typeof TextResourceContentsSchema>;
 export type BlobResourceContents = z.infer<typeof BlobResourceContentsSchema>;
@@ -7333,6 +8043,8 @@ export type Resource = z.infer<typeof ResourceSchema>;
 export type ResourceTemplate = z.infer<typeof ResourceTemplateSchema>;
 export type ListResourcesRequest = z.infer<typeof ListResourcesRequestSchema>;
 export type ListResourcesResult = z.infer<typeof ListResourcesResultSchema>;
+export type ListResourceTemplatesRequest = z.infer<typeof ListResourceTemplatesRequestSchema>;
+export type ListResourceTemplatesResult = z.infer<typeof ListResourceTemplatesResultSchema>;
 export type ReadResourceRequest = z.infer<typeof ReadResourceRequestSchema>;
 export type ReadResourceResult = z.infer<typeof ReadResourceResultSchema>;
 export type ResourceListChangedNotification = z.infer<typeof ResourceListChangedNotificationSchema>;
@@ -7345,6 +8057,7 @@ export type ListPromptsRequest = z.infer<typeof ListPromptsRequestSchema>;
 export type ListPromptsResult = z.infer<typeof ListPromptsResultSchema>;
 export type GetPromptRequest = z.infer<typeof GetPromptRequestSchema>;
 export type GetPromptResult = z.infer<typeof GetPromptResultSchema>;
+export type PromptListChangedNotification = z.infer<typeof PromptListChangedNotificationSchema>;
 export type Tool = z.infer<typeof ToolSchema>;
 export type ListToolsRequest = z.infer<typeof ListToolsRequestSchema>;
 export type ListToolsResult = z.infer<typeof ListToolsResultSchema>;
