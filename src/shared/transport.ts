@@ -5,6 +5,13 @@ import { JSONRPCMessage } from "../types.js";
  */
 export interface Transport {
   /**
+   * Starts processing messages on the transport, including any connection steps that might need to be taken.
+   *
+   * This method should only be called after callbacks are installed, or else messages may be lost.
+   */
+  start(): Promise<void>;
+
+  /**
    * Sends a JSON-RPC message (request or response).
    */
   send(message: JSONRPCMessage): Promise<void>;
