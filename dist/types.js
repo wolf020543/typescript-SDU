@@ -206,16 +206,19 @@ export const ServerCapabilitiesSchema = z.object({
     /**
      * Present if the server offers any prompt templates.
      */
-    prompts: z.optional(z.object({
+    prompts: z.optional(z
+        .object({
         /**
          * Whether this server supports notifications for changes to the prompt list.
          */
         listChanged: z.optional(z.boolean()),
-    }).passthrough()),
+    })
+        .passthrough()),
     /**
      * Present if the server offers any resources to read.
      */
-    resources: z.optional(z.object({
+    resources: z.optional(z
+        .object({
         /**
          * Whether this server supports subscribing to resource updates.
          */
@@ -224,16 +227,19 @@ export const ServerCapabilitiesSchema = z.object({
          * Whether this server supports notifications for changes to the resource list.
          */
         listChanged: z.optional(z.boolean()),
-    }).passthrough()),
+    })
+        .passthrough()),
     /**
      * Present if the server offers any tools to call.
      */
-    tools: z.optional(z.object({
+    tools: z.optional(z
+        .object({
         /**
          * Whether this server supports notifications for changes to the tool list.
          */
         listChanged: z.optional(z.boolean()),
-    }).passthrough()),
+    })
+        .passthrough()),
 });
 /**
  * After receiving an initialize request from the client, the server sends this response.
@@ -307,7 +313,7 @@ export const ResourceContentsSchema = z.object({
     /**
      * The URI of this resource.
      */
-    uri: z.string().url(),
+    uri: z.string().transform((s) => new URL(s)),
     /**
      * The MIME type of this resource, if known.
      */
@@ -332,7 +338,7 @@ export const ResourceSchema = z.object({
     /**
      * The URI of this resource.
      */
-    uri: z.string().url(),
+    uri: z.string().transform((s) => new URL(s)),
     /**
      * A human-readable name for this resource.
      *
@@ -408,7 +414,7 @@ export const ReadResourceRequestSchema = RequestSchema.extend({
         /**
          * The URI of the resource to read. The URI can use any protocol; it is up to the server how to interpret it.
          */
-        uri: z.string().url(),
+        uri: z.string().transform((s) => new URL(s)),
     }),
 });
 /**
@@ -432,7 +438,7 @@ export const SubscribeRequestSchema = RequestSchema.extend({
         /**
          * The URI of the resource to subscribe to. The URI can use any protocol; it is up to the server how to interpret it.
          */
-        uri: z.string().url(),
+        uri: z.string().transform((s) => new URL(s)),
     }),
 });
 /**
@@ -444,7 +450,7 @@ export const UnsubscribeRequestSchema = RequestSchema.extend({
         /**
          * The URI of the resource to unsubscribe from.
          */
-        uri: z.string().url(),
+        uri: z.string().transform((s) => new URL(s)),
     }),
 });
 /**
@@ -456,7 +462,7 @@ export const ResourceUpdatedNotificationSchema = NotificationSchema.extend({
         /**
          * The URI of the resource that has been updated. This might be a sub-resource of the one that the client actually subscribed to.
          */
-        uri: z.string().url(),
+        uri: z.string().transform((s) => new URL(s)),
     }),
 });
 /* Prompts */
