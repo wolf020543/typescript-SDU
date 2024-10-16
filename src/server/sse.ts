@@ -37,7 +37,9 @@ export class SSEServerTransport implements Transport {
    */
   async start(): Promise<void> {
     if (this._sseResponse) {
-      throw new Error("Already connected!");
+      throw new Error(
+        "SSEServerTransport already started! If using Server class, note that connect() calls start() automatically.",
+      );
     }
 
     this.res.writeHead(200, {

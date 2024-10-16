@@ -19,6 +19,12 @@ export class WebSocketClientTransport implements Transport {
   }
 
   start(): Promise<void> {
+    if (this._socket) {
+      throw new Error(
+        "WebSocketClientTransport already started! If using Client class, note that connect() calls start() automatically.",
+      );
+    }
+
     return new Promise((resolve, reject) => {
       this._socket = new WebSocket(this._url, SUBPROTOCOL);
 

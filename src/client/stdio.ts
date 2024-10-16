@@ -45,6 +45,12 @@ export class StdioClientTransport implements Transport {
    * Starts the server process and prepares to communicate with it.
    */
   async start(): Promise<void> {
+    if (this._process) {
+      throw new Error(
+        "StdioClientTransport already started! If using Client class, note that connect() calls start() automatically.",
+      );
+    }
+
     return new Promise((resolve, reject) => {
       this._process = spawn(
         this._serverParams.command,

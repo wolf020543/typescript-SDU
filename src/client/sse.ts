@@ -22,6 +22,12 @@ export class SSEClientTransport implements Transport {
   }
 
   start(): Promise<void> {
+    if (this._eventSource) {
+      throw new Error(
+        "SSEClientTransport already started! If using Client class, note that connect() calls start() automatically.",
+      );
+    }
+
     return new Promise((resolve, reject) => {
       this._eventSource = new EventSource(this._url.href);
       this._abortController = new AbortController();
