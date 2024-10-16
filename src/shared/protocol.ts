@@ -32,7 +32,7 @@ export class Protocol<
 > {
   private _transport?: Transport;
   private _requestMessageId = 0;
-  private _requestHandlers: Map<
+  protected _requestHandlers: Map<
     string,
     (request: JSONRPCRequest) => Promise<SendResultT>
   > = new Map();
