@@ -32,16 +32,13 @@ async function runClient(url_or_command: string, args: string[]) {
 
   if (url?.protocol === "http:" || url?.protocol === "https:") {
     clientTransport = new SSEClientTransport(new URL(url_or_command));
-    await clientTransport.start();
   } else if (url?.protocol === "ws:" || url?.protocol === "wss:") {
     clientTransport = new WebSocketClientTransport(new URL(url_or_command));
-    await clientTransport.start();
   } else {
     clientTransport = new StdioClientTransport({
       command: url_or_command,
       args,
     });
-    await clientTransport.start();
   }
 
   console.log("Connected to server.");
@@ -75,7 +72,6 @@ async function runServer(port: number | null) {
         servers = servers.filter((s) => s !== server);
       };
 
-      await transport.start();
       await server.connect(transport);
     });
 
@@ -104,7 +100,6 @@ async function runServer(port: number | null) {
     });
 
     const transport = new StdioServerTransport();
-    await transport.start();
     await server.connect(transport);
 
     console.log("Server running on stdio");

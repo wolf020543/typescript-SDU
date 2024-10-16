@@ -8,6 +8,8 @@ export interface Transport {
    * Starts processing messages on the transport, including any connection steps that might need to be taken.
    *
    * This method should only be called after callbacks are installed, or else messages may be lost.
+   *
+   * NOTE: This method should not be called explicitly when using Client, Server, or Protocol classes, as they will implicitly call start().
    */
   start(): Promise<void>;
 
