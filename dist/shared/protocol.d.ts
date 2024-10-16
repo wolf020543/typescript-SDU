@@ -1,5 +1,5 @@
 import { AnyZodObject, ZodLiteral, ZodObject, z } from "zod";
-import { Notification, Progress, Request, Result } from "../types.js";
+import { JSONRPCRequest, Notification, Progress, Request, Result } from "../types.js";
 import { Transport } from "./transport.js";
 /**
  * Callback for progress notifications.
@@ -12,7 +12,7 @@ export type ProgressCallback = (progress: Progress) => void;
 export declare class Protocol<SendRequestT extends Request, SendNotificationT extends Notification, SendResultT extends Result> {
     private _transport?;
     private _requestMessageId;
-    private _requestHandlers;
+    protected _requestHandlers: Map<string, (request: JSONRPCRequest) => Promise<SendResultT>>;
     private _notificationHandlers;
     private _responseHandlers;
     private _progressHandlers;
