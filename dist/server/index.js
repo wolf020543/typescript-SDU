@@ -39,15 +39,20 @@ export class Server extends Protocol {
     getClientVersion() {
         return this._clientVersion;
     }
-    getCapability(reqType) {
-        return this._requestHandlers.has(reqType) ? {} : undefined;
-    }
     getCapabilities() {
         return {
-            prompts: this.getCapability(ListPromptsRequestSchema.shape.method.value),
-            resources: this.getCapability(ListResourcesRequestSchema.shape.method.value),
-            tools: this.getCapability(ListToolsRequestSchema.shape.method.value),
-            logging: this.getCapability(SetLevelRequestSchema.shape.method.value),
+            prompts: this._requestHandlers.has(ListPromptsRequestSchema.shape.method.value)
+                ? {}
+                : undefined,
+            resources: this._requestHandlers.has(ListResourcesRequestSchema.shape.method.value)
+                ? {}
+                : undefined,
+            tools: this._requestHandlers.has(ListToolsRequestSchema.shape.method.value)
+                ? {}
+                : undefined,
+            logging: this._requestHandlers.has(SetLevelRequestSchema.shape.method.value)
+                ? {}
+                : undefined,
         };
     }
 }

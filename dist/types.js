@@ -130,17 +130,20 @@ export const EmptyResultSchema = ResultSchema.strict();
 /**
  * Text provided to or from an LLM.
  */
-export const TextContentSchema = z.object({
+export const TextContentSchema = z
+    .object({
     type: z.literal("text"),
     /**
      * The text content of the message.
      */
     text: z.string(),
-});
+})
+    .passthrough();
 /**
  * An image provided to or from an LLM.
  */
-export const ImageContentSchema = z.object({
+export const ImageContentSchema = z
+    .object({
     type: z.literal("image"),
     /**
      * The base64-encoded image data.
@@ -150,25 +153,31 @@ export const ImageContentSchema = z.object({
      * The MIME type of the image. Different providers may support different image types.
      */
     mimeType: z.string(),
-});
+})
+    .passthrough();
 /**
  * Describes a message issued to or received from an LLM API.
  */
-export const SamplingMessageSchema = z.object({
+export const SamplingMessageSchema = z
+    .object({
     role: z.enum(["user", "assistant"]),
     content: z.union([TextContentSchema, ImageContentSchema]),
-});
+})
+    .passthrough();
 /**
  * Describes the name and version of an MCP implementation.
  */
-export const ImplementationSchema = z.object({
+export const ImplementationSchema = z
+    .object({
     name: z.string(),
     version: z.string(),
-});
+})
+    .passthrough();
 /**
  * Capabilities a client may support. Known capabilities are defined here, in this schema, but this is not a closed set: any client can define its own, additional capabilities.
  */
-export const ClientCapabilitiesSchema = z.object({
+export const ClientCapabilitiesSchema = z
+    .object({
     /**
      * Experimental, non-standard capabilities that the client supports.
      */
@@ -177,7 +186,8 @@ export const ClientCapabilitiesSchema = z.object({
      * Present if the client supports sampling from an LLM.
      */
     sampling: z.optional(z.object({}).passthrough()),
-});
+})
+    .passthrough();
 /**
  * This request is sent from the client to the server when it first connects, asking it to begin initialization.
  */
@@ -195,7 +205,8 @@ export const InitializeRequestSchema = RequestSchema.extend({
 /**
  * Capabilities that a server may support. Known capabilities are defined here, in this schema, but this is not a closed set: any server can define its own, additional capabilities.
  */
-export const ServerCapabilitiesSchema = z.object({
+export const ServerCapabilitiesSchema = z
+    .object({
     /**
      * Experimental, non-standard capabilities that the server supports.
      */
@@ -241,7 +252,8 @@ export const ServerCapabilitiesSchema = z.object({
         listChanged: z.optional(z.boolean()),
     })
         .passthrough()),
-});
+})
+    .passthrough();
 /**
  * After receiving an initialize request from the client, the server sends this response.
  */
@@ -267,7 +279,8 @@ export const PingRequestSchema = RequestSchema.extend({
     method: z.literal("ping"),
 });
 /* Progress notifications */
-export const ProgressSchema = z.object({
+export const ProgressSchema = z
+    .object({
     /**
      * The progress thus far. This should increase every time progress is made, even if the total is unknown.
      */
@@ -276,7 +289,8 @@ export const ProgressSchema = z.object({
      * Total number of items to process (or total progress required), if known.
      */
     total: z.optional(z.number()),
-});
+})
+    .passthrough();
 /**
  * An out-of-band notification used to inform the receiver of a progress update for a long-running request.
  */
@@ -310,7 +324,8 @@ export const PaginatedResultSchema = ResultSchema.extend({
 /**
  * The contents of a specific resource or sub-resource.
  */
-export const ResourceContentsSchema = z.object({
+export const ResourceContentsSchema = z
+    .object({
     /**
      * The URI of this resource.
      */
@@ -319,7 +334,8 @@ export const ResourceContentsSchema = z.object({
      * The MIME type of this resource, if known.
      */
     mimeType: z.optional(z.string()),
-});
+})
+    .passthrough();
 export const TextResourceContentsSchema = ResourceContentsSchema.extend({
     /**
      * The text of the item. This must only be set if the item can actually be represented as text (not binary data).
@@ -335,7 +351,8 @@ export const BlobResourceContentsSchema = ResourceContentsSchema.extend({
 /**
  * A known resource that the server is capable of reading.
  */
-export const ResourceSchema = z.object({
+export const ResourceSchema = z
+    .object({
     /**
      * The URI of this resource.
      */
@@ -356,11 +373,13 @@ export const ResourceSchema = z.object({
      * The MIME type of this resource, if known.
      */
     mimeType: z.optional(z.string()),
-});
+})
+    .passthrough();
 /**
  * A template description for resources available on the server.
  */
-export const ResourceTemplateSchema = z.object({
+export const ResourceTemplateSchema = z
+    .object({
     /**
      * A URI template (according to RFC 6570) that can be used to construct resource URIs.
      */
@@ -381,7 +400,8 @@ export const ResourceTemplateSchema = z.object({
      * The MIME type for all resources that match this template. This should only be included if all resources matching this template have the same type.
      */
     mimeType: z.optional(z.string()),
-});
+})
+    .passthrough();
 /**
  * Sent from the client to request a list of resources the server has.
  */
@@ -459,18 +479,21 @@ export const UnsubscribeRequestSchema = RequestSchema.extend({
  */
 export const ResourceUpdatedNotificationSchema = NotificationSchema.extend({
     method: z.literal("notifications/resources/updated"),
-    params: z.object({
+    params: z
+        .object({
         /**
          * The URI of the resource that has been updated. This might be a sub-resource of the one that the client actually subscribed to.
          */
         uri: z.string(),
-    }),
+    })
+        .passthrough(),
 });
 /* Prompts */
 /**
  * Describes an argument that a prompt can accept.
  */
-export const PromptArgumentSchema = z.object({
+export const PromptArgumentSchema = z
+    .object({
     /**
      * The name of the argument.
      */
@@ -483,11 +506,13 @@ export const PromptArgumentSchema = z.object({
      * Whether this argument must be provided.
      */
     required: z.optional(z.boolean()),
-});
+})
+    .passthrough();
 /**
  * A prompt or prompt template that the server offers.
  */
-export const PromptSchema = z.object({
+export const PromptSchema = z
+    .object({
     /**
      * The name of the prompt or prompt template.
      */
@@ -500,7 +525,8 @@ export const PromptSchema = z.object({
      * A list of arguments to use for templating the prompt.
      */
     arguments: z.optional(z.array(PromptArgumentSchema)),
-});
+})
+    .passthrough();
 /**
  * Sent from the client to request a list of prompts and prompt templates the server has.
  */
@@ -549,7 +575,8 @@ export const PromptListChangedNotificationSchema = NotificationSchema.extend({
 /**
  * Definition for a tool the client can call.
  */
-export const ToolSchema = z.object({
+export const ToolSchema = z
+    .object({
     /**
      * The name of the tool.
      */
@@ -561,11 +588,14 @@ export const ToolSchema = z.object({
     /**
      * A JSON Schema object defining the expected parameters for the tool.
      */
-    inputSchema: z.object({
+    inputSchema: z
+        .object({
         type: z.literal("object"),
         properties: z.optional(z.object({}).passthrough()),
-    }),
-});
+    })
+        .passthrough(),
+})
+    .passthrough();
 /**
  * Sent from the client to request a list of tools the server has.
  */
@@ -622,7 +652,8 @@ export const SetLevelRequestSchema = RequestSchema.extend({
  */
 export const LoggingMessageNotificationSchema = NotificationSchema.extend({
     method: z.literal("notifications/message"),
-    params: z.object({
+    params: z
+        .object({
         /**
          * The severity of this log message.
          */
@@ -635,7 +666,8 @@ export const LoggingMessageNotificationSchema = NotificationSchema.extend({
          * The data to be logged, such as a string message or an object. Any JSON serializable type is allowed here.
          */
         data: z.unknown(),
-    }),
+    })
+        .passthrough(),
 });
 /* Sampling */
 /**
@@ -687,23 +719,27 @@ export const CreateMessageResultSchema = ResultSchema.extend({
 /**
  * A reference to a resource or resource template definition.
  */
-export const ResourceReferenceSchema = z.object({
+export const ResourceReferenceSchema = z
+    .object({
     type: z.literal("ref/resource"),
     /**
      * The URI or URI template of the resource.
      */
     uri: z.string(),
-});
+})
+    .passthrough();
 /**
  * Identifies a prompt.
  */
-export const PromptReferenceSchema = z.object({
+export const PromptReferenceSchema = z
+    .object({
     type: z.literal("ref/prompt"),
     /**
      * The name of the prompt or prompt template
      */
     name: z.string(),
-});
+})
+    .passthrough();
 /**
  * A request from the client to the server, to ask for completion options.
  */
@@ -714,7 +750,8 @@ export const CompleteRequestSchema = RequestSchema.extend({
         /**
          * The argument's information
          */
-        argument: z.object({
+        argument: z
+            .object({
             /**
              * The name of the argument
              */
@@ -723,14 +760,16 @@ export const CompleteRequestSchema = RequestSchema.extend({
              * The value of the argument to use for completion matching.
              */
             value: z.string(),
-        }),
+        })
+            .passthrough(),
     }),
 });
 /**
  * The server's response to a completion/complete request
  */
 export const CompleteResultSchema = ResultSchema.extend({
-    completion: z.object({
+    completion: z
+        .object({
         /**
          * An array of completion values. Must not exceed 100 items.
          */
@@ -743,7 +782,8 @@ export const CompleteResultSchema = ResultSchema.extend({
          * Indicates whether there are additional completion options beyond those provided in the current response, even if the exact total is unknown.
          */
         hasMore: z.optional(z.boolean()),
-    }),
+    })
+        .passthrough(),
 });
 /* Client messages */
 export const ClientRequestSchema = z.union([
