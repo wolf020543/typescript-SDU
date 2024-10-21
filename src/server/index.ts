@@ -1,7 +1,6 @@
 import { Protocol } from "../shared/protocol.js";
 import {
   ClientCapabilities,
-  ClientRequest,
   Implementation,
   InitializedNotificationSchema,
   InitializeRequest,
