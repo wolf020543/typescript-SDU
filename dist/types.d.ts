@@ -639,13 +639,19 @@ export declare const TextContentSchema: z.ZodObject<{
      * The text content of the message.
      */
     text: z.ZodString;
-}, "strip", z.ZodTypeAny, {
-    type: "text";
-    text: string;
-}, {
-    type: "text";
-    text: string;
-}>;
+}, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+    type: z.ZodLiteral<"text">;
+    /**
+     * The text content of the message.
+     */
+    text: z.ZodString;
+}, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+    type: z.ZodLiteral<"text">;
+    /**
+     * The text content of the message.
+     */
+    text: z.ZodString;
+}, z.ZodTypeAny, "passthrough">>;
 /**
  * An image provided to or from an LLM.
  */
@@ -659,15 +665,27 @@ export declare const ImageContentSchema: z.ZodObject<{
      * The MIME type of the image. Different providers may support different image types.
      */
     mimeType: z.ZodString;
-}, "strip", z.ZodTypeAny, {
-    type: "image";
-    data: string;
-    mimeType: string;
-}, {
-    type: "image";
-    data: string;
-    mimeType: string;
-}>;
+}, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+    type: z.ZodLiteral<"image">;
+    /**
+     * The base64-encoded image data.
+     */
+    data: z.ZodString;
+    /**
+     * The MIME type of the image. Different providers may support different image types.
+     */
+    mimeType: z.ZodString;
+}, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+    type: z.ZodLiteral<"image">;
+    /**
+     * The base64-encoded image data.
+     */
+    data: z.ZodString;
+    /**
+     * The MIME type of the image. Different providers may support different image types.
+     */
+    mimeType: z.ZodString;
+}, z.ZodTypeAny, "passthrough">>;
 /**
  * Describes a message issued to or received from an LLM API.
  */
@@ -679,13 +697,19 @@ export declare const SamplingMessageSchema: z.ZodObject<{
          * The text content of the message.
          */
         text: z.ZodString;
-    }, "strip", z.ZodTypeAny, {
-        type: "text";
-        text: string;
-    }, {
-        type: "text";
-        text: string;
-    }>, z.ZodObject<{
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        type: z.ZodLiteral<"text">;
+        /**
+         * The text content of the message.
+         */
+        text: z.ZodString;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        type: z.ZodLiteral<"text">;
+        /**
+         * The text content of the message.
+         */
+        text: z.ZodString;
+    }, z.ZodTypeAny, "passthrough">>, z.ZodObject<{
         type: z.ZodLiteral<"image">;
         /**
          * The base64-encoded image data.
@@ -695,49 +719,143 @@ export declare const SamplingMessageSchema: z.ZodObject<{
          * The MIME type of the image. Different providers may support different image types.
          */
         mimeType: z.ZodString;
-    }, "strip", z.ZodTypeAny, {
-        type: "image";
-        data: string;
-        mimeType: string;
-    }, {
-        type: "image";
-        data: string;
-        mimeType: string;
-    }>]>;
-}, "strip", z.ZodTypeAny, {
-    role: "user" | "assistant";
-    content: {
-        type: "text";
-        text: string;
-    } | {
-        type: "image";
-        data: string;
-        mimeType: string;
-    };
-}, {
-    role: "user" | "assistant";
-    content: {
-        type: "text";
-        text: string;
-    } | {
-        type: "image";
-        data: string;
-        mimeType: string;
-    };
-}>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        type: z.ZodLiteral<"image">;
+        /**
+         * The base64-encoded image data.
+         */
+        data: z.ZodString;
+        /**
+         * The MIME type of the image. Different providers may support different image types.
+         */
+        mimeType: z.ZodString;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        type: z.ZodLiteral<"image">;
+        /**
+         * The base64-encoded image data.
+         */
+        data: z.ZodString;
+        /**
+         * The MIME type of the image. Different providers may support different image types.
+         */
+        mimeType: z.ZodString;
+    }, z.ZodTypeAny, "passthrough">>]>;
+}, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+    role: z.ZodEnum<["user", "assistant"]>;
+    content: z.ZodUnion<[z.ZodObject<{
+        type: z.ZodLiteral<"text">;
+        /**
+         * The text content of the message.
+         */
+        text: z.ZodString;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        type: z.ZodLiteral<"text">;
+        /**
+         * The text content of the message.
+         */
+        text: z.ZodString;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        type: z.ZodLiteral<"text">;
+        /**
+         * The text content of the message.
+         */
+        text: z.ZodString;
+    }, z.ZodTypeAny, "passthrough">>, z.ZodObject<{
+        type: z.ZodLiteral<"image">;
+        /**
+         * The base64-encoded image data.
+         */
+        data: z.ZodString;
+        /**
+         * The MIME type of the image. Different providers may support different image types.
+         */
+        mimeType: z.ZodString;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        type: z.ZodLiteral<"image">;
+        /**
+         * The base64-encoded image data.
+         */
+        data: z.ZodString;
+        /**
+         * The MIME type of the image. Different providers may support different image types.
+         */
+        mimeType: z.ZodString;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        type: z.ZodLiteral<"image">;
+        /**
+         * The base64-encoded image data.
+         */
+        data: z.ZodString;
+        /**
+         * The MIME type of the image. Different providers may support different image types.
+         */
+        mimeType: z.ZodString;
+    }, z.ZodTypeAny, "passthrough">>]>;
+}, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+    role: z.ZodEnum<["user", "assistant"]>;
+    content: z.ZodUnion<[z.ZodObject<{
+        type: z.ZodLiteral<"text">;
+        /**
+         * The text content of the message.
+         */
+        text: z.ZodString;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        type: z.ZodLiteral<"text">;
+        /**
+         * The text content of the message.
+         */
+        text: z.ZodString;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        type: z.ZodLiteral<"text">;
+        /**
+         * The text content of the message.
+         */
+        text: z.ZodString;
+    }, z.ZodTypeAny, "passthrough">>, z.ZodObject<{
+        type: z.ZodLiteral<"image">;
+        /**
+         * The base64-encoded image data.
+         */
+        data: z.ZodString;
+        /**
+         * The MIME type of the image. Different providers may support different image types.
+         */
+        mimeType: z.ZodString;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        type: z.ZodLiteral<"image">;
+        /**
+         * The base64-encoded image data.
+         */
+        data: z.ZodString;
+        /**
+         * The MIME type of the image. Different providers may support different image types.
+         */
+        mimeType: z.ZodString;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        type: z.ZodLiteral<"image">;
+        /**
+         * The base64-encoded image data.
+         */
+        data: z.ZodString;
+        /**
+         * The MIME type of the image. Different providers may support different image types.
+         */
+        mimeType: z.ZodString;
+    }, z.ZodTypeAny, "passthrough">>]>;
+}, z.ZodTypeAny, "passthrough">>;
 /**
  * Describes the name and version of an MCP implementation.
  */
 export declare const ImplementationSchema: z.ZodObject<{
     name: z.ZodString;
     version: z.ZodString;
-}, "strip", z.ZodTypeAny, {
-    name: string;
-    version: string;
-}, {
-    name: string;
-    version: string;
-}>;
+}, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+    name: z.ZodString;
+    version: z.ZodString;
+}, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+    name: z.ZodString;
+    version: z.ZodString;
+}, z.ZodTypeAny, "passthrough">>;
 /**
  * Capabilities a client may support. Known capabilities are defined here, in this schema, but this is not a closed set: any client can define its own, additional capabilities.
  */
@@ -750,13 +868,25 @@ export declare const ClientCapabilitiesSchema: z.ZodObject<{
      * Present if the client supports sampling from an LLM.
      */
     sampling: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
-}, "strip", z.ZodTypeAny, {
-    experimental?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-    sampling?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-}, {
-    experimental?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-    sampling?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-}>;
+}, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+    /**
+     * Experimental, non-standard capabilities that the client supports.
+     */
+    experimental: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+    /**
+     * Present if the client supports sampling from an LLM.
+     */
+    sampling: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+}, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+    /**
+     * Experimental, non-standard capabilities that the client supports.
+     */
+    experimental: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+    /**
+     * Present if the client supports sampling from an LLM.
+     */
+    sampling: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+}, z.ZodTypeAny, "passthrough">>;
 /**
  * This request is sent from the client to the server when it first connects, asking it to begin initialization.
  */
@@ -847,23 +977,35 @@ export declare const InitializeRequestSchema: z.ZodObject<z.objectUtil.extendSha
              * Present if the client supports sampling from an LLM.
              */
             sampling: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
-        }, "strip", z.ZodTypeAny, {
-            experimental?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-            sampling?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        }, {
-            experimental?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-            sampling?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        }>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * Experimental, non-standard capabilities that the client supports.
+             */
+            experimental: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+            /**
+             * Present if the client supports sampling from an LLM.
+             */
+            sampling: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * Experimental, non-standard capabilities that the client supports.
+             */
+            experimental: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+            /**
+             * Present if the client supports sampling from an LLM.
+             */
+            sampling: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">>;
         clientInfo: z.ZodObject<{
             name: z.ZodString;
             version: z.ZodString;
-        }, "strip", z.ZodTypeAny, {
-            name: string;
-            version: string;
-        }, {
-            name: string;
-            version: string;
-        }>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            name: z.ZodString;
+            version: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            name: z.ZodString;
+            version: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">>;
     }>, "passthrough", z.ZodTypeAny, z.objectOutputType<z.objectUtil.extendShape<{
         _meta: z.ZodOptional<z.ZodObject<{
             /**
@@ -895,23 +1037,35 @@ export declare const InitializeRequestSchema: z.ZodObject<z.objectUtil.extendSha
              * Present if the client supports sampling from an LLM.
              */
             sampling: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
-        }, "strip", z.ZodTypeAny, {
-            experimental?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-            sampling?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        }, {
-            experimental?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-            sampling?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        }>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * Experimental, non-standard capabilities that the client supports.
+             */
+            experimental: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+            /**
+             * Present if the client supports sampling from an LLM.
+             */
+            sampling: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * Experimental, non-standard capabilities that the client supports.
+             */
+            experimental: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+            /**
+             * Present if the client supports sampling from an LLM.
+             */
+            sampling: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">>;
         clientInfo: z.ZodObject<{
             name: z.ZodString;
             version: z.ZodString;
-        }, "strip", z.ZodTypeAny, {
-            name: string;
-            version: string;
-        }, {
-            name: string;
-            version: string;
-        }>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            name: z.ZodString;
+            version: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            name: z.ZodString;
+            version: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">>;
     }>, z.ZodTypeAny, "passthrough">, z.objectInputType<z.objectUtil.extendShape<{
         _meta: z.ZodOptional<z.ZodObject<{
             /**
@@ -943,23 +1097,35 @@ export declare const InitializeRequestSchema: z.ZodObject<z.objectUtil.extendSha
              * Present if the client supports sampling from an LLM.
              */
             sampling: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
-        }, "strip", z.ZodTypeAny, {
-            experimental?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-            sampling?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        }, {
-            experimental?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-            sampling?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        }>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * Experimental, non-standard capabilities that the client supports.
+             */
+            experimental: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+            /**
+             * Present if the client supports sampling from an LLM.
+             */
+            sampling: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * Experimental, non-standard capabilities that the client supports.
+             */
+            experimental: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+            /**
+             * Present if the client supports sampling from an LLM.
+             */
+            sampling: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">>;
         clientInfo: z.ZodObject<{
             name: z.ZodString;
             version: z.ZodString;
-        }, "strip", z.ZodTypeAny, {
-            name: string;
-            version: string;
-        }, {
-            name: string;
-            version: string;
-        }>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            name: z.ZodString;
+            version: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            name: z.ZodString;
+            version: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">>;
     }>, z.ZodTypeAny, "passthrough">>;
 }>, "strip", z.ZodTypeAny, {
     params: {
@@ -967,10 +1133,14 @@ export declare const InitializeRequestSchema: z.ZodObject<z.objectUtil.extendSha
         capabilities: {
             experimental?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
             sampling?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
+        } & {
+            [k: string]: unknown;
         };
         clientInfo: {
             name: string;
             version: string;
+        } & {
+            [k: string]: unknown;
         };
         _meta?: z.objectOutputType<{
             /**
@@ -988,10 +1158,14 @@ export declare const InitializeRequestSchema: z.ZodObject<z.objectUtil.extendSha
         capabilities: {
             experimental?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
             sampling?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
+        } & {
+            [k: string]: unknown;
         };
         clientInfo: {
             name: string;
             version: string;
+        } & {
+            [k: string]: unknown;
         };
         _meta?: z.objectInputType<{
             /**
@@ -1085,16 +1259,38 @@ export declare const ServerCapabilitiesSchema: z.ZodObject<{
          */
         listChanged: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">>>;
-}, "strip", z.ZodTypeAny, {
-    experimental?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-    logging?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-    prompts?: z.objectOutputType<{
+}, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+    /**
+     * Experimental, non-standard capabilities that the server supports.
+     */
+    experimental: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+    /**
+     * Present if the server supports sending log messages to the client.
+     */
+    logging: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+    /**
+     * Present if the server offers any prompt templates.
+     */
+    prompts: z.ZodOptional<z.ZodObject<{
         /**
          * Whether this server supports notifications for changes to the prompt list.
          */
         listChanged: z.ZodOptional<z.ZodBoolean>;
-    }, z.ZodTypeAny, "passthrough"> | undefined;
-    resources?: z.objectOutputType<{
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        /**
+         * Whether this server supports notifications for changes to the prompt list.
+         */
+        listChanged: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        /**
+         * Whether this server supports notifications for changes to the prompt list.
+         */
+        listChanged: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">>>;
+    /**
+     * Present if the server offers any resources to read.
+     */
+    resources: z.ZodOptional<z.ZodObject<{
         /**
          * Whether this server supports subscribing to resource updates.
          */
@@ -1103,23 +1299,7 @@ export declare const ServerCapabilitiesSchema: z.ZodObject<{
          * Whether this server supports notifications for changes to the resource list.
          */
         listChanged: z.ZodOptional<z.ZodBoolean>;
-    }, z.ZodTypeAny, "passthrough"> | undefined;
-    tools?: z.objectOutputType<{
-        /**
-         * Whether this server supports notifications for changes to the tool list.
-         */
-        listChanged: z.ZodOptional<z.ZodBoolean>;
-    }, z.ZodTypeAny, "passthrough"> | undefined;
-}, {
-    experimental?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-    logging?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-    prompts?: z.objectInputType<{
-        /**
-         * Whether this server supports notifications for changes to the prompt list.
-         */
-        listChanged: z.ZodOptional<z.ZodBoolean>;
-    }, z.ZodTypeAny, "passthrough"> | undefined;
-    resources?: z.objectInputType<{
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
         /**
          * Whether this server supports subscribing to resource updates.
          */
@@ -1128,14 +1308,114 @@ export declare const ServerCapabilitiesSchema: z.ZodObject<{
          * Whether this server supports notifications for changes to the resource list.
          */
         listChanged: z.ZodOptional<z.ZodBoolean>;
-    }, z.ZodTypeAny, "passthrough"> | undefined;
-    tools?: z.objectInputType<{
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        /**
+         * Whether this server supports subscribing to resource updates.
+         */
+        subscribe: z.ZodOptional<z.ZodBoolean>;
+        /**
+         * Whether this server supports notifications for changes to the resource list.
+         */
+        listChanged: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">>>;
+    /**
+     * Present if the server offers any tools to call.
+     */
+    tools: z.ZodOptional<z.ZodObject<{
         /**
          * Whether this server supports notifications for changes to the tool list.
          */
         listChanged: z.ZodOptional<z.ZodBoolean>;
-    }, z.ZodTypeAny, "passthrough"> | undefined;
-}>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        /**
+         * Whether this server supports notifications for changes to the tool list.
+         */
+        listChanged: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        /**
+         * Whether this server supports notifications for changes to the tool list.
+         */
+        listChanged: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">>>;
+}, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+    /**
+     * Experimental, non-standard capabilities that the server supports.
+     */
+    experimental: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+    /**
+     * Present if the server supports sending log messages to the client.
+     */
+    logging: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+    /**
+     * Present if the server offers any prompt templates.
+     */
+    prompts: z.ZodOptional<z.ZodObject<{
+        /**
+         * Whether this server supports notifications for changes to the prompt list.
+         */
+        listChanged: z.ZodOptional<z.ZodBoolean>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        /**
+         * Whether this server supports notifications for changes to the prompt list.
+         */
+        listChanged: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        /**
+         * Whether this server supports notifications for changes to the prompt list.
+         */
+        listChanged: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">>>;
+    /**
+     * Present if the server offers any resources to read.
+     */
+    resources: z.ZodOptional<z.ZodObject<{
+        /**
+         * Whether this server supports subscribing to resource updates.
+         */
+        subscribe: z.ZodOptional<z.ZodBoolean>;
+        /**
+         * Whether this server supports notifications for changes to the resource list.
+         */
+        listChanged: z.ZodOptional<z.ZodBoolean>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        /**
+         * Whether this server supports subscribing to resource updates.
+         */
+        subscribe: z.ZodOptional<z.ZodBoolean>;
+        /**
+         * Whether this server supports notifications for changes to the resource list.
+         */
+        listChanged: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        /**
+         * Whether this server supports subscribing to resource updates.
+         */
+        subscribe: z.ZodOptional<z.ZodBoolean>;
+        /**
+         * Whether this server supports notifications for changes to the resource list.
+         */
+        listChanged: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">>>;
+    /**
+     * Present if the server offers any tools to call.
+     */
+    tools: z.ZodOptional<z.ZodObject<{
+        /**
+         * Whether this server supports notifications for changes to the tool list.
+         */
+        listChanged: z.ZodOptional<z.ZodBoolean>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        /**
+         * Whether this server supports notifications for changes to the tool list.
+         */
+        listChanged: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        /**
+         * Whether this server supports notifications for changes to the tool list.
+         */
+        listChanged: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">>>;
+}, z.ZodTypeAny, "passthrough">>;
 /**
  * After receiving an initialize request from the client, the server sends this response.
  */
@@ -1227,16 +1507,38 @@ export declare const InitializeResultSchema: z.ZodObject<z.objectUtil.extendShap
              */
             listChanged: z.ZodOptional<z.ZodBoolean>;
         }, z.ZodTypeAny, "passthrough">>>;
-    }, "strip", z.ZodTypeAny, {
-        experimental?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        logging?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        prompts?: z.objectOutputType<{
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        /**
+         * Experimental, non-standard capabilities that the server supports.
+         */
+        experimental: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        /**
+         * Present if the server supports sending log messages to the client.
+         */
+        logging: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        /**
+         * Present if the server offers any prompt templates.
+         */
+        prompts: z.ZodOptional<z.ZodObject<{
             /**
              * Whether this server supports notifications for changes to the prompt list.
              */
             listChanged: z.ZodOptional<z.ZodBoolean>;
-        }, z.ZodTypeAny, "passthrough"> | undefined;
-        resources?: z.objectOutputType<{
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * Whether this server supports notifications for changes to the prompt list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * Whether this server supports notifications for changes to the prompt list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">>>;
+        /**
+         * Present if the server offers any resources to read.
+         */
+        resources: z.ZodOptional<z.ZodObject<{
             /**
              * Whether this server supports subscribing to resource updates.
              */
@@ -1245,23 +1547,7 @@ export declare const InitializeResultSchema: z.ZodObject<z.objectUtil.extendShap
              * Whether this server supports notifications for changes to the resource list.
              */
             listChanged: z.ZodOptional<z.ZodBoolean>;
-        }, z.ZodTypeAny, "passthrough"> | undefined;
-        tools?: z.objectOutputType<{
-            /**
-             * Whether this server supports notifications for changes to the tool list.
-             */
-            listChanged: z.ZodOptional<z.ZodBoolean>;
-        }, z.ZodTypeAny, "passthrough"> | undefined;
-    }, {
-        experimental?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        logging?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        prompts?: z.objectInputType<{
-            /**
-             * Whether this server supports notifications for changes to the prompt list.
-             */
-            listChanged: z.ZodOptional<z.ZodBoolean>;
-        }, z.ZodTypeAny, "passthrough"> | undefined;
-        resources?: z.objectInputType<{
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
             /**
              * Whether this server supports subscribing to resource updates.
              */
@@ -1270,24 +1556,124 @@ export declare const InitializeResultSchema: z.ZodObject<z.objectUtil.extendShap
              * Whether this server supports notifications for changes to the resource list.
              */
             listChanged: z.ZodOptional<z.ZodBoolean>;
-        }, z.ZodTypeAny, "passthrough"> | undefined;
-        tools?: z.objectInputType<{
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * Whether this server supports subscribing to resource updates.
+             */
+            subscribe: z.ZodOptional<z.ZodBoolean>;
+            /**
+             * Whether this server supports notifications for changes to the resource list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">>>;
+        /**
+         * Present if the server offers any tools to call.
+         */
+        tools: z.ZodOptional<z.ZodObject<{
             /**
              * Whether this server supports notifications for changes to the tool list.
              */
             listChanged: z.ZodOptional<z.ZodBoolean>;
-        }, z.ZodTypeAny, "passthrough"> | undefined;
-    }>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * Whether this server supports notifications for changes to the tool list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * Whether this server supports notifications for changes to the tool list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">>>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        /**
+         * Experimental, non-standard capabilities that the server supports.
+         */
+        experimental: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        /**
+         * Present if the server supports sending log messages to the client.
+         */
+        logging: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        /**
+         * Present if the server offers any prompt templates.
+         */
+        prompts: z.ZodOptional<z.ZodObject<{
+            /**
+             * Whether this server supports notifications for changes to the prompt list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * Whether this server supports notifications for changes to the prompt list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * Whether this server supports notifications for changes to the prompt list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">>>;
+        /**
+         * Present if the server offers any resources to read.
+         */
+        resources: z.ZodOptional<z.ZodObject<{
+            /**
+             * Whether this server supports subscribing to resource updates.
+             */
+            subscribe: z.ZodOptional<z.ZodBoolean>;
+            /**
+             * Whether this server supports notifications for changes to the resource list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * Whether this server supports subscribing to resource updates.
+             */
+            subscribe: z.ZodOptional<z.ZodBoolean>;
+            /**
+             * Whether this server supports notifications for changes to the resource list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * Whether this server supports subscribing to resource updates.
+             */
+            subscribe: z.ZodOptional<z.ZodBoolean>;
+            /**
+             * Whether this server supports notifications for changes to the resource list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">>>;
+        /**
+         * Present if the server offers any tools to call.
+         */
+        tools: z.ZodOptional<z.ZodObject<{
+            /**
+             * Whether this server supports notifications for changes to the tool list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * Whether this server supports notifications for changes to the tool list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * Whether this server supports notifications for changes to the tool list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">>>;
+    }, z.ZodTypeAny, "passthrough">>;
     serverInfo: z.ZodObject<{
         name: z.ZodString;
         version: z.ZodString;
-    }, "strip", z.ZodTypeAny, {
-        name: string;
-        version: string;
-    }, {
-        name: string;
-        version: string;
-    }>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        name: z.ZodString;
+        version: z.ZodString;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        name: z.ZodString;
+        version: z.ZodString;
+    }, z.ZodTypeAny, "passthrough">>;
 }>, "passthrough", z.ZodTypeAny, z.objectOutputType<z.objectUtil.extendShape<{
     /**
      * This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses.
@@ -1376,16 +1762,38 @@ export declare const InitializeResultSchema: z.ZodObject<z.objectUtil.extendShap
              */
             listChanged: z.ZodOptional<z.ZodBoolean>;
         }, z.ZodTypeAny, "passthrough">>>;
-    }, "strip", z.ZodTypeAny, {
-        experimental?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        logging?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        prompts?: z.objectOutputType<{
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        /**
+         * Experimental, non-standard capabilities that the server supports.
+         */
+        experimental: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        /**
+         * Present if the server supports sending log messages to the client.
+         */
+        logging: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        /**
+         * Present if the server offers any prompt templates.
+         */
+        prompts: z.ZodOptional<z.ZodObject<{
             /**
              * Whether this server supports notifications for changes to the prompt list.
              */
             listChanged: z.ZodOptional<z.ZodBoolean>;
-        }, z.ZodTypeAny, "passthrough"> | undefined;
-        resources?: z.objectOutputType<{
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * Whether this server supports notifications for changes to the prompt list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * Whether this server supports notifications for changes to the prompt list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">>>;
+        /**
+         * Present if the server offers any resources to read.
+         */
+        resources: z.ZodOptional<z.ZodObject<{
             /**
              * Whether this server supports subscribing to resource updates.
              */
@@ -1394,23 +1802,7 @@ export declare const InitializeResultSchema: z.ZodObject<z.objectUtil.extendShap
              * Whether this server supports notifications for changes to the resource list.
              */
             listChanged: z.ZodOptional<z.ZodBoolean>;
-        }, z.ZodTypeAny, "passthrough"> | undefined;
-        tools?: z.objectOutputType<{
-            /**
-             * Whether this server supports notifications for changes to the tool list.
-             */
-            listChanged: z.ZodOptional<z.ZodBoolean>;
-        }, z.ZodTypeAny, "passthrough"> | undefined;
-    }, {
-        experimental?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        logging?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        prompts?: z.objectInputType<{
-            /**
-             * Whether this server supports notifications for changes to the prompt list.
-             */
-            listChanged: z.ZodOptional<z.ZodBoolean>;
-        }, z.ZodTypeAny, "passthrough"> | undefined;
-        resources?: z.objectInputType<{
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
             /**
              * Whether this server supports subscribing to resource updates.
              */
@@ -1419,24 +1811,124 @@ export declare const InitializeResultSchema: z.ZodObject<z.objectUtil.extendShap
              * Whether this server supports notifications for changes to the resource list.
              */
             listChanged: z.ZodOptional<z.ZodBoolean>;
-        }, z.ZodTypeAny, "passthrough"> | undefined;
-        tools?: z.objectInputType<{
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * Whether this server supports subscribing to resource updates.
+             */
+            subscribe: z.ZodOptional<z.ZodBoolean>;
+            /**
+             * Whether this server supports notifications for changes to the resource list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">>>;
+        /**
+         * Present if the server offers any tools to call.
+         */
+        tools: z.ZodOptional<z.ZodObject<{
             /**
              * Whether this server supports notifications for changes to the tool list.
              */
             listChanged: z.ZodOptional<z.ZodBoolean>;
-        }, z.ZodTypeAny, "passthrough"> | undefined;
-    }>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * Whether this server supports notifications for changes to the tool list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * Whether this server supports notifications for changes to the tool list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">>>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        /**
+         * Experimental, non-standard capabilities that the server supports.
+         */
+        experimental: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        /**
+         * Present if the server supports sending log messages to the client.
+         */
+        logging: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        /**
+         * Present if the server offers any prompt templates.
+         */
+        prompts: z.ZodOptional<z.ZodObject<{
+            /**
+             * Whether this server supports notifications for changes to the prompt list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * Whether this server supports notifications for changes to the prompt list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * Whether this server supports notifications for changes to the prompt list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">>>;
+        /**
+         * Present if the server offers any resources to read.
+         */
+        resources: z.ZodOptional<z.ZodObject<{
+            /**
+             * Whether this server supports subscribing to resource updates.
+             */
+            subscribe: z.ZodOptional<z.ZodBoolean>;
+            /**
+             * Whether this server supports notifications for changes to the resource list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * Whether this server supports subscribing to resource updates.
+             */
+            subscribe: z.ZodOptional<z.ZodBoolean>;
+            /**
+             * Whether this server supports notifications for changes to the resource list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * Whether this server supports subscribing to resource updates.
+             */
+            subscribe: z.ZodOptional<z.ZodBoolean>;
+            /**
+             * Whether this server supports notifications for changes to the resource list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">>>;
+        /**
+         * Present if the server offers any tools to call.
+         */
+        tools: z.ZodOptional<z.ZodObject<{
+            /**
+             * Whether this server supports notifications for changes to the tool list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * Whether this server supports notifications for changes to the tool list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * Whether this server supports notifications for changes to the tool list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">>>;
+    }, z.ZodTypeAny, "passthrough">>;
     serverInfo: z.ZodObject<{
         name: z.ZodString;
         version: z.ZodString;
-    }, "strip", z.ZodTypeAny, {
-        name: string;
-        version: string;
-    }, {
-        name: string;
-        version: string;
-    }>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        name: z.ZodString;
+        version: z.ZodString;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        name: z.ZodString;
+        version: z.ZodString;
+    }, z.ZodTypeAny, "passthrough">>;
 }>, z.ZodTypeAny, "passthrough">, z.objectInputType<z.objectUtil.extendShape<{
     /**
      * This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses.
@@ -1525,16 +2017,38 @@ export declare const InitializeResultSchema: z.ZodObject<z.objectUtil.extendShap
              */
             listChanged: z.ZodOptional<z.ZodBoolean>;
         }, z.ZodTypeAny, "passthrough">>>;
-    }, "strip", z.ZodTypeAny, {
-        experimental?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        logging?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        prompts?: z.objectOutputType<{
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        /**
+         * Experimental, non-standard capabilities that the server supports.
+         */
+        experimental: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        /**
+         * Present if the server supports sending log messages to the client.
+         */
+        logging: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        /**
+         * Present if the server offers any prompt templates.
+         */
+        prompts: z.ZodOptional<z.ZodObject<{
             /**
              * Whether this server supports notifications for changes to the prompt list.
              */
             listChanged: z.ZodOptional<z.ZodBoolean>;
-        }, z.ZodTypeAny, "passthrough"> | undefined;
-        resources?: z.objectOutputType<{
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * Whether this server supports notifications for changes to the prompt list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * Whether this server supports notifications for changes to the prompt list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">>>;
+        /**
+         * Present if the server offers any resources to read.
+         */
+        resources: z.ZodOptional<z.ZodObject<{
             /**
              * Whether this server supports subscribing to resource updates.
              */
@@ -1543,23 +2057,7 @@ export declare const InitializeResultSchema: z.ZodObject<z.objectUtil.extendShap
              * Whether this server supports notifications for changes to the resource list.
              */
             listChanged: z.ZodOptional<z.ZodBoolean>;
-        }, z.ZodTypeAny, "passthrough"> | undefined;
-        tools?: z.objectOutputType<{
-            /**
-             * Whether this server supports notifications for changes to the tool list.
-             */
-            listChanged: z.ZodOptional<z.ZodBoolean>;
-        }, z.ZodTypeAny, "passthrough"> | undefined;
-    }, {
-        experimental?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        logging?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        prompts?: z.objectInputType<{
-            /**
-             * Whether this server supports notifications for changes to the prompt list.
-             */
-            listChanged: z.ZodOptional<z.ZodBoolean>;
-        }, z.ZodTypeAny, "passthrough"> | undefined;
-        resources?: z.objectInputType<{
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
             /**
              * Whether this server supports subscribing to resource updates.
              */
@@ -1568,24 +2066,124 @@ export declare const InitializeResultSchema: z.ZodObject<z.objectUtil.extendShap
              * Whether this server supports notifications for changes to the resource list.
              */
             listChanged: z.ZodOptional<z.ZodBoolean>;
-        }, z.ZodTypeAny, "passthrough"> | undefined;
-        tools?: z.objectInputType<{
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * Whether this server supports subscribing to resource updates.
+             */
+            subscribe: z.ZodOptional<z.ZodBoolean>;
+            /**
+             * Whether this server supports notifications for changes to the resource list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">>>;
+        /**
+         * Present if the server offers any tools to call.
+         */
+        tools: z.ZodOptional<z.ZodObject<{
             /**
              * Whether this server supports notifications for changes to the tool list.
              */
             listChanged: z.ZodOptional<z.ZodBoolean>;
-        }, z.ZodTypeAny, "passthrough"> | undefined;
-    }>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * Whether this server supports notifications for changes to the tool list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * Whether this server supports notifications for changes to the tool list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">>>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        /**
+         * Experimental, non-standard capabilities that the server supports.
+         */
+        experimental: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        /**
+         * Present if the server supports sending log messages to the client.
+         */
+        logging: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        /**
+         * Present if the server offers any prompt templates.
+         */
+        prompts: z.ZodOptional<z.ZodObject<{
+            /**
+             * Whether this server supports notifications for changes to the prompt list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * Whether this server supports notifications for changes to the prompt list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * Whether this server supports notifications for changes to the prompt list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">>>;
+        /**
+         * Present if the server offers any resources to read.
+         */
+        resources: z.ZodOptional<z.ZodObject<{
+            /**
+             * Whether this server supports subscribing to resource updates.
+             */
+            subscribe: z.ZodOptional<z.ZodBoolean>;
+            /**
+             * Whether this server supports notifications for changes to the resource list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * Whether this server supports subscribing to resource updates.
+             */
+            subscribe: z.ZodOptional<z.ZodBoolean>;
+            /**
+             * Whether this server supports notifications for changes to the resource list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * Whether this server supports subscribing to resource updates.
+             */
+            subscribe: z.ZodOptional<z.ZodBoolean>;
+            /**
+             * Whether this server supports notifications for changes to the resource list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">>>;
+        /**
+         * Present if the server offers any tools to call.
+         */
+        tools: z.ZodOptional<z.ZodObject<{
+            /**
+             * Whether this server supports notifications for changes to the tool list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * Whether this server supports notifications for changes to the tool list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * Whether this server supports notifications for changes to the tool list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">>>;
+    }, z.ZodTypeAny, "passthrough">>;
     serverInfo: z.ZodObject<{
         name: z.ZodString;
         version: z.ZodString;
-    }, "strip", z.ZodTypeAny, {
-        name: string;
-        version: string;
-    }, {
-        name: string;
-        version: string;
-    }>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        name: z.ZodString;
+        version: z.ZodString;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        name: z.ZodString;
+        version: z.ZodString;
+    }, z.ZodTypeAny, "passthrough">>;
 }>, z.ZodTypeAny, "passthrough">>;
 /**
  * This notification is sent from the client to the server after initialization has finished.
@@ -1736,13 +2334,25 @@ export declare const ProgressSchema: z.ZodObject<{
      * Total number of items to process (or total progress required), if known.
      */
     total: z.ZodOptional<z.ZodNumber>;
-}, "strip", z.ZodTypeAny, {
-    progress: number;
-    total?: number | undefined;
-}, {
-    progress: number;
-    total?: number | undefined;
-}>;
+}, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+    /**
+     * The progress thus far. This should increase every time progress is made, even if the total is unknown.
+     */
+    progress: z.ZodNumber;
+    /**
+     * Total number of items to process (or total progress required), if known.
+     */
+    total: z.ZodOptional<z.ZodNumber>;
+}, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+    /**
+     * The progress thus far. This should increase every time progress is made, even if the total is unknown.
+     */
+    progress: z.ZodNumber;
+    /**
+     * Total number of items to process (or total progress required), if known.
+     */
+    total: z.ZodOptional<z.ZodNumber>;
+}, z.ZodTypeAny, "passthrough">>;
 /**
  * An out-of-band notification used to inform the receiver of a progress update for a long-running request.
  */
@@ -1780,20 +2390,42 @@ export declare const ProgressNotificationSchema: z.ZodObject<z.objectUtil.extend
          * The progress token which was given in the initial request, used to associate this notification with the request that is proceeding.
          */
         progressToken: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodNumber]>>;
-    }>, "strip", z.ZodTypeAny, {
-        progress: number;
-        progressToken?: string | number | undefined;
-        total?: number | undefined;
+    }>, "passthrough", z.ZodTypeAny, z.objectOutputType<z.objectUtil.extendShape<{
+        /**
+         * The progress thus far. This should increase every time progress is made, even if the total is unknown.
+         */
+        progress: z.ZodNumber;
+        /**
+         * Total number of items to process (or total progress required), if known.
+         */
+        total: z.ZodOptional<z.ZodNumber>;
     }, {
-        progress: number;
-        progressToken?: string | number | undefined;
-        total?: number | undefined;
-    }>;
+        /**
+         * The progress token which was given in the initial request, used to associate this notification with the request that is proceeding.
+         */
+        progressToken: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodNumber]>>;
+    }>, z.ZodTypeAny, "passthrough">, z.objectInputType<z.objectUtil.extendShape<{
+        /**
+         * The progress thus far. This should increase every time progress is made, even if the total is unknown.
+         */
+        progress: z.ZodNumber;
+        /**
+         * Total number of items to process (or total progress required), if known.
+         */
+        total: z.ZodOptional<z.ZodNumber>;
+    }, {
+        /**
+         * The progress token which was given in the initial request, used to associate this notification with the request that is proceeding.
+         */
+        progressToken: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodNumber]>>;
+    }>, z.ZodTypeAny, "passthrough">>;
 }>, "strip", z.ZodTypeAny, {
     params: {
         progress: number;
         progressToken?: string | number | undefined;
         total?: number | undefined;
+    } & {
+        [k: string]: unknown;
     };
     method: "notifications/progress";
 }, {
@@ -1801,6 +2433,8 @@ export declare const ProgressNotificationSchema: z.ZodObject<z.objectUtil.extend
         progress: number;
         progressToken?: string | number | undefined;
         total?: number | undefined;
+    } & {
+        [k: string]: unknown;
     };
     method: "notifications/progress";
 }>;
@@ -2002,13 +2636,25 @@ export declare const ResourceContentsSchema: z.ZodObject<{
      * The MIME type of this resource, if known.
      */
     mimeType: z.ZodOptional<z.ZodString>;
-}, "strip", z.ZodTypeAny, {
-    uri: string;
-    mimeType?: string | undefined;
-}, {
-    uri: string;
-    mimeType?: string | undefined;
-}>;
+}, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+    /**
+     * The URI of this resource.
+     */
+    uri: z.ZodString;
+    /**
+     * The MIME type of this resource, if known.
+     */
+    mimeType: z.ZodOptional<z.ZodString>;
+}, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+    /**
+     * The URI of this resource.
+     */
+    uri: z.ZodString;
+    /**
+     * The MIME type of this resource, if known.
+     */
+    mimeType: z.ZodOptional<z.ZodString>;
+}, z.ZodTypeAny, "passthrough">>;
 export declare const TextResourceContentsSchema: z.ZodObject<z.objectUtil.extendShape<{
     /**
      * The URI of this resource.
@@ -2023,15 +2669,35 @@ export declare const TextResourceContentsSchema: z.ZodObject<z.objectUtil.extend
      * The text of the item. This must only be set if the item can actually be represented as text (not binary data).
      */
     text: z.ZodString;
-}>, "strip", z.ZodTypeAny, {
-    text: string;
-    uri: string;
-    mimeType?: string | undefined;
+}>, "passthrough", z.ZodTypeAny, z.objectOutputType<z.objectUtil.extendShape<{
+    /**
+     * The URI of this resource.
+     */
+    uri: z.ZodString;
+    /**
+     * The MIME type of this resource, if known.
+     */
+    mimeType: z.ZodOptional<z.ZodString>;
 }, {
-    text: string;
-    uri: string;
-    mimeType?: string | undefined;
-}>;
+    /**
+     * The text of the item. This must only be set if the item can actually be represented as text (not binary data).
+     */
+    text: z.ZodString;
+}>, z.ZodTypeAny, "passthrough">, z.objectInputType<z.objectUtil.extendShape<{
+    /**
+     * The URI of this resource.
+     */
+    uri: z.ZodString;
+    /**
+     * The MIME type of this resource, if known.
+     */
+    mimeType: z.ZodOptional<z.ZodString>;
+}, {
+    /**
+     * The text of the item. This must only be set if the item can actually be represented as text (not binary data).
+     */
+    text: z.ZodString;
+}>, z.ZodTypeAny, "passthrough">>;
 export declare const BlobResourceContentsSchema: z.ZodObject<z.objectUtil.extendShape<{
     /**
      * The URI of this resource.
@@ -2046,15 +2712,35 @@ export declare const BlobResourceContentsSchema: z.ZodObject<z.objectUtil.extend
      * A base64-encoded string representing the binary data of the item.
      */
     blob: z.ZodString;
-}>, "strip", z.ZodTypeAny, {
-    uri: string;
-    blob: string;
-    mimeType?: string | undefined;
+}>, "passthrough", z.ZodTypeAny, z.objectOutputType<z.objectUtil.extendShape<{
+    /**
+     * The URI of this resource.
+     */
+    uri: z.ZodString;
+    /**
+     * The MIME type of this resource, if known.
+     */
+    mimeType: z.ZodOptional<z.ZodString>;
 }, {
-    uri: string;
-    blob: string;
-    mimeType?: string | undefined;
-}>;
+    /**
+     * A base64-encoded string representing the binary data of the item.
+     */
+    blob: z.ZodString;
+}>, z.ZodTypeAny, "passthrough">, z.objectInputType<z.objectUtil.extendShape<{
+    /**
+     * The URI of this resource.
+     */
+    uri: z.ZodString;
+    /**
+     * The MIME type of this resource, if known.
+     */
+    mimeType: z.ZodOptional<z.ZodString>;
+}, {
+    /**
+     * A base64-encoded string representing the binary data of the item.
+     */
+    blob: z.ZodString;
+}>, z.ZodTypeAny, "passthrough">>;
 /**
  * A known resource that the server is capable of reading.
  */
@@ -2079,17 +2765,49 @@ export declare const ResourceSchema: z.ZodObject<{
      * The MIME type of this resource, if known.
      */
     mimeType: z.ZodOptional<z.ZodString>;
-}, "strip", z.ZodTypeAny, {
-    name: string;
-    uri: string;
-    mimeType?: string | undefined;
-    description?: string | undefined;
-}, {
-    name: string;
-    uri: string;
-    mimeType?: string | undefined;
-    description?: string | undefined;
-}>;
+}, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+    /**
+     * The URI of this resource.
+     */
+    uri: z.ZodString;
+    /**
+     * A human-readable name for this resource.
+     *
+     * This can be used by clients to populate UI elements.
+     */
+    name: z.ZodString;
+    /**
+     * A description of what this resource represents.
+     *
+     * This can be used by clients to improve the LLM's understanding of available resources. It can be thought of like a "hint" to the model.
+     */
+    description: z.ZodOptional<z.ZodString>;
+    /**
+     * The MIME type of this resource, if known.
+     */
+    mimeType: z.ZodOptional<z.ZodString>;
+}, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+    /**
+     * The URI of this resource.
+     */
+    uri: z.ZodString;
+    /**
+     * A human-readable name for this resource.
+     *
+     * This can be used by clients to populate UI elements.
+     */
+    name: z.ZodString;
+    /**
+     * A description of what this resource represents.
+     *
+     * This can be used by clients to improve the LLM's understanding of available resources. It can be thought of like a "hint" to the model.
+     */
+    description: z.ZodOptional<z.ZodString>;
+    /**
+     * The MIME type of this resource, if known.
+     */
+    mimeType: z.ZodOptional<z.ZodString>;
+}, z.ZodTypeAny, "passthrough">>;
 /**
  * A template description for resources available on the server.
  */
@@ -2114,17 +2832,49 @@ export declare const ResourceTemplateSchema: z.ZodObject<{
      * The MIME type for all resources that match this template. This should only be included if all resources matching this template have the same type.
      */
     mimeType: z.ZodOptional<z.ZodString>;
-}, "strip", z.ZodTypeAny, {
-    name: string;
-    uriTemplate: string;
-    mimeType?: string | undefined;
-    description?: string | undefined;
-}, {
-    name: string;
-    uriTemplate: string;
-    mimeType?: string | undefined;
-    description?: string | undefined;
-}>;
+}, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+    /**
+     * A URI template (according to RFC 6570) that can be used to construct resource URIs.
+     */
+    uriTemplate: z.ZodString;
+    /**
+     * A human-readable name for the type of resource this template refers to.
+     *
+     * This can be used by clients to populate UI elements.
+     */
+    name: z.ZodString;
+    /**
+     * A description of what this template is for.
+     *
+     * This can be used by clients to improve the LLM's understanding of available resources. It can be thought of like a "hint" to the model.
+     */
+    description: z.ZodOptional<z.ZodString>;
+    /**
+     * The MIME type for all resources that match this template. This should only be included if all resources matching this template have the same type.
+     */
+    mimeType: z.ZodOptional<z.ZodString>;
+}, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+    /**
+     * A URI template (according to RFC 6570) that can be used to construct resource URIs.
+     */
+    uriTemplate: z.ZodString;
+    /**
+     * A human-readable name for the type of resource this template refers to.
+     *
+     * This can be used by clients to populate UI elements.
+     */
+    name: z.ZodString;
+    /**
+     * A description of what this template is for.
+     *
+     * This can be used by clients to improve the LLM's understanding of available resources. It can be thought of like a "hint" to the model.
+     */
+    description: z.ZodOptional<z.ZodString>;
+    /**
+     * The MIME type for all resources that match this template. This should only be included if all resources matching this template have the same type.
+     */
+    mimeType: z.ZodOptional<z.ZodString>;
+}, z.ZodTypeAny, "passthrough">>;
 /**
  * Sent from the client to request a list of resources the server has.
  */
@@ -2318,17 +3068,49 @@ export declare const ListResourcesResultSchema: z.ZodObject<z.objectUtil.extendS
          * The MIME type of this resource, if known.
          */
         mimeType: z.ZodOptional<z.ZodString>;
-    }, "strip", z.ZodTypeAny, {
-        name: string;
-        uri: string;
-        mimeType?: string | undefined;
-        description?: string | undefined;
-    }, {
-        name: string;
-        uri: string;
-        mimeType?: string | undefined;
-        description?: string | undefined;
-    }>, "many">;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        /**
+         * The URI of this resource.
+         */
+        uri: z.ZodString;
+        /**
+         * A human-readable name for this resource.
+         *
+         * This can be used by clients to populate UI elements.
+         */
+        name: z.ZodString;
+        /**
+         * A description of what this resource represents.
+         *
+         * This can be used by clients to improve the LLM's understanding of available resources. It can be thought of like a "hint" to the model.
+         */
+        description: z.ZodOptional<z.ZodString>;
+        /**
+         * The MIME type of this resource, if known.
+         */
+        mimeType: z.ZodOptional<z.ZodString>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        /**
+         * The URI of this resource.
+         */
+        uri: z.ZodString;
+        /**
+         * A human-readable name for this resource.
+         *
+         * This can be used by clients to populate UI elements.
+         */
+        name: z.ZodString;
+        /**
+         * A description of what this resource represents.
+         *
+         * This can be used by clients to improve the LLM's understanding of available resources. It can be thought of like a "hint" to the model.
+         */
+        description: z.ZodOptional<z.ZodString>;
+        /**
+         * The MIME type of this resource, if known.
+         */
+        mimeType: z.ZodOptional<z.ZodString>;
+    }, z.ZodTypeAny, "passthrough">>, "many">;
 }>, "passthrough", z.ZodTypeAny, z.objectOutputType<z.objectUtil.extendShape<z.objectUtil.extendShape<{
     /**
      * This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses.
@@ -2362,17 +3144,49 @@ export declare const ListResourcesResultSchema: z.ZodObject<z.objectUtil.extendS
          * The MIME type of this resource, if known.
          */
         mimeType: z.ZodOptional<z.ZodString>;
-    }, "strip", z.ZodTypeAny, {
-        name: string;
-        uri: string;
-        mimeType?: string | undefined;
-        description?: string | undefined;
-    }, {
-        name: string;
-        uri: string;
-        mimeType?: string | undefined;
-        description?: string | undefined;
-    }>, "many">;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        /**
+         * The URI of this resource.
+         */
+        uri: z.ZodString;
+        /**
+         * A human-readable name for this resource.
+         *
+         * This can be used by clients to populate UI elements.
+         */
+        name: z.ZodString;
+        /**
+         * A description of what this resource represents.
+         *
+         * This can be used by clients to improve the LLM's understanding of available resources. It can be thought of like a "hint" to the model.
+         */
+        description: z.ZodOptional<z.ZodString>;
+        /**
+         * The MIME type of this resource, if known.
+         */
+        mimeType: z.ZodOptional<z.ZodString>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        /**
+         * The URI of this resource.
+         */
+        uri: z.ZodString;
+        /**
+         * A human-readable name for this resource.
+         *
+         * This can be used by clients to populate UI elements.
+         */
+        name: z.ZodString;
+        /**
+         * A description of what this resource represents.
+         *
+         * This can be used by clients to improve the LLM's understanding of available resources. It can be thought of like a "hint" to the model.
+         */
+        description: z.ZodOptional<z.ZodString>;
+        /**
+         * The MIME type of this resource, if known.
+         */
+        mimeType: z.ZodOptional<z.ZodString>;
+    }, z.ZodTypeAny, "passthrough">>, "many">;
 }>, z.ZodTypeAny, "passthrough">, z.objectInputType<z.objectUtil.extendShape<z.objectUtil.extendShape<{
     /**
      * This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses.
@@ -2406,17 +3220,49 @@ export declare const ListResourcesResultSchema: z.ZodObject<z.objectUtil.extendS
          * The MIME type of this resource, if known.
          */
         mimeType: z.ZodOptional<z.ZodString>;
-    }, "strip", z.ZodTypeAny, {
-        name: string;
-        uri: string;
-        mimeType?: string | undefined;
-        description?: string | undefined;
-    }, {
-        name: string;
-        uri: string;
-        mimeType?: string | undefined;
-        description?: string | undefined;
-    }>, "many">;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        /**
+         * The URI of this resource.
+         */
+        uri: z.ZodString;
+        /**
+         * A human-readable name for this resource.
+         *
+         * This can be used by clients to populate UI elements.
+         */
+        name: z.ZodString;
+        /**
+         * A description of what this resource represents.
+         *
+         * This can be used by clients to improve the LLM's understanding of available resources. It can be thought of like a "hint" to the model.
+         */
+        description: z.ZodOptional<z.ZodString>;
+        /**
+         * The MIME type of this resource, if known.
+         */
+        mimeType: z.ZodOptional<z.ZodString>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        /**
+         * The URI of this resource.
+         */
+        uri: z.ZodString;
+        /**
+         * A human-readable name for this resource.
+         *
+         * This can be used by clients to populate UI elements.
+         */
+        name: z.ZodString;
+        /**
+         * A description of what this resource represents.
+         *
+         * This can be used by clients to improve the LLM's understanding of available resources. It can be thought of like a "hint" to the model.
+         */
+        description: z.ZodOptional<z.ZodString>;
+        /**
+         * The MIME type of this resource, if known.
+         */
+        mimeType: z.ZodOptional<z.ZodString>;
+    }, z.ZodTypeAny, "passthrough">>, "many">;
 }>, z.ZodTypeAny, "passthrough">>;
 /**
  * Sent from the client to request a list of resource templates the server has.
@@ -2611,17 +3457,49 @@ export declare const ListResourceTemplatesResultSchema: z.ZodObject<z.objectUtil
          * The MIME type for all resources that match this template. This should only be included if all resources matching this template have the same type.
          */
         mimeType: z.ZodOptional<z.ZodString>;
-    }, "strip", z.ZodTypeAny, {
-        name: string;
-        uriTemplate: string;
-        mimeType?: string | undefined;
-        description?: string | undefined;
-    }, {
-        name: string;
-        uriTemplate: string;
-        mimeType?: string | undefined;
-        description?: string | undefined;
-    }>, "many">;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        /**
+         * A URI template (according to RFC 6570) that can be used to construct resource URIs.
+         */
+        uriTemplate: z.ZodString;
+        /**
+         * A human-readable name for the type of resource this template refers to.
+         *
+         * This can be used by clients to populate UI elements.
+         */
+        name: z.ZodString;
+        /**
+         * A description of what this template is for.
+         *
+         * This can be used by clients to improve the LLM's understanding of available resources. It can be thought of like a "hint" to the model.
+         */
+        description: z.ZodOptional<z.ZodString>;
+        /**
+         * The MIME type for all resources that match this template. This should only be included if all resources matching this template have the same type.
+         */
+        mimeType: z.ZodOptional<z.ZodString>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        /**
+         * A URI template (according to RFC 6570) that can be used to construct resource URIs.
+         */
+        uriTemplate: z.ZodString;
+        /**
+         * A human-readable name for the type of resource this template refers to.
+         *
+         * This can be used by clients to populate UI elements.
+         */
+        name: z.ZodString;
+        /**
+         * A description of what this template is for.
+         *
+         * This can be used by clients to improve the LLM's understanding of available resources. It can be thought of like a "hint" to the model.
+         */
+        description: z.ZodOptional<z.ZodString>;
+        /**
+         * The MIME type for all resources that match this template. This should only be included if all resources matching this template have the same type.
+         */
+        mimeType: z.ZodOptional<z.ZodString>;
+    }, z.ZodTypeAny, "passthrough">>, "many">;
 }>, "passthrough", z.ZodTypeAny, z.objectOutputType<z.objectUtil.extendShape<z.objectUtil.extendShape<{
     /**
      * This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses.
@@ -2655,17 +3533,49 @@ export declare const ListResourceTemplatesResultSchema: z.ZodObject<z.objectUtil
          * The MIME type for all resources that match this template. This should only be included if all resources matching this template have the same type.
          */
         mimeType: z.ZodOptional<z.ZodString>;
-    }, "strip", z.ZodTypeAny, {
-        name: string;
-        uriTemplate: string;
-        mimeType?: string | undefined;
-        description?: string | undefined;
-    }, {
-        name: string;
-        uriTemplate: string;
-        mimeType?: string | undefined;
-        description?: string | undefined;
-    }>, "many">;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        /**
+         * A URI template (according to RFC 6570) that can be used to construct resource URIs.
+         */
+        uriTemplate: z.ZodString;
+        /**
+         * A human-readable name for the type of resource this template refers to.
+         *
+         * This can be used by clients to populate UI elements.
+         */
+        name: z.ZodString;
+        /**
+         * A description of what this template is for.
+         *
+         * This can be used by clients to improve the LLM's understanding of available resources. It can be thought of like a "hint" to the model.
+         */
+        description: z.ZodOptional<z.ZodString>;
+        /**
+         * The MIME type for all resources that match this template. This should only be included if all resources matching this template have the same type.
+         */
+        mimeType: z.ZodOptional<z.ZodString>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        /**
+         * A URI template (according to RFC 6570) that can be used to construct resource URIs.
+         */
+        uriTemplate: z.ZodString;
+        /**
+         * A human-readable name for the type of resource this template refers to.
+         *
+         * This can be used by clients to populate UI elements.
+         */
+        name: z.ZodString;
+        /**
+         * A description of what this template is for.
+         *
+         * This can be used by clients to improve the LLM's understanding of available resources. It can be thought of like a "hint" to the model.
+         */
+        description: z.ZodOptional<z.ZodString>;
+        /**
+         * The MIME type for all resources that match this template. This should only be included if all resources matching this template have the same type.
+         */
+        mimeType: z.ZodOptional<z.ZodString>;
+    }, z.ZodTypeAny, "passthrough">>, "many">;
 }>, z.ZodTypeAny, "passthrough">, z.objectInputType<z.objectUtil.extendShape<z.objectUtil.extendShape<{
     /**
      * This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses.
@@ -2699,17 +3609,49 @@ export declare const ListResourceTemplatesResultSchema: z.ZodObject<z.objectUtil
          * The MIME type for all resources that match this template. This should only be included if all resources matching this template have the same type.
          */
         mimeType: z.ZodOptional<z.ZodString>;
-    }, "strip", z.ZodTypeAny, {
-        name: string;
-        uriTemplate: string;
-        mimeType?: string | undefined;
-        description?: string | undefined;
-    }, {
-        name: string;
-        uriTemplate: string;
-        mimeType?: string | undefined;
-        description?: string | undefined;
-    }>, "many">;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        /**
+         * A URI template (according to RFC 6570) that can be used to construct resource URIs.
+         */
+        uriTemplate: z.ZodString;
+        /**
+         * A human-readable name for the type of resource this template refers to.
+         *
+         * This can be used by clients to populate UI elements.
+         */
+        name: z.ZodString;
+        /**
+         * A description of what this template is for.
+         *
+         * This can be used by clients to improve the LLM's understanding of available resources. It can be thought of like a "hint" to the model.
+         */
+        description: z.ZodOptional<z.ZodString>;
+        /**
+         * The MIME type for all resources that match this template. This should only be included if all resources matching this template have the same type.
+         */
+        mimeType: z.ZodOptional<z.ZodString>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        /**
+         * A URI template (according to RFC 6570) that can be used to construct resource URIs.
+         */
+        uriTemplate: z.ZodString;
+        /**
+         * A human-readable name for the type of resource this template refers to.
+         *
+         * This can be used by clients to populate UI elements.
+         */
+        name: z.ZodString;
+        /**
+         * A description of what this template is for.
+         *
+         * This can be used by clients to improve the LLM's understanding of available resources. It can be thought of like a "hint" to the model.
+         */
+        description: z.ZodOptional<z.ZodString>;
+        /**
+         * The MIME type for all resources that match this template. This should only be included if all resources matching this template have the same type.
+         */
+        mimeType: z.ZodOptional<z.ZodString>;
+    }, z.ZodTypeAny, "passthrough">>, "many">;
 }>, z.ZodTypeAny, "passthrough">>;
 /**
  * Sent from the client to the server, to read a specific resource URI.
@@ -2887,15 +3829,35 @@ export declare const ReadResourceResultSchema: z.ZodObject<z.objectUtil.extendSh
          * The text of the item. This must only be set if the item can actually be represented as text (not binary data).
          */
         text: z.ZodString;
-    }>, "strip", z.ZodTypeAny, {
-        text: string;
-        uri: string;
-        mimeType?: string | undefined;
+    }>, "passthrough", z.ZodTypeAny, z.objectOutputType<z.objectUtil.extendShape<{
+        /**
+         * The URI of this resource.
+         */
+        uri: z.ZodString;
+        /**
+         * The MIME type of this resource, if known.
+         */
+        mimeType: z.ZodOptional<z.ZodString>;
     }, {
-        text: string;
-        uri: string;
-        mimeType?: string | undefined;
-    }>, z.ZodObject<z.objectUtil.extendShape<{
+        /**
+         * The text of the item. This must only be set if the item can actually be represented as text (not binary data).
+         */
+        text: z.ZodString;
+    }>, z.ZodTypeAny, "passthrough">, z.objectInputType<z.objectUtil.extendShape<{
+        /**
+         * The URI of this resource.
+         */
+        uri: z.ZodString;
+        /**
+         * The MIME type of this resource, if known.
+         */
+        mimeType: z.ZodOptional<z.ZodString>;
+    }, {
+        /**
+         * The text of the item. This must only be set if the item can actually be represented as text (not binary data).
+         */
+        text: z.ZodString;
+    }>, z.ZodTypeAny, "passthrough">>, z.ZodObject<z.objectUtil.extendShape<{
         /**
          * The URI of this resource.
          */
@@ -2909,15 +3871,35 @@ export declare const ReadResourceResultSchema: z.ZodObject<z.objectUtil.extendSh
          * A base64-encoded string representing the binary data of the item.
          */
         blob: z.ZodString;
-    }>, "strip", z.ZodTypeAny, {
-        uri: string;
-        blob: string;
-        mimeType?: string | undefined;
+    }>, "passthrough", z.ZodTypeAny, z.objectOutputType<z.objectUtil.extendShape<{
+        /**
+         * The URI of this resource.
+         */
+        uri: z.ZodString;
+        /**
+         * The MIME type of this resource, if known.
+         */
+        mimeType: z.ZodOptional<z.ZodString>;
     }, {
-        uri: string;
-        blob: string;
-        mimeType?: string | undefined;
-    }>]>, "many">;
+        /**
+         * A base64-encoded string representing the binary data of the item.
+         */
+        blob: z.ZodString;
+    }>, z.ZodTypeAny, "passthrough">, z.objectInputType<z.objectUtil.extendShape<{
+        /**
+         * The URI of this resource.
+         */
+        uri: z.ZodString;
+        /**
+         * The MIME type of this resource, if known.
+         */
+        mimeType: z.ZodOptional<z.ZodString>;
+    }, {
+        /**
+         * A base64-encoded string representing the binary data of the item.
+         */
+        blob: z.ZodString;
+    }>, z.ZodTypeAny, "passthrough">>]>, "many">;
 }>, "passthrough", z.ZodTypeAny, z.objectOutputType<z.objectUtil.extendShape<{
     /**
      * This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses.
@@ -2938,15 +3920,35 @@ export declare const ReadResourceResultSchema: z.ZodObject<z.objectUtil.extendSh
          * The text of the item. This must only be set if the item can actually be represented as text (not binary data).
          */
         text: z.ZodString;
-    }>, "strip", z.ZodTypeAny, {
-        text: string;
-        uri: string;
-        mimeType?: string | undefined;
+    }>, "passthrough", z.ZodTypeAny, z.objectOutputType<z.objectUtil.extendShape<{
+        /**
+         * The URI of this resource.
+         */
+        uri: z.ZodString;
+        /**
+         * The MIME type of this resource, if known.
+         */
+        mimeType: z.ZodOptional<z.ZodString>;
     }, {
-        text: string;
-        uri: string;
-        mimeType?: string | undefined;
-    }>, z.ZodObject<z.objectUtil.extendShape<{
+        /**
+         * The text of the item. This must only be set if the item can actually be represented as text (not binary data).
+         */
+        text: z.ZodString;
+    }>, z.ZodTypeAny, "passthrough">, z.objectInputType<z.objectUtil.extendShape<{
+        /**
+         * The URI of this resource.
+         */
+        uri: z.ZodString;
+        /**
+         * The MIME type of this resource, if known.
+         */
+        mimeType: z.ZodOptional<z.ZodString>;
+    }, {
+        /**
+         * The text of the item. This must only be set if the item can actually be represented as text (not binary data).
+         */
+        text: z.ZodString;
+    }>, z.ZodTypeAny, "passthrough">>, z.ZodObject<z.objectUtil.extendShape<{
         /**
          * The URI of this resource.
          */
@@ -2960,15 +3962,35 @@ export declare const ReadResourceResultSchema: z.ZodObject<z.objectUtil.extendSh
          * A base64-encoded string representing the binary data of the item.
          */
         blob: z.ZodString;
-    }>, "strip", z.ZodTypeAny, {
-        uri: string;
-        blob: string;
-        mimeType?: string | undefined;
+    }>, "passthrough", z.ZodTypeAny, z.objectOutputType<z.objectUtil.extendShape<{
+        /**
+         * The URI of this resource.
+         */
+        uri: z.ZodString;
+        /**
+         * The MIME type of this resource, if known.
+         */
+        mimeType: z.ZodOptional<z.ZodString>;
     }, {
-        uri: string;
-        blob: string;
-        mimeType?: string | undefined;
-    }>]>, "many">;
+        /**
+         * A base64-encoded string representing the binary data of the item.
+         */
+        blob: z.ZodString;
+    }>, z.ZodTypeAny, "passthrough">, z.objectInputType<z.objectUtil.extendShape<{
+        /**
+         * The URI of this resource.
+         */
+        uri: z.ZodString;
+        /**
+         * The MIME type of this resource, if known.
+         */
+        mimeType: z.ZodOptional<z.ZodString>;
+    }, {
+        /**
+         * A base64-encoded string representing the binary data of the item.
+         */
+        blob: z.ZodString;
+    }>, z.ZodTypeAny, "passthrough">>]>, "many">;
 }>, z.ZodTypeAny, "passthrough">, z.objectInputType<z.objectUtil.extendShape<{
     /**
      * This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses.
@@ -2989,15 +4011,35 @@ export declare const ReadResourceResultSchema: z.ZodObject<z.objectUtil.extendSh
          * The text of the item. This must only be set if the item can actually be represented as text (not binary data).
          */
         text: z.ZodString;
-    }>, "strip", z.ZodTypeAny, {
-        text: string;
-        uri: string;
-        mimeType?: string | undefined;
+    }>, "passthrough", z.ZodTypeAny, z.objectOutputType<z.objectUtil.extendShape<{
+        /**
+         * The URI of this resource.
+         */
+        uri: z.ZodString;
+        /**
+         * The MIME type of this resource, if known.
+         */
+        mimeType: z.ZodOptional<z.ZodString>;
     }, {
-        text: string;
-        uri: string;
-        mimeType?: string | undefined;
-    }>, z.ZodObject<z.objectUtil.extendShape<{
+        /**
+         * The text of the item. This must only be set if the item can actually be represented as text (not binary data).
+         */
+        text: z.ZodString;
+    }>, z.ZodTypeAny, "passthrough">, z.objectInputType<z.objectUtil.extendShape<{
+        /**
+         * The URI of this resource.
+         */
+        uri: z.ZodString;
+        /**
+         * The MIME type of this resource, if known.
+         */
+        mimeType: z.ZodOptional<z.ZodString>;
+    }, {
+        /**
+         * The text of the item. This must only be set if the item can actually be represented as text (not binary data).
+         */
+        text: z.ZodString;
+    }>, z.ZodTypeAny, "passthrough">>, z.ZodObject<z.objectUtil.extendShape<{
         /**
          * The URI of this resource.
          */
@@ -3011,15 +4053,35 @@ export declare const ReadResourceResultSchema: z.ZodObject<z.objectUtil.extendSh
          * A base64-encoded string representing the binary data of the item.
          */
         blob: z.ZodString;
-    }>, "strip", z.ZodTypeAny, {
-        uri: string;
-        blob: string;
-        mimeType?: string | undefined;
+    }>, "passthrough", z.ZodTypeAny, z.objectOutputType<z.objectUtil.extendShape<{
+        /**
+         * The URI of this resource.
+         */
+        uri: z.ZodString;
+        /**
+         * The MIME type of this resource, if known.
+         */
+        mimeType: z.ZodOptional<z.ZodString>;
     }, {
-        uri: string;
-        blob: string;
-        mimeType?: string | undefined;
-    }>]>, "many">;
+        /**
+         * A base64-encoded string representing the binary data of the item.
+         */
+        blob: z.ZodString;
+    }>, z.ZodTypeAny, "passthrough">, z.objectInputType<z.objectUtil.extendShape<{
+        /**
+         * The URI of this resource.
+         */
+        uri: z.ZodString;
+        /**
+         * The MIME type of this resource, if known.
+         */
+        mimeType: z.ZodOptional<z.ZodString>;
+    }, {
+        /**
+         * A base64-encoded string representing the binary data of the item.
+         */
+        blob: z.ZodString;
+    }>, z.ZodTypeAny, "passthrough">>]>, "many">;
 }>, z.ZodTypeAny, "passthrough">>;
 /**
  * An optional notification from the server to the client, informing it that the list of resources it can read from has changed. This may be issued by servers without any previous subscription from the client.
@@ -3395,19 +4457,29 @@ export declare const ResourceUpdatedNotificationSchema: z.ZodObject<z.objectUtil
          * The URI of the resource that has been updated. This might be a sub-resource of the one that the client actually subscribed to.
          */
         uri: z.ZodString;
-    }, "strip", z.ZodTypeAny, {
-        uri: string;
-    }, {
-        uri: string;
-    }>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        /**
+         * The URI of the resource that has been updated. This might be a sub-resource of the one that the client actually subscribed to.
+         */
+        uri: z.ZodString;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        /**
+         * The URI of the resource that has been updated. This might be a sub-resource of the one that the client actually subscribed to.
+         */
+        uri: z.ZodString;
+    }, z.ZodTypeAny, "passthrough">>;
 }>, "strip", z.ZodTypeAny, {
     params: {
         uri: string;
+    } & {
+        [k: string]: unknown;
     };
     method: "notifications/resources/updated";
 }, {
     params: {
         uri: string;
+    } & {
+        [k: string]: unknown;
     };
     method: "notifications/resources/updated";
 }>;
@@ -3427,15 +4499,33 @@ export declare const PromptArgumentSchema: z.ZodObject<{
      * Whether this argument must be provided.
      */
     required: z.ZodOptional<z.ZodBoolean>;
-}, "strip", z.ZodTypeAny, {
-    name: string;
-    description?: string | undefined;
-    required?: boolean | undefined;
-}, {
-    name: string;
-    description?: string | undefined;
-    required?: boolean | undefined;
-}>;
+}, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+    /**
+     * The name of the argument.
+     */
+    name: z.ZodString;
+    /**
+     * A human-readable description of the argument.
+     */
+    description: z.ZodOptional<z.ZodString>;
+    /**
+     * Whether this argument must be provided.
+     */
+    required: z.ZodOptional<z.ZodBoolean>;
+}, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+    /**
+     * The name of the argument.
+     */
+    name: z.ZodString;
+    /**
+     * A human-readable description of the argument.
+     */
+    description: z.ZodOptional<z.ZodString>;
+    /**
+     * Whether this argument must be provided.
+     */
+    required: z.ZodOptional<z.ZodBoolean>;
+}, z.ZodTypeAny, "passthrough">>;
 /**
  * A prompt or prompt template that the server offers.
  */
@@ -3464,32 +4554,138 @@ export declare const PromptSchema: z.ZodObject<{
          * Whether this argument must be provided.
          */
         required: z.ZodOptional<z.ZodBoolean>;
-    }, "strip", z.ZodTypeAny, {
-        name: string;
-        description?: string | undefined;
-        required?: boolean | undefined;
-    }, {
-        name: string;
-        description?: string | undefined;
-        required?: boolean | undefined;
-    }>, "many">>;
-}, "strip", z.ZodTypeAny, {
-    name: string;
-    description?: string | undefined;
-    arguments?: {
-        name: string;
-        description?: string | undefined;
-        required?: boolean | undefined;
-    }[] | undefined;
-}, {
-    name: string;
-    description?: string | undefined;
-    arguments?: {
-        name: string;
-        description?: string | undefined;
-        required?: boolean | undefined;
-    }[] | undefined;
-}>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        /**
+         * The name of the argument.
+         */
+        name: z.ZodString;
+        /**
+         * A human-readable description of the argument.
+         */
+        description: z.ZodOptional<z.ZodString>;
+        /**
+         * Whether this argument must be provided.
+         */
+        required: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        /**
+         * The name of the argument.
+         */
+        name: z.ZodString;
+        /**
+         * A human-readable description of the argument.
+         */
+        description: z.ZodOptional<z.ZodString>;
+        /**
+         * Whether this argument must be provided.
+         */
+        required: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">>, "many">>;
+}, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+    /**
+     * The name of the prompt or prompt template.
+     */
+    name: z.ZodString;
+    /**
+     * An optional description of what this prompt provides
+     */
+    description: z.ZodOptional<z.ZodString>;
+    /**
+     * A list of arguments to use for templating the prompt.
+     */
+    arguments: z.ZodOptional<z.ZodArray<z.ZodObject<{
+        /**
+         * The name of the argument.
+         */
+        name: z.ZodString;
+        /**
+         * A human-readable description of the argument.
+         */
+        description: z.ZodOptional<z.ZodString>;
+        /**
+         * Whether this argument must be provided.
+         */
+        required: z.ZodOptional<z.ZodBoolean>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        /**
+         * The name of the argument.
+         */
+        name: z.ZodString;
+        /**
+         * A human-readable description of the argument.
+         */
+        description: z.ZodOptional<z.ZodString>;
+        /**
+         * Whether this argument must be provided.
+         */
+        required: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        /**
+         * The name of the argument.
+         */
+        name: z.ZodString;
+        /**
+         * A human-readable description of the argument.
+         */
+        description: z.ZodOptional<z.ZodString>;
+        /**
+         * Whether this argument must be provided.
+         */
+        required: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">>, "many">>;
+}, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+    /**
+     * The name of the prompt or prompt template.
+     */
+    name: z.ZodString;
+    /**
+     * An optional description of what this prompt provides
+     */
+    description: z.ZodOptional<z.ZodString>;
+    /**
+     * A list of arguments to use for templating the prompt.
+     */
+    arguments: z.ZodOptional<z.ZodArray<z.ZodObject<{
+        /**
+         * The name of the argument.
+         */
+        name: z.ZodString;
+        /**
+         * A human-readable description of the argument.
+         */
+        description: z.ZodOptional<z.ZodString>;
+        /**
+         * Whether this argument must be provided.
+         */
+        required: z.ZodOptional<z.ZodBoolean>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        /**
+         * The name of the argument.
+         */
+        name: z.ZodString;
+        /**
+         * A human-readable description of the argument.
+         */
+        description: z.ZodOptional<z.ZodString>;
+        /**
+         * Whether this argument must be provided.
+         */
+        required: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        /**
+         * The name of the argument.
+         */
+        name: z.ZodString;
+        /**
+         * A human-readable description of the argument.
+         */
+        description: z.ZodOptional<z.ZodString>;
+        /**
+         * Whether this argument must be provided.
+         */
+        required: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">>, "many">>;
+}, z.ZodTypeAny, "passthrough">>;
 /**
  * Sent from the client to request a list of prompts and prompt templates the server has.
  */
@@ -3687,32 +4883,138 @@ export declare const ListPromptsResultSchema: z.ZodObject<z.objectUtil.extendSha
              * Whether this argument must be provided.
              */
             required: z.ZodOptional<z.ZodBoolean>;
-        }, "strip", z.ZodTypeAny, {
-            name: string;
-            description?: string | undefined;
-            required?: boolean | undefined;
-        }, {
-            name: string;
-            description?: string | undefined;
-            required?: boolean | undefined;
-        }>, "many">>;
-    }, "strip", z.ZodTypeAny, {
-        name: string;
-        description?: string | undefined;
-        arguments?: {
-            name: string;
-            description?: string | undefined;
-            required?: boolean | undefined;
-        }[] | undefined;
-    }, {
-        name: string;
-        description?: string | undefined;
-        arguments?: {
-            name: string;
-            description?: string | undefined;
-            required?: boolean | undefined;
-        }[] | undefined;
-    }>, "many">;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * The name of the argument.
+             */
+            name: z.ZodString;
+            /**
+             * A human-readable description of the argument.
+             */
+            description: z.ZodOptional<z.ZodString>;
+            /**
+             * Whether this argument must be provided.
+             */
+            required: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * The name of the argument.
+             */
+            name: z.ZodString;
+            /**
+             * A human-readable description of the argument.
+             */
+            description: z.ZodOptional<z.ZodString>;
+            /**
+             * Whether this argument must be provided.
+             */
+            required: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">>, "many">>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        /**
+         * The name of the prompt or prompt template.
+         */
+        name: z.ZodString;
+        /**
+         * An optional description of what this prompt provides
+         */
+        description: z.ZodOptional<z.ZodString>;
+        /**
+         * A list of arguments to use for templating the prompt.
+         */
+        arguments: z.ZodOptional<z.ZodArray<z.ZodObject<{
+            /**
+             * The name of the argument.
+             */
+            name: z.ZodString;
+            /**
+             * A human-readable description of the argument.
+             */
+            description: z.ZodOptional<z.ZodString>;
+            /**
+             * Whether this argument must be provided.
+             */
+            required: z.ZodOptional<z.ZodBoolean>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * The name of the argument.
+             */
+            name: z.ZodString;
+            /**
+             * A human-readable description of the argument.
+             */
+            description: z.ZodOptional<z.ZodString>;
+            /**
+             * Whether this argument must be provided.
+             */
+            required: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * The name of the argument.
+             */
+            name: z.ZodString;
+            /**
+             * A human-readable description of the argument.
+             */
+            description: z.ZodOptional<z.ZodString>;
+            /**
+             * Whether this argument must be provided.
+             */
+            required: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">>, "many">>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        /**
+         * The name of the prompt or prompt template.
+         */
+        name: z.ZodString;
+        /**
+         * An optional description of what this prompt provides
+         */
+        description: z.ZodOptional<z.ZodString>;
+        /**
+         * A list of arguments to use for templating the prompt.
+         */
+        arguments: z.ZodOptional<z.ZodArray<z.ZodObject<{
+            /**
+             * The name of the argument.
+             */
+            name: z.ZodString;
+            /**
+             * A human-readable description of the argument.
+             */
+            description: z.ZodOptional<z.ZodString>;
+            /**
+             * Whether this argument must be provided.
+             */
+            required: z.ZodOptional<z.ZodBoolean>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * The name of the argument.
+             */
+            name: z.ZodString;
+            /**
+             * A human-readable description of the argument.
+             */
+            description: z.ZodOptional<z.ZodString>;
+            /**
+             * Whether this argument must be provided.
+             */
+            required: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * The name of the argument.
+             */
+            name: z.ZodString;
+            /**
+             * A human-readable description of the argument.
+             */
+            description: z.ZodOptional<z.ZodString>;
+            /**
+             * Whether this argument must be provided.
+             */
+            required: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">>, "many">>;
+    }, z.ZodTypeAny, "passthrough">>, "many">;
 }>, "passthrough", z.ZodTypeAny, z.objectOutputType<z.objectUtil.extendShape<z.objectUtil.extendShape<{
     /**
      * This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses.
@@ -3750,32 +5052,138 @@ export declare const ListPromptsResultSchema: z.ZodObject<z.objectUtil.extendSha
              * Whether this argument must be provided.
              */
             required: z.ZodOptional<z.ZodBoolean>;
-        }, "strip", z.ZodTypeAny, {
-            name: string;
-            description?: string | undefined;
-            required?: boolean | undefined;
-        }, {
-            name: string;
-            description?: string | undefined;
-            required?: boolean | undefined;
-        }>, "many">>;
-    }, "strip", z.ZodTypeAny, {
-        name: string;
-        description?: string | undefined;
-        arguments?: {
-            name: string;
-            description?: string | undefined;
-            required?: boolean | undefined;
-        }[] | undefined;
-    }, {
-        name: string;
-        description?: string | undefined;
-        arguments?: {
-            name: string;
-            description?: string | undefined;
-            required?: boolean | undefined;
-        }[] | undefined;
-    }>, "many">;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * The name of the argument.
+             */
+            name: z.ZodString;
+            /**
+             * A human-readable description of the argument.
+             */
+            description: z.ZodOptional<z.ZodString>;
+            /**
+             * Whether this argument must be provided.
+             */
+            required: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * The name of the argument.
+             */
+            name: z.ZodString;
+            /**
+             * A human-readable description of the argument.
+             */
+            description: z.ZodOptional<z.ZodString>;
+            /**
+             * Whether this argument must be provided.
+             */
+            required: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">>, "many">>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        /**
+         * The name of the prompt or prompt template.
+         */
+        name: z.ZodString;
+        /**
+         * An optional description of what this prompt provides
+         */
+        description: z.ZodOptional<z.ZodString>;
+        /**
+         * A list of arguments to use for templating the prompt.
+         */
+        arguments: z.ZodOptional<z.ZodArray<z.ZodObject<{
+            /**
+             * The name of the argument.
+             */
+            name: z.ZodString;
+            /**
+             * A human-readable description of the argument.
+             */
+            description: z.ZodOptional<z.ZodString>;
+            /**
+             * Whether this argument must be provided.
+             */
+            required: z.ZodOptional<z.ZodBoolean>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * The name of the argument.
+             */
+            name: z.ZodString;
+            /**
+             * A human-readable description of the argument.
+             */
+            description: z.ZodOptional<z.ZodString>;
+            /**
+             * Whether this argument must be provided.
+             */
+            required: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * The name of the argument.
+             */
+            name: z.ZodString;
+            /**
+             * A human-readable description of the argument.
+             */
+            description: z.ZodOptional<z.ZodString>;
+            /**
+             * Whether this argument must be provided.
+             */
+            required: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">>, "many">>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        /**
+         * The name of the prompt or prompt template.
+         */
+        name: z.ZodString;
+        /**
+         * An optional description of what this prompt provides
+         */
+        description: z.ZodOptional<z.ZodString>;
+        /**
+         * A list of arguments to use for templating the prompt.
+         */
+        arguments: z.ZodOptional<z.ZodArray<z.ZodObject<{
+            /**
+             * The name of the argument.
+             */
+            name: z.ZodString;
+            /**
+             * A human-readable description of the argument.
+             */
+            description: z.ZodOptional<z.ZodString>;
+            /**
+             * Whether this argument must be provided.
+             */
+            required: z.ZodOptional<z.ZodBoolean>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * The name of the argument.
+             */
+            name: z.ZodString;
+            /**
+             * A human-readable description of the argument.
+             */
+            description: z.ZodOptional<z.ZodString>;
+            /**
+             * Whether this argument must be provided.
+             */
+            required: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * The name of the argument.
+             */
+            name: z.ZodString;
+            /**
+             * A human-readable description of the argument.
+             */
+            description: z.ZodOptional<z.ZodString>;
+            /**
+             * Whether this argument must be provided.
+             */
+            required: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">>, "many">>;
+    }, z.ZodTypeAny, "passthrough">>, "many">;
 }>, z.ZodTypeAny, "passthrough">, z.objectInputType<z.objectUtil.extendShape<z.objectUtil.extendShape<{
     /**
      * This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses.
@@ -3813,32 +5221,138 @@ export declare const ListPromptsResultSchema: z.ZodObject<z.objectUtil.extendSha
              * Whether this argument must be provided.
              */
             required: z.ZodOptional<z.ZodBoolean>;
-        }, "strip", z.ZodTypeAny, {
-            name: string;
-            description?: string | undefined;
-            required?: boolean | undefined;
-        }, {
-            name: string;
-            description?: string | undefined;
-            required?: boolean | undefined;
-        }>, "many">>;
-    }, "strip", z.ZodTypeAny, {
-        name: string;
-        description?: string | undefined;
-        arguments?: {
-            name: string;
-            description?: string | undefined;
-            required?: boolean | undefined;
-        }[] | undefined;
-    }, {
-        name: string;
-        description?: string | undefined;
-        arguments?: {
-            name: string;
-            description?: string | undefined;
-            required?: boolean | undefined;
-        }[] | undefined;
-    }>, "many">;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * The name of the argument.
+             */
+            name: z.ZodString;
+            /**
+             * A human-readable description of the argument.
+             */
+            description: z.ZodOptional<z.ZodString>;
+            /**
+             * Whether this argument must be provided.
+             */
+            required: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * The name of the argument.
+             */
+            name: z.ZodString;
+            /**
+             * A human-readable description of the argument.
+             */
+            description: z.ZodOptional<z.ZodString>;
+            /**
+             * Whether this argument must be provided.
+             */
+            required: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">>, "many">>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        /**
+         * The name of the prompt or prompt template.
+         */
+        name: z.ZodString;
+        /**
+         * An optional description of what this prompt provides
+         */
+        description: z.ZodOptional<z.ZodString>;
+        /**
+         * A list of arguments to use for templating the prompt.
+         */
+        arguments: z.ZodOptional<z.ZodArray<z.ZodObject<{
+            /**
+             * The name of the argument.
+             */
+            name: z.ZodString;
+            /**
+             * A human-readable description of the argument.
+             */
+            description: z.ZodOptional<z.ZodString>;
+            /**
+             * Whether this argument must be provided.
+             */
+            required: z.ZodOptional<z.ZodBoolean>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * The name of the argument.
+             */
+            name: z.ZodString;
+            /**
+             * A human-readable description of the argument.
+             */
+            description: z.ZodOptional<z.ZodString>;
+            /**
+             * Whether this argument must be provided.
+             */
+            required: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * The name of the argument.
+             */
+            name: z.ZodString;
+            /**
+             * A human-readable description of the argument.
+             */
+            description: z.ZodOptional<z.ZodString>;
+            /**
+             * Whether this argument must be provided.
+             */
+            required: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">>, "many">>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        /**
+         * The name of the prompt or prompt template.
+         */
+        name: z.ZodString;
+        /**
+         * An optional description of what this prompt provides
+         */
+        description: z.ZodOptional<z.ZodString>;
+        /**
+         * A list of arguments to use for templating the prompt.
+         */
+        arguments: z.ZodOptional<z.ZodArray<z.ZodObject<{
+            /**
+             * The name of the argument.
+             */
+            name: z.ZodString;
+            /**
+             * A human-readable description of the argument.
+             */
+            description: z.ZodOptional<z.ZodString>;
+            /**
+             * Whether this argument must be provided.
+             */
+            required: z.ZodOptional<z.ZodBoolean>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * The name of the argument.
+             */
+            name: z.ZodString;
+            /**
+             * A human-readable description of the argument.
+             */
+            description: z.ZodOptional<z.ZodString>;
+            /**
+             * Whether this argument must be provided.
+             */
+            required: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * The name of the argument.
+             */
+            name: z.ZodString;
+            /**
+             * A human-readable description of the argument.
+             */
+            description: z.ZodOptional<z.ZodString>;
+            /**
+             * Whether this argument must be provided.
+             */
+            required: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">>, "many">>;
+    }, z.ZodTypeAny, "passthrough">>, "many">;
 }>, z.ZodTypeAny, "passthrough">>;
 /**
  * Used by the client to get a prompt provided by the server.
@@ -4028,13 +5542,19 @@ export declare const GetPromptResultSchema: z.ZodObject<z.objectUtil.extendShape
              * The text content of the message.
              */
             text: z.ZodString;
-        }, "strip", z.ZodTypeAny, {
-            type: "text";
-            text: string;
-        }, {
-            type: "text";
-            text: string;
-        }>, z.ZodObject<{
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            type: z.ZodLiteral<"text">;
+            /**
+             * The text content of the message.
+             */
+            text: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            type: z.ZodLiteral<"text">;
+            /**
+             * The text content of the message.
+             */
+            text: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">>, z.ZodObject<{
             type: z.ZodLiteral<"image">;
             /**
              * The base64-encoded image data.
@@ -4044,36 +5564,130 @@ export declare const GetPromptResultSchema: z.ZodObject<z.objectUtil.extendShape
              * The MIME type of the image. Different providers may support different image types.
              */
             mimeType: z.ZodString;
-        }, "strip", z.ZodTypeAny, {
-            type: "image";
-            data: string;
-            mimeType: string;
-        }, {
-            type: "image";
-            data: string;
-            mimeType: string;
-        }>]>;
-    }, "strip", z.ZodTypeAny, {
-        role: "user" | "assistant";
-        content: {
-            type: "text";
-            text: string;
-        } | {
-            type: "image";
-            data: string;
-            mimeType: string;
-        };
-    }, {
-        role: "user" | "assistant";
-        content: {
-            type: "text";
-            text: string;
-        } | {
-            type: "image";
-            data: string;
-            mimeType: string;
-        };
-    }>, "many">;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            type: z.ZodLiteral<"image">;
+            /**
+             * The base64-encoded image data.
+             */
+            data: z.ZodString;
+            /**
+             * The MIME type of the image. Different providers may support different image types.
+             */
+            mimeType: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            type: z.ZodLiteral<"image">;
+            /**
+             * The base64-encoded image data.
+             */
+            data: z.ZodString;
+            /**
+             * The MIME type of the image. Different providers may support different image types.
+             */
+            mimeType: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">>]>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        role: z.ZodEnum<["user", "assistant"]>;
+        content: z.ZodUnion<[z.ZodObject<{
+            type: z.ZodLiteral<"text">;
+            /**
+             * The text content of the message.
+             */
+            text: z.ZodString;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            type: z.ZodLiteral<"text">;
+            /**
+             * The text content of the message.
+             */
+            text: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            type: z.ZodLiteral<"text">;
+            /**
+             * The text content of the message.
+             */
+            text: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">>, z.ZodObject<{
+            type: z.ZodLiteral<"image">;
+            /**
+             * The base64-encoded image data.
+             */
+            data: z.ZodString;
+            /**
+             * The MIME type of the image. Different providers may support different image types.
+             */
+            mimeType: z.ZodString;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            type: z.ZodLiteral<"image">;
+            /**
+             * The base64-encoded image data.
+             */
+            data: z.ZodString;
+            /**
+             * The MIME type of the image. Different providers may support different image types.
+             */
+            mimeType: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            type: z.ZodLiteral<"image">;
+            /**
+             * The base64-encoded image data.
+             */
+            data: z.ZodString;
+            /**
+             * The MIME type of the image. Different providers may support different image types.
+             */
+            mimeType: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">>]>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        role: z.ZodEnum<["user", "assistant"]>;
+        content: z.ZodUnion<[z.ZodObject<{
+            type: z.ZodLiteral<"text">;
+            /**
+             * The text content of the message.
+             */
+            text: z.ZodString;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            type: z.ZodLiteral<"text">;
+            /**
+             * The text content of the message.
+             */
+            text: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            type: z.ZodLiteral<"text">;
+            /**
+             * The text content of the message.
+             */
+            text: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">>, z.ZodObject<{
+            type: z.ZodLiteral<"image">;
+            /**
+             * The base64-encoded image data.
+             */
+            data: z.ZodString;
+            /**
+             * The MIME type of the image. Different providers may support different image types.
+             */
+            mimeType: z.ZodString;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            type: z.ZodLiteral<"image">;
+            /**
+             * The base64-encoded image data.
+             */
+            data: z.ZodString;
+            /**
+             * The MIME type of the image. Different providers may support different image types.
+             */
+            mimeType: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            type: z.ZodLiteral<"image">;
+            /**
+             * The base64-encoded image data.
+             */
+            data: z.ZodString;
+            /**
+             * The MIME type of the image. Different providers may support different image types.
+             */
+            mimeType: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">>]>;
+    }, z.ZodTypeAny, "passthrough">>, "many">;
 }>, "passthrough", z.ZodTypeAny, z.objectOutputType<z.objectUtil.extendShape<{
     /**
      * This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses.
@@ -4092,13 +5706,19 @@ export declare const GetPromptResultSchema: z.ZodObject<z.objectUtil.extendShape
              * The text content of the message.
              */
             text: z.ZodString;
-        }, "strip", z.ZodTypeAny, {
-            type: "text";
-            text: string;
-        }, {
-            type: "text";
-            text: string;
-        }>, z.ZodObject<{
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            type: z.ZodLiteral<"text">;
+            /**
+             * The text content of the message.
+             */
+            text: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            type: z.ZodLiteral<"text">;
+            /**
+             * The text content of the message.
+             */
+            text: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">>, z.ZodObject<{
             type: z.ZodLiteral<"image">;
             /**
              * The base64-encoded image data.
@@ -4108,36 +5728,130 @@ export declare const GetPromptResultSchema: z.ZodObject<z.objectUtil.extendShape
              * The MIME type of the image. Different providers may support different image types.
              */
             mimeType: z.ZodString;
-        }, "strip", z.ZodTypeAny, {
-            type: "image";
-            data: string;
-            mimeType: string;
-        }, {
-            type: "image";
-            data: string;
-            mimeType: string;
-        }>]>;
-    }, "strip", z.ZodTypeAny, {
-        role: "user" | "assistant";
-        content: {
-            type: "text";
-            text: string;
-        } | {
-            type: "image";
-            data: string;
-            mimeType: string;
-        };
-    }, {
-        role: "user" | "assistant";
-        content: {
-            type: "text";
-            text: string;
-        } | {
-            type: "image";
-            data: string;
-            mimeType: string;
-        };
-    }>, "many">;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            type: z.ZodLiteral<"image">;
+            /**
+             * The base64-encoded image data.
+             */
+            data: z.ZodString;
+            /**
+             * The MIME type of the image. Different providers may support different image types.
+             */
+            mimeType: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            type: z.ZodLiteral<"image">;
+            /**
+             * The base64-encoded image data.
+             */
+            data: z.ZodString;
+            /**
+             * The MIME type of the image. Different providers may support different image types.
+             */
+            mimeType: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">>]>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        role: z.ZodEnum<["user", "assistant"]>;
+        content: z.ZodUnion<[z.ZodObject<{
+            type: z.ZodLiteral<"text">;
+            /**
+             * The text content of the message.
+             */
+            text: z.ZodString;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            type: z.ZodLiteral<"text">;
+            /**
+             * The text content of the message.
+             */
+            text: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            type: z.ZodLiteral<"text">;
+            /**
+             * The text content of the message.
+             */
+            text: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">>, z.ZodObject<{
+            type: z.ZodLiteral<"image">;
+            /**
+             * The base64-encoded image data.
+             */
+            data: z.ZodString;
+            /**
+             * The MIME type of the image. Different providers may support different image types.
+             */
+            mimeType: z.ZodString;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            type: z.ZodLiteral<"image">;
+            /**
+             * The base64-encoded image data.
+             */
+            data: z.ZodString;
+            /**
+             * The MIME type of the image. Different providers may support different image types.
+             */
+            mimeType: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            type: z.ZodLiteral<"image">;
+            /**
+             * The base64-encoded image data.
+             */
+            data: z.ZodString;
+            /**
+             * The MIME type of the image. Different providers may support different image types.
+             */
+            mimeType: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">>]>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        role: z.ZodEnum<["user", "assistant"]>;
+        content: z.ZodUnion<[z.ZodObject<{
+            type: z.ZodLiteral<"text">;
+            /**
+             * The text content of the message.
+             */
+            text: z.ZodString;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            type: z.ZodLiteral<"text">;
+            /**
+             * The text content of the message.
+             */
+            text: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            type: z.ZodLiteral<"text">;
+            /**
+             * The text content of the message.
+             */
+            text: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">>, z.ZodObject<{
+            type: z.ZodLiteral<"image">;
+            /**
+             * The base64-encoded image data.
+             */
+            data: z.ZodString;
+            /**
+             * The MIME type of the image. Different providers may support different image types.
+             */
+            mimeType: z.ZodString;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            type: z.ZodLiteral<"image">;
+            /**
+             * The base64-encoded image data.
+             */
+            data: z.ZodString;
+            /**
+             * The MIME type of the image. Different providers may support different image types.
+             */
+            mimeType: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            type: z.ZodLiteral<"image">;
+            /**
+             * The base64-encoded image data.
+             */
+            data: z.ZodString;
+            /**
+             * The MIME type of the image. Different providers may support different image types.
+             */
+            mimeType: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">>]>;
+    }, z.ZodTypeAny, "passthrough">>, "many">;
 }>, z.ZodTypeAny, "passthrough">, z.objectInputType<z.objectUtil.extendShape<{
     /**
      * This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses.
@@ -4156,13 +5870,19 @@ export declare const GetPromptResultSchema: z.ZodObject<z.objectUtil.extendShape
              * The text content of the message.
              */
             text: z.ZodString;
-        }, "strip", z.ZodTypeAny, {
-            type: "text";
-            text: string;
-        }, {
-            type: "text";
-            text: string;
-        }>, z.ZodObject<{
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            type: z.ZodLiteral<"text">;
+            /**
+             * The text content of the message.
+             */
+            text: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            type: z.ZodLiteral<"text">;
+            /**
+             * The text content of the message.
+             */
+            text: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">>, z.ZodObject<{
             type: z.ZodLiteral<"image">;
             /**
              * The base64-encoded image data.
@@ -4172,36 +5892,130 @@ export declare const GetPromptResultSchema: z.ZodObject<z.objectUtil.extendShape
              * The MIME type of the image. Different providers may support different image types.
              */
             mimeType: z.ZodString;
-        }, "strip", z.ZodTypeAny, {
-            type: "image";
-            data: string;
-            mimeType: string;
-        }, {
-            type: "image";
-            data: string;
-            mimeType: string;
-        }>]>;
-    }, "strip", z.ZodTypeAny, {
-        role: "user" | "assistant";
-        content: {
-            type: "text";
-            text: string;
-        } | {
-            type: "image";
-            data: string;
-            mimeType: string;
-        };
-    }, {
-        role: "user" | "assistant";
-        content: {
-            type: "text";
-            text: string;
-        } | {
-            type: "image";
-            data: string;
-            mimeType: string;
-        };
-    }>, "many">;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            type: z.ZodLiteral<"image">;
+            /**
+             * The base64-encoded image data.
+             */
+            data: z.ZodString;
+            /**
+             * The MIME type of the image. Different providers may support different image types.
+             */
+            mimeType: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            type: z.ZodLiteral<"image">;
+            /**
+             * The base64-encoded image data.
+             */
+            data: z.ZodString;
+            /**
+             * The MIME type of the image. Different providers may support different image types.
+             */
+            mimeType: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">>]>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        role: z.ZodEnum<["user", "assistant"]>;
+        content: z.ZodUnion<[z.ZodObject<{
+            type: z.ZodLiteral<"text">;
+            /**
+             * The text content of the message.
+             */
+            text: z.ZodString;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            type: z.ZodLiteral<"text">;
+            /**
+             * The text content of the message.
+             */
+            text: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            type: z.ZodLiteral<"text">;
+            /**
+             * The text content of the message.
+             */
+            text: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">>, z.ZodObject<{
+            type: z.ZodLiteral<"image">;
+            /**
+             * The base64-encoded image data.
+             */
+            data: z.ZodString;
+            /**
+             * The MIME type of the image. Different providers may support different image types.
+             */
+            mimeType: z.ZodString;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            type: z.ZodLiteral<"image">;
+            /**
+             * The base64-encoded image data.
+             */
+            data: z.ZodString;
+            /**
+             * The MIME type of the image. Different providers may support different image types.
+             */
+            mimeType: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            type: z.ZodLiteral<"image">;
+            /**
+             * The base64-encoded image data.
+             */
+            data: z.ZodString;
+            /**
+             * The MIME type of the image. Different providers may support different image types.
+             */
+            mimeType: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">>]>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        role: z.ZodEnum<["user", "assistant"]>;
+        content: z.ZodUnion<[z.ZodObject<{
+            type: z.ZodLiteral<"text">;
+            /**
+             * The text content of the message.
+             */
+            text: z.ZodString;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            type: z.ZodLiteral<"text">;
+            /**
+             * The text content of the message.
+             */
+            text: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            type: z.ZodLiteral<"text">;
+            /**
+             * The text content of the message.
+             */
+            text: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">>, z.ZodObject<{
+            type: z.ZodLiteral<"image">;
+            /**
+             * The base64-encoded image data.
+             */
+            data: z.ZodString;
+            /**
+             * The MIME type of the image. Different providers may support different image types.
+             */
+            mimeType: z.ZodString;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            type: z.ZodLiteral<"image">;
+            /**
+             * The base64-encoded image data.
+             */
+            data: z.ZodString;
+            /**
+             * The MIME type of the image. Different providers may support different image types.
+             */
+            mimeType: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            type: z.ZodLiteral<"image">;
+            /**
+             * The base64-encoded image data.
+             */
+            data: z.ZodString;
+            /**
+             * The MIME type of the image. Different providers may support different image types.
+             */
+            mimeType: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">>]>;
+    }, z.ZodTypeAny, "passthrough">>, "many">;
 }>, z.ZodTypeAny, "passthrough">>;
 /**
  * An optional notification from the server to the client, informing it that the list of prompts it offers has changed. This may be issued by servers without any previous subscription from the client.
@@ -4261,28 +6075,58 @@ export declare const ToolSchema: z.ZodObject<{
     inputSchema: z.ZodObject<{
         type: z.ZodLiteral<"object">;
         properties: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
-    }, "strip", z.ZodTypeAny, {
-        type: "object";
-        properties?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-    }, {
-        type: "object";
-        properties?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-    }>;
-}, "strip", z.ZodTypeAny, {
-    name: string;
-    inputSchema: {
-        type: "object";
-        properties?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-    };
-    description?: string | undefined;
-}, {
-    name: string;
-    inputSchema: {
-        type: "object";
-        properties?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-    };
-    description?: string | undefined;
-}>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        type: z.ZodLiteral<"object">;
+        properties: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        type: z.ZodLiteral<"object">;
+        properties: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+    }, z.ZodTypeAny, "passthrough">>;
+}, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+    /**
+     * The name of the tool.
+     */
+    name: z.ZodString;
+    /**
+     * A human-readable description of the tool.
+     */
+    description: z.ZodOptional<z.ZodString>;
+    /**
+     * A JSON Schema object defining the expected parameters for the tool.
+     */
+    inputSchema: z.ZodObject<{
+        type: z.ZodLiteral<"object">;
+        properties: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        type: z.ZodLiteral<"object">;
+        properties: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        type: z.ZodLiteral<"object">;
+        properties: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+    }, z.ZodTypeAny, "passthrough">>;
+}, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+    /**
+     * The name of the tool.
+     */
+    name: z.ZodString;
+    /**
+     * A human-readable description of the tool.
+     */
+    description: z.ZodOptional<z.ZodString>;
+    /**
+     * A JSON Schema object defining the expected parameters for the tool.
+     */
+    inputSchema: z.ZodObject<{
+        type: z.ZodLiteral<"object">;
+        properties: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        type: z.ZodLiteral<"object">;
+        properties: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        type: z.ZodLiteral<"object">;
+        properties: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+    }, z.ZodTypeAny, "passthrough">>;
+}, z.ZodTypeAny, "passthrough">>;
 /**
  * Sent from the client to request a list of tools the server has.
  */
@@ -4470,28 +6314,58 @@ export declare const ListToolsResultSchema: z.ZodObject<z.objectUtil.extendShape
         inputSchema: z.ZodObject<{
             type: z.ZodLiteral<"object">;
             properties: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
-        }, "strip", z.ZodTypeAny, {
-            type: "object";
-            properties?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        }, {
-            type: "object";
-            properties?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        }>;
-    }, "strip", z.ZodTypeAny, {
-        name: string;
-        inputSchema: {
-            type: "object";
-            properties?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        };
-        description?: string | undefined;
-    }, {
-        name: string;
-        inputSchema: {
-            type: "object";
-            properties?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        };
-        description?: string | undefined;
-    }>, "many">;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            type: z.ZodLiteral<"object">;
+            properties: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            type: z.ZodLiteral<"object">;
+            properties: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        /**
+         * The name of the tool.
+         */
+        name: z.ZodString;
+        /**
+         * A human-readable description of the tool.
+         */
+        description: z.ZodOptional<z.ZodString>;
+        /**
+         * A JSON Schema object defining the expected parameters for the tool.
+         */
+        inputSchema: z.ZodObject<{
+            type: z.ZodLiteral<"object">;
+            properties: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            type: z.ZodLiteral<"object">;
+            properties: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            type: z.ZodLiteral<"object">;
+            properties: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        /**
+         * The name of the tool.
+         */
+        name: z.ZodString;
+        /**
+         * A human-readable description of the tool.
+         */
+        description: z.ZodOptional<z.ZodString>;
+        /**
+         * A JSON Schema object defining the expected parameters for the tool.
+         */
+        inputSchema: z.ZodObject<{
+            type: z.ZodLiteral<"object">;
+            properties: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            type: z.ZodLiteral<"object">;
+            properties: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            type: z.ZodLiteral<"object">;
+            properties: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">>;
+    }, z.ZodTypeAny, "passthrough">>, "many">;
 }>, "passthrough", z.ZodTypeAny, z.objectOutputType<z.objectUtil.extendShape<z.objectUtil.extendShape<{
     /**
      * This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses.
@@ -4519,28 +6393,58 @@ export declare const ListToolsResultSchema: z.ZodObject<z.objectUtil.extendShape
         inputSchema: z.ZodObject<{
             type: z.ZodLiteral<"object">;
             properties: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
-        }, "strip", z.ZodTypeAny, {
-            type: "object";
-            properties?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        }, {
-            type: "object";
-            properties?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        }>;
-    }, "strip", z.ZodTypeAny, {
-        name: string;
-        inputSchema: {
-            type: "object";
-            properties?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        };
-        description?: string | undefined;
-    }, {
-        name: string;
-        inputSchema: {
-            type: "object";
-            properties?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        };
-        description?: string | undefined;
-    }>, "many">;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            type: z.ZodLiteral<"object">;
+            properties: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            type: z.ZodLiteral<"object">;
+            properties: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        /**
+         * The name of the tool.
+         */
+        name: z.ZodString;
+        /**
+         * A human-readable description of the tool.
+         */
+        description: z.ZodOptional<z.ZodString>;
+        /**
+         * A JSON Schema object defining the expected parameters for the tool.
+         */
+        inputSchema: z.ZodObject<{
+            type: z.ZodLiteral<"object">;
+            properties: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            type: z.ZodLiteral<"object">;
+            properties: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            type: z.ZodLiteral<"object">;
+            properties: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        /**
+         * The name of the tool.
+         */
+        name: z.ZodString;
+        /**
+         * A human-readable description of the tool.
+         */
+        description: z.ZodOptional<z.ZodString>;
+        /**
+         * A JSON Schema object defining the expected parameters for the tool.
+         */
+        inputSchema: z.ZodObject<{
+            type: z.ZodLiteral<"object">;
+            properties: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            type: z.ZodLiteral<"object">;
+            properties: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            type: z.ZodLiteral<"object">;
+            properties: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">>;
+    }, z.ZodTypeAny, "passthrough">>, "many">;
 }>, z.ZodTypeAny, "passthrough">, z.objectInputType<z.objectUtil.extendShape<z.objectUtil.extendShape<{
     /**
      * This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses.
@@ -4568,28 +6472,58 @@ export declare const ListToolsResultSchema: z.ZodObject<z.objectUtil.extendShape
         inputSchema: z.ZodObject<{
             type: z.ZodLiteral<"object">;
             properties: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
-        }, "strip", z.ZodTypeAny, {
-            type: "object";
-            properties?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        }, {
-            type: "object";
-            properties?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        }>;
-    }, "strip", z.ZodTypeAny, {
-        name: string;
-        inputSchema: {
-            type: "object";
-            properties?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        };
-        description?: string | undefined;
-    }, {
-        name: string;
-        inputSchema: {
-            type: "object";
-            properties?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        };
-        description?: string | undefined;
-    }>, "many">;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            type: z.ZodLiteral<"object">;
+            properties: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            type: z.ZodLiteral<"object">;
+            properties: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        /**
+         * The name of the tool.
+         */
+        name: z.ZodString;
+        /**
+         * A human-readable description of the tool.
+         */
+        description: z.ZodOptional<z.ZodString>;
+        /**
+         * A JSON Schema object defining the expected parameters for the tool.
+         */
+        inputSchema: z.ZodObject<{
+            type: z.ZodLiteral<"object">;
+            properties: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            type: z.ZodLiteral<"object">;
+            properties: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            type: z.ZodLiteral<"object">;
+            properties: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        /**
+         * The name of the tool.
+         */
+        name: z.ZodString;
+        /**
+         * A human-readable description of the tool.
+         */
+        description: z.ZodOptional<z.ZodString>;
+        /**
+         * A JSON Schema object defining the expected parameters for the tool.
+         */
+        inputSchema: z.ZodObject<{
+            type: z.ZodLiteral<"object">;
+            properties: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            type: z.ZodLiteral<"object">;
+            properties: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            type: z.ZodLiteral<"object">;
+            properties: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">>;
+    }, z.ZodTypeAny, "passthrough">>, "many">;
 }>, z.ZodTypeAny, "passthrough">>;
 /**
  * The server's response to a tool call.
@@ -4998,20 +6932,40 @@ export declare const LoggingMessageNotificationSchema: z.ZodObject<z.objectUtil.
          * The data to be logged, such as a string message or an object. Any JSON serializable type is allowed here.
          */
         data: z.ZodUnknown;
-    }, "strip", z.ZodTypeAny, {
-        level: "error" | "debug" | "info" | "warning";
-        data?: unknown;
-        logger?: string | undefined;
-    }, {
-        level: "error" | "debug" | "info" | "warning";
-        data?: unknown;
-        logger?: string | undefined;
-    }>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        /**
+         * The severity of this log message.
+         */
+        level: z.ZodEnum<["debug", "info", "warning", "error"]>;
+        /**
+         * An optional name of the logger issuing this message.
+         */
+        logger: z.ZodOptional<z.ZodString>;
+        /**
+         * The data to be logged, such as a string message or an object. Any JSON serializable type is allowed here.
+         */
+        data: z.ZodUnknown;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        /**
+         * The severity of this log message.
+         */
+        level: z.ZodEnum<["debug", "info", "warning", "error"]>;
+        /**
+         * An optional name of the logger issuing this message.
+         */
+        logger: z.ZodOptional<z.ZodString>;
+        /**
+         * The data to be logged, such as a string message or an object. Any JSON serializable type is allowed here.
+         */
+        data: z.ZodUnknown;
+    }, z.ZodTypeAny, "passthrough">>;
 }>, "strip", z.ZodTypeAny, {
     params: {
         level: "error" | "debug" | "info" | "warning";
         data?: unknown;
         logger?: string | undefined;
+    } & {
+        [k: string]: unknown;
     };
     method: "notifications/message";
 }, {
@@ -5019,6 +6973,8 @@ export declare const LoggingMessageNotificationSchema: z.ZodObject<z.objectUtil.
         level: "error" | "debug" | "info" | "warning";
         data?: unknown;
         logger?: string | undefined;
+    } & {
+        [k: string]: unknown;
     };
     method: "notifications/message";
 }>;
@@ -5107,13 +7063,19 @@ export declare const CreateMessageRequestSchema: z.ZodObject<z.objectUtil.extend
                  * The text content of the message.
                  */
                 text: z.ZodString;
-            }, "strip", z.ZodTypeAny, {
-                type: "text";
-                text: string;
-            }, {
-                type: "text";
-                text: string;
-            }>, z.ZodObject<{
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                type: z.ZodLiteral<"text">;
+                /**
+                 * The text content of the message.
+                 */
+                text: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                type: z.ZodLiteral<"text">;
+                /**
+                 * The text content of the message.
+                 */
+                text: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">>, z.ZodObject<{
                 type: z.ZodLiteral<"image">;
                 /**
                  * The base64-encoded image data.
@@ -5123,36 +7085,130 @@ export declare const CreateMessageRequestSchema: z.ZodObject<z.objectUtil.extend
                  * The MIME type of the image. Different providers may support different image types.
                  */
                 mimeType: z.ZodString;
-            }, "strip", z.ZodTypeAny, {
-                type: "image";
-                data: string;
-                mimeType: string;
-            }, {
-                type: "image";
-                data: string;
-                mimeType: string;
-            }>]>;
-        }, "strip", z.ZodTypeAny, {
-            role: "user" | "assistant";
-            content: {
-                type: "text";
-                text: string;
-            } | {
-                type: "image";
-                data: string;
-                mimeType: string;
-            };
-        }, {
-            role: "user" | "assistant";
-            content: {
-                type: "text";
-                text: string;
-            } | {
-                type: "image";
-                data: string;
-                mimeType: string;
-            };
-        }>, "many">;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                type: z.ZodLiteral<"image">;
+                /**
+                 * The base64-encoded image data.
+                 */
+                data: z.ZodString;
+                /**
+                 * The MIME type of the image. Different providers may support different image types.
+                 */
+                mimeType: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                type: z.ZodLiteral<"image">;
+                /**
+                 * The base64-encoded image data.
+                 */
+                data: z.ZodString;
+                /**
+                 * The MIME type of the image. Different providers may support different image types.
+                 */
+                mimeType: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">>]>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            role: z.ZodEnum<["user", "assistant"]>;
+            content: z.ZodUnion<[z.ZodObject<{
+                type: z.ZodLiteral<"text">;
+                /**
+                 * The text content of the message.
+                 */
+                text: z.ZodString;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                type: z.ZodLiteral<"text">;
+                /**
+                 * The text content of the message.
+                 */
+                text: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                type: z.ZodLiteral<"text">;
+                /**
+                 * The text content of the message.
+                 */
+                text: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">>, z.ZodObject<{
+                type: z.ZodLiteral<"image">;
+                /**
+                 * The base64-encoded image data.
+                 */
+                data: z.ZodString;
+                /**
+                 * The MIME type of the image. Different providers may support different image types.
+                 */
+                mimeType: z.ZodString;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                type: z.ZodLiteral<"image">;
+                /**
+                 * The base64-encoded image data.
+                 */
+                data: z.ZodString;
+                /**
+                 * The MIME type of the image. Different providers may support different image types.
+                 */
+                mimeType: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                type: z.ZodLiteral<"image">;
+                /**
+                 * The base64-encoded image data.
+                 */
+                data: z.ZodString;
+                /**
+                 * The MIME type of the image. Different providers may support different image types.
+                 */
+                mimeType: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">>]>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            role: z.ZodEnum<["user", "assistant"]>;
+            content: z.ZodUnion<[z.ZodObject<{
+                type: z.ZodLiteral<"text">;
+                /**
+                 * The text content of the message.
+                 */
+                text: z.ZodString;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                type: z.ZodLiteral<"text">;
+                /**
+                 * The text content of the message.
+                 */
+                text: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                type: z.ZodLiteral<"text">;
+                /**
+                 * The text content of the message.
+                 */
+                text: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">>, z.ZodObject<{
+                type: z.ZodLiteral<"image">;
+                /**
+                 * The base64-encoded image data.
+                 */
+                data: z.ZodString;
+                /**
+                 * The MIME type of the image. Different providers may support different image types.
+                 */
+                mimeType: z.ZodString;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                type: z.ZodLiteral<"image">;
+                /**
+                 * The base64-encoded image data.
+                 */
+                data: z.ZodString;
+                /**
+                 * The MIME type of the image. Different providers may support different image types.
+                 */
+                mimeType: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                type: z.ZodLiteral<"image">;
+                /**
+                 * The base64-encoded image data.
+                 */
+                data: z.ZodString;
+                /**
+                 * The MIME type of the image. Different providers may support different image types.
+                 */
+                mimeType: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">>]>;
+        }, z.ZodTypeAny, "passthrough">>, "many">;
         /**
          * An optional system prompt the server wants to use for sampling. The client MAY modify or omit this prompt.
          */
@@ -5197,13 +7253,19 @@ export declare const CreateMessageRequestSchema: z.ZodObject<z.objectUtil.extend
                  * The text content of the message.
                  */
                 text: z.ZodString;
-            }, "strip", z.ZodTypeAny, {
-                type: "text";
-                text: string;
-            }, {
-                type: "text";
-                text: string;
-            }>, z.ZodObject<{
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                type: z.ZodLiteral<"text">;
+                /**
+                 * The text content of the message.
+                 */
+                text: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                type: z.ZodLiteral<"text">;
+                /**
+                 * The text content of the message.
+                 */
+                text: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">>, z.ZodObject<{
                 type: z.ZodLiteral<"image">;
                 /**
                  * The base64-encoded image data.
@@ -5213,36 +7275,130 @@ export declare const CreateMessageRequestSchema: z.ZodObject<z.objectUtil.extend
                  * The MIME type of the image. Different providers may support different image types.
                  */
                 mimeType: z.ZodString;
-            }, "strip", z.ZodTypeAny, {
-                type: "image";
-                data: string;
-                mimeType: string;
-            }, {
-                type: "image";
-                data: string;
-                mimeType: string;
-            }>]>;
-        }, "strip", z.ZodTypeAny, {
-            role: "user" | "assistant";
-            content: {
-                type: "text";
-                text: string;
-            } | {
-                type: "image";
-                data: string;
-                mimeType: string;
-            };
-        }, {
-            role: "user" | "assistant";
-            content: {
-                type: "text";
-                text: string;
-            } | {
-                type: "image";
-                data: string;
-                mimeType: string;
-            };
-        }>, "many">;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                type: z.ZodLiteral<"image">;
+                /**
+                 * The base64-encoded image data.
+                 */
+                data: z.ZodString;
+                /**
+                 * The MIME type of the image. Different providers may support different image types.
+                 */
+                mimeType: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                type: z.ZodLiteral<"image">;
+                /**
+                 * The base64-encoded image data.
+                 */
+                data: z.ZodString;
+                /**
+                 * The MIME type of the image. Different providers may support different image types.
+                 */
+                mimeType: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">>]>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            role: z.ZodEnum<["user", "assistant"]>;
+            content: z.ZodUnion<[z.ZodObject<{
+                type: z.ZodLiteral<"text">;
+                /**
+                 * The text content of the message.
+                 */
+                text: z.ZodString;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                type: z.ZodLiteral<"text">;
+                /**
+                 * The text content of the message.
+                 */
+                text: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                type: z.ZodLiteral<"text">;
+                /**
+                 * The text content of the message.
+                 */
+                text: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">>, z.ZodObject<{
+                type: z.ZodLiteral<"image">;
+                /**
+                 * The base64-encoded image data.
+                 */
+                data: z.ZodString;
+                /**
+                 * The MIME type of the image. Different providers may support different image types.
+                 */
+                mimeType: z.ZodString;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                type: z.ZodLiteral<"image">;
+                /**
+                 * The base64-encoded image data.
+                 */
+                data: z.ZodString;
+                /**
+                 * The MIME type of the image. Different providers may support different image types.
+                 */
+                mimeType: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                type: z.ZodLiteral<"image">;
+                /**
+                 * The base64-encoded image data.
+                 */
+                data: z.ZodString;
+                /**
+                 * The MIME type of the image. Different providers may support different image types.
+                 */
+                mimeType: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">>]>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            role: z.ZodEnum<["user", "assistant"]>;
+            content: z.ZodUnion<[z.ZodObject<{
+                type: z.ZodLiteral<"text">;
+                /**
+                 * The text content of the message.
+                 */
+                text: z.ZodString;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                type: z.ZodLiteral<"text">;
+                /**
+                 * The text content of the message.
+                 */
+                text: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                type: z.ZodLiteral<"text">;
+                /**
+                 * The text content of the message.
+                 */
+                text: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">>, z.ZodObject<{
+                type: z.ZodLiteral<"image">;
+                /**
+                 * The base64-encoded image data.
+                 */
+                data: z.ZodString;
+                /**
+                 * The MIME type of the image. Different providers may support different image types.
+                 */
+                mimeType: z.ZodString;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                type: z.ZodLiteral<"image">;
+                /**
+                 * The base64-encoded image data.
+                 */
+                data: z.ZodString;
+                /**
+                 * The MIME type of the image. Different providers may support different image types.
+                 */
+                mimeType: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                type: z.ZodLiteral<"image">;
+                /**
+                 * The base64-encoded image data.
+                 */
+                data: z.ZodString;
+                /**
+                 * The MIME type of the image. Different providers may support different image types.
+                 */
+                mimeType: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">>]>;
+        }, z.ZodTypeAny, "passthrough">>, "many">;
         /**
          * An optional system prompt the server wants to use for sampling. The client MAY modify or omit this prompt.
          */
@@ -5287,13 +7443,19 @@ export declare const CreateMessageRequestSchema: z.ZodObject<z.objectUtil.extend
                  * The text content of the message.
                  */
                 text: z.ZodString;
-            }, "strip", z.ZodTypeAny, {
-                type: "text";
-                text: string;
-            }, {
-                type: "text";
-                text: string;
-            }>, z.ZodObject<{
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                type: z.ZodLiteral<"text">;
+                /**
+                 * The text content of the message.
+                 */
+                text: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                type: z.ZodLiteral<"text">;
+                /**
+                 * The text content of the message.
+                 */
+                text: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">>, z.ZodObject<{
                 type: z.ZodLiteral<"image">;
                 /**
                  * The base64-encoded image data.
@@ -5303,36 +7465,130 @@ export declare const CreateMessageRequestSchema: z.ZodObject<z.objectUtil.extend
                  * The MIME type of the image. Different providers may support different image types.
                  */
                 mimeType: z.ZodString;
-            }, "strip", z.ZodTypeAny, {
-                type: "image";
-                data: string;
-                mimeType: string;
-            }, {
-                type: "image";
-                data: string;
-                mimeType: string;
-            }>]>;
-        }, "strip", z.ZodTypeAny, {
-            role: "user" | "assistant";
-            content: {
-                type: "text";
-                text: string;
-            } | {
-                type: "image";
-                data: string;
-                mimeType: string;
-            };
-        }, {
-            role: "user" | "assistant";
-            content: {
-                type: "text";
-                text: string;
-            } | {
-                type: "image";
-                data: string;
-                mimeType: string;
-            };
-        }>, "many">;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                type: z.ZodLiteral<"image">;
+                /**
+                 * The base64-encoded image data.
+                 */
+                data: z.ZodString;
+                /**
+                 * The MIME type of the image. Different providers may support different image types.
+                 */
+                mimeType: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                type: z.ZodLiteral<"image">;
+                /**
+                 * The base64-encoded image data.
+                 */
+                data: z.ZodString;
+                /**
+                 * The MIME type of the image. Different providers may support different image types.
+                 */
+                mimeType: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">>]>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            role: z.ZodEnum<["user", "assistant"]>;
+            content: z.ZodUnion<[z.ZodObject<{
+                type: z.ZodLiteral<"text">;
+                /**
+                 * The text content of the message.
+                 */
+                text: z.ZodString;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                type: z.ZodLiteral<"text">;
+                /**
+                 * The text content of the message.
+                 */
+                text: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                type: z.ZodLiteral<"text">;
+                /**
+                 * The text content of the message.
+                 */
+                text: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">>, z.ZodObject<{
+                type: z.ZodLiteral<"image">;
+                /**
+                 * The base64-encoded image data.
+                 */
+                data: z.ZodString;
+                /**
+                 * The MIME type of the image. Different providers may support different image types.
+                 */
+                mimeType: z.ZodString;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                type: z.ZodLiteral<"image">;
+                /**
+                 * The base64-encoded image data.
+                 */
+                data: z.ZodString;
+                /**
+                 * The MIME type of the image. Different providers may support different image types.
+                 */
+                mimeType: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                type: z.ZodLiteral<"image">;
+                /**
+                 * The base64-encoded image data.
+                 */
+                data: z.ZodString;
+                /**
+                 * The MIME type of the image. Different providers may support different image types.
+                 */
+                mimeType: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">>]>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            role: z.ZodEnum<["user", "assistant"]>;
+            content: z.ZodUnion<[z.ZodObject<{
+                type: z.ZodLiteral<"text">;
+                /**
+                 * The text content of the message.
+                 */
+                text: z.ZodString;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                type: z.ZodLiteral<"text">;
+                /**
+                 * The text content of the message.
+                 */
+                text: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                type: z.ZodLiteral<"text">;
+                /**
+                 * The text content of the message.
+                 */
+                text: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">>, z.ZodObject<{
+                type: z.ZodLiteral<"image">;
+                /**
+                 * The base64-encoded image data.
+                 */
+                data: z.ZodString;
+                /**
+                 * The MIME type of the image. Different providers may support different image types.
+                 */
+                mimeType: z.ZodString;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                type: z.ZodLiteral<"image">;
+                /**
+                 * The base64-encoded image data.
+                 */
+                data: z.ZodString;
+                /**
+                 * The MIME type of the image. Different providers may support different image types.
+                 */
+                mimeType: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                type: z.ZodLiteral<"image">;
+                /**
+                 * The base64-encoded image data.
+                 */
+                data: z.ZodString;
+                /**
+                 * The MIME type of the image. Different providers may support different image types.
+                 */
+                mimeType: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">>]>;
+        }, z.ZodTypeAny, "passthrough">>, "many">;
         /**
          * An optional system prompt the server wants to use for sampling. The client MAY modify or omit this prompt.
          */
@@ -5354,17 +7610,58 @@ export declare const CreateMessageRequestSchema: z.ZodObject<z.objectUtil.extend
     }>, z.ZodTypeAny, "passthrough">>;
 }>, "strip", z.ZodTypeAny, {
     params: {
-        messages: {
-            role: "user" | "assistant";
-            content: {
-                type: "text";
-                text: string;
-            } | {
-                type: "image";
-                data: string;
-                mimeType: string;
-            };
-        }[];
+        messages: z.objectOutputType<{
+            role: z.ZodEnum<["user", "assistant"]>;
+            content: z.ZodUnion<[z.ZodObject<{
+                type: z.ZodLiteral<"text">;
+                /**
+                 * The text content of the message.
+                 */
+                text: z.ZodString;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                type: z.ZodLiteral<"text">;
+                /**
+                 * The text content of the message.
+                 */
+                text: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                type: z.ZodLiteral<"text">;
+                /**
+                 * The text content of the message.
+                 */
+                text: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">>, z.ZodObject<{
+                type: z.ZodLiteral<"image">;
+                /**
+                 * The base64-encoded image data.
+                 */
+                data: z.ZodString;
+                /**
+                 * The MIME type of the image. Different providers may support different image types.
+                 */
+                mimeType: z.ZodString;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                type: z.ZodLiteral<"image">;
+                /**
+                 * The base64-encoded image data.
+                 */
+                data: z.ZodString;
+                /**
+                 * The MIME type of the image. Different providers may support different image types.
+                 */
+                mimeType: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                type: z.ZodLiteral<"image">;
+                /**
+                 * The base64-encoded image data.
+                 */
+                data: z.ZodString;
+                /**
+                 * The MIME type of the image. Different providers may support different image types.
+                 */
+                mimeType: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">>]>;
+        }, z.ZodTypeAny, "passthrough">[];
         maxTokens: number;
         _meta?: z.objectOutputType<{
             /**
@@ -5383,17 +7680,58 @@ export declare const CreateMessageRequestSchema: z.ZodObject<z.objectUtil.extend
     method: "sampling/createMessage";
 }, {
     params: {
-        messages: {
-            role: "user" | "assistant";
-            content: {
-                type: "text";
-                text: string;
-            } | {
-                type: "image";
-                data: string;
-                mimeType: string;
-            };
-        }[];
+        messages: z.objectInputType<{
+            role: z.ZodEnum<["user", "assistant"]>;
+            content: z.ZodUnion<[z.ZodObject<{
+                type: z.ZodLiteral<"text">;
+                /**
+                 * The text content of the message.
+                 */
+                text: z.ZodString;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                type: z.ZodLiteral<"text">;
+                /**
+                 * The text content of the message.
+                 */
+                text: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                type: z.ZodLiteral<"text">;
+                /**
+                 * The text content of the message.
+                 */
+                text: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">>, z.ZodObject<{
+                type: z.ZodLiteral<"image">;
+                /**
+                 * The base64-encoded image data.
+                 */
+                data: z.ZodString;
+                /**
+                 * The MIME type of the image. Different providers may support different image types.
+                 */
+                mimeType: z.ZodString;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                type: z.ZodLiteral<"image">;
+                /**
+                 * The base64-encoded image data.
+                 */
+                data: z.ZodString;
+                /**
+                 * The MIME type of the image. Different providers may support different image types.
+                 */
+                mimeType: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                type: z.ZodLiteral<"image">;
+                /**
+                 * The base64-encoded image data.
+                 */
+                data: z.ZodString;
+                /**
+                 * The MIME type of the image. Different providers may support different image types.
+                 */
+                mimeType: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">>]>;
+        }, z.ZodTypeAny, "passthrough">[];
         maxTokens: number;
         _meta?: z.objectInputType<{
             /**
@@ -5435,13 +7773,19 @@ export declare const CreateMessageResultSchema: z.ZodObject<z.objectUtil.extendS
          * The text content of the message.
          */
         text: z.ZodString;
-    }, "strip", z.ZodTypeAny, {
-        type: "text";
-        text: string;
-    }, {
-        type: "text";
-        text: string;
-    }>, z.ZodObject<{
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        type: z.ZodLiteral<"text">;
+        /**
+         * The text content of the message.
+         */
+        text: z.ZodString;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        type: z.ZodLiteral<"text">;
+        /**
+         * The text content of the message.
+         */
+        text: z.ZodString;
+    }, z.ZodTypeAny, "passthrough">>, z.ZodObject<{
         type: z.ZodLiteral<"image">;
         /**
          * The base64-encoded image data.
@@ -5451,15 +7795,27 @@ export declare const CreateMessageResultSchema: z.ZodObject<z.objectUtil.extendS
          * The MIME type of the image. Different providers may support different image types.
          */
         mimeType: z.ZodString;
-    }, "strip", z.ZodTypeAny, {
-        type: "image";
-        data: string;
-        mimeType: string;
-    }, {
-        type: "image";
-        data: string;
-        mimeType: string;
-    }>]>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        type: z.ZodLiteral<"image">;
+        /**
+         * The base64-encoded image data.
+         */
+        data: z.ZodString;
+        /**
+         * The MIME type of the image. Different providers may support different image types.
+         */
+        mimeType: z.ZodString;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        type: z.ZodLiteral<"image">;
+        /**
+         * The base64-encoded image data.
+         */
+        data: z.ZodString;
+        /**
+         * The MIME type of the image. Different providers may support different image types.
+         */
+        mimeType: z.ZodString;
+    }, z.ZodTypeAny, "passthrough">>]>;
 }>, "passthrough", z.ZodTypeAny, z.objectOutputType<z.objectUtil.extendShape<{
     /**
      * This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses.
@@ -5481,13 +7837,19 @@ export declare const CreateMessageResultSchema: z.ZodObject<z.objectUtil.extendS
          * The text content of the message.
          */
         text: z.ZodString;
-    }, "strip", z.ZodTypeAny, {
-        type: "text";
-        text: string;
-    }, {
-        type: "text";
-        text: string;
-    }>, z.ZodObject<{
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        type: z.ZodLiteral<"text">;
+        /**
+         * The text content of the message.
+         */
+        text: z.ZodString;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        type: z.ZodLiteral<"text">;
+        /**
+         * The text content of the message.
+         */
+        text: z.ZodString;
+    }, z.ZodTypeAny, "passthrough">>, z.ZodObject<{
         type: z.ZodLiteral<"image">;
         /**
          * The base64-encoded image data.
@@ -5497,15 +7859,27 @@ export declare const CreateMessageResultSchema: z.ZodObject<z.objectUtil.extendS
          * The MIME type of the image. Different providers may support different image types.
          */
         mimeType: z.ZodString;
-    }, "strip", z.ZodTypeAny, {
-        type: "image";
-        data: string;
-        mimeType: string;
-    }, {
-        type: "image";
-        data: string;
-        mimeType: string;
-    }>]>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        type: z.ZodLiteral<"image">;
+        /**
+         * The base64-encoded image data.
+         */
+        data: z.ZodString;
+        /**
+         * The MIME type of the image. Different providers may support different image types.
+         */
+        mimeType: z.ZodString;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        type: z.ZodLiteral<"image">;
+        /**
+         * The base64-encoded image data.
+         */
+        data: z.ZodString;
+        /**
+         * The MIME type of the image. Different providers may support different image types.
+         */
+        mimeType: z.ZodString;
+    }, z.ZodTypeAny, "passthrough">>]>;
 }>, z.ZodTypeAny, "passthrough">, z.objectInputType<z.objectUtil.extendShape<{
     /**
      * This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses.
@@ -5527,13 +7901,19 @@ export declare const CreateMessageResultSchema: z.ZodObject<z.objectUtil.extendS
          * The text content of the message.
          */
         text: z.ZodString;
-    }, "strip", z.ZodTypeAny, {
-        type: "text";
-        text: string;
-    }, {
-        type: "text";
-        text: string;
-    }>, z.ZodObject<{
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        type: z.ZodLiteral<"text">;
+        /**
+         * The text content of the message.
+         */
+        text: z.ZodString;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        type: z.ZodLiteral<"text">;
+        /**
+         * The text content of the message.
+         */
+        text: z.ZodString;
+    }, z.ZodTypeAny, "passthrough">>, z.ZodObject<{
         type: z.ZodLiteral<"image">;
         /**
          * The base64-encoded image data.
@@ -5543,15 +7923,27 @@ export declare const CreateMessageResultSchema: z.ZodObject<z.objectUtil.extendS
          * The MIME type of the image. Different providers may support different image types.
          */
         mimeType: z.ZodString;
-    }, "strip", z.ZodTypeAny, {
-        type: "image";
-        data: string;
-        mimeType: string;
-    }, {
-        type: "image";
-        data: string;
-        mimeType: string;
-    }>]>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        type: z.ZodLiteral<"image">;
+        /**
+         * The base64-encoded image data.
+         */
+        data: z.ZodString;
+        /**
+         * The MIME type of the image. Different providers may support different image types.
+         */
+        mimeType: z.ZodString;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        type: z.ZodLiteral<"image">;
+        /**
+         * The base64-encoded image data.
+         */
+        data: z.ZodString;
+        /**
+         * The MIME type of the image. Different providers may support different image types.
+         */
+        mimeType: z.ZodString;
+    }, z.ZodTypeAny, "passthrough">>]>;
 }>, z.ZodTypeAny, "passthrough">>;
 /**
  * A reference to a resource or resource template definition.
@@ -5562,13 +7954,19 @@ export declare const ResourceReferenceSchema: z.ZodObject<{
      * The URI or URI template of the resource.
      */
     uri: z.ZodString;
-}, "strip", z.ZodTypeAny, {
-    type: "ref/resource";
-    uri: string;
-}, {
-    type: "ref/resource";
-    uri: string;
-}>;
+}, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+    type: z.ZodLiteral<"ref/resource">;
+    /**
+     * The URI or URI template of the resource.
+     */
+    uri: z.ZodString;
+}, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+    type: z.ZodLiteral<"ref/resource">;
+    /**
+     * The URI or URI template of the resource.
+     */
+    uri: z.ZodString;
+}, z.ZodTypeAny, "passthrough">>;
 /**
  * Identifies a prompt.
  */
@@ -5578,13 +7976,19 @@ export declare const PromptReferenceSchema: z.ZodObject<{
      * The name of the prompt or prompt template
      */
     name: z.ZodString;
-}, "strip", z.ZodTypeAny, {
-    type: "ref/prompt";
-    name: string;
-}, {
-    type: "ref/prompt";
-    name: string;
-}>;
+}, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+    type: z.ZodLiteral<"ref/prompt">;
+    /**
+     * The name of the prompt or prompt template
+     */
+    name: z.ZodString;
+}, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+    type: z.ZodLiteral<"ref/prompt">;
+    /**
+     * The name of the prompt or prompt template
+     */
+    name: z.ZodString;
+}, z.ZodTypeAny, "passthrough">>;
 /**
  * A request from the client to the server, to ask for completion options.
  */
@@ -5668,25 +8072,37 @@ export declare const CompleteRequestSchema: z.ZodObject<z.objectUtil.extendShape
              * The name of the prompt or prompt template
              */
             name: z.ZodString;
-        }, "strip", z.ZodTypeAny, {
-            type: "ref/prompt";
-            name: string;
-        }, {
-            type: "ref/prompt";
-            name: string;
-        }>, z.ZodObject<{
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            type: z.ZodLiteral<"ref/prompt">;
+            /**
+             * The name of the prompt or prompt template
+             */
+            name: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            type: z.ZodLiteral<"ref/prompt">;
+            /**
+             * The name of the prompt or prompt template
+             */
+            name: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">>, z.ZodObject<{
             type: z.ZodLiteral<"ref/resource">;
             /**
              * The URI or URI template of the resource.
              */
             uri: z.ZodString;
-        }, "strip", z.ZodTypeAny, {
-            type: "ref/resource";
-            uri: string;
-        }, {
-            type: "ref/resource";
-            uri: string;
-        }>]>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            type: z.ZodLiteral<"ref/resource">;
+            /**
+             * The URI or URI template of the resource.
+             */
+            uri: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            type: z.ZodLiteral<"ref/resource">;
+            /**
+             * The URI or URI template of the resource.
+             */
+            uri: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">>]>;
         /**
          * The argument's information
          */
@@ -5699,13 +8115,25 @@ export declare const CompleteRequestSchema: z.ZodObject<z.objectUtil.extendShape
              * The value of the argument to use for completion matching.
              */
             value: z.ZodString;
-        }, "strip", z.ZodTypeAny, {
-            value: string;
-            name: string;
-        }, {
-            value: string;
-            name: string;
-        }>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * The name of the argument
+             */
+            name: z.ZodString;
+            /**
+             * The value of the argument to use for completion matching.
+             */
+            value: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * The name of the argument
+             */
+            name: z.ZodString;
+            /**
+             * The value of the argument to use for completion matching.
+             */
+            value: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">>;
     }>, "passthrough", z.ZodTypeAny, z.objectOutputType<z.objectUtil.extendShape<{
         _meta: z.ZodOptional<z.ZodObject<{
             /**
@@ -5730,25 +8158,37 @@ export declare const CompleteRequestSchema: z.ZodObject<z.objectUtil.extendShape
              * The name of the prompt or prompt template
              */
             name: z.ZodString;
-        }, "strip", z.ZodTypeAny, {
-            type: "ref/prompt";
-            name: string;
-        }, {
-            type: "ref/prompt";
-            name: string;
-        }>, z.ZodObject<{
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            type: z.ZodLiteral<"ref/prompt">;
+            /**
+             * The name of the prompt or prompt template
+             */
+            name: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            type: z.ZodLiteral<"ref/prompt">;
+            /**
+             * The name of the prompt or prompt template
+             */
+            name: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">>, z.ZodObject<{
             type: z.ZodLiteral<"ref/resource">;
             /**
              * The URI or URI template of the resource.
              */
             uri: z.ZodString;
-        }, "strip", z.ZodTypeAny, {
-            type: "ref/resource";
-            uri: string;
-        }, {
-            type: "ref/resource";
-            uri: string;
-        }>]>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            type: z.ZodLiteral<"ref/resource">;
+            /**
+             * The URI or URI template of the resource.
+             */
+            uri: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            type: z.ZodLiteral<"ref/resource">;
+            /**
+             * The URI or URI template of the resource.
+             */
+            uri: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">>]>;
         /**
          * The argument's information
          */
@@ -5761,13 +8201,25 @@ export declare const CompleteRequestSchema: z.ZodObject<z.objectUtil.extendShape
              * The value of the argument to use for completion matching.
              */
             value: z.ZodString;
-        }, "strip", z.ZodTypeAny, {
-            value: string;
-            name: string;
-        }, {
-            value: string;
-            name: string;
-        }>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * The name of the argument
+             */
+            name: z.ZodString;
+            /**
+             * The value of the argument to use for completion matching.
+             */
+            value: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * The name of the argument
+             */
+            name: z.ZodString;
+            /**
+             * The value of the argument to use for completion matching.
+             */
+            value: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">>;
     }>, z.ZodTypeAny, "passthrough">, z.objectInputType<z.objectUtil.extendShape<{
         _meta: z.ZodOptional<z.ZodObject<{
             /**
@@ -5792,25 +8244,37 @@ export declare const CompleteRequestSchema: z.ZodObject<z.objectUtil.extendShape
              * The name of the prompt or prompt template
              */
             name: z.ZodString;
-        }, "strip", z.ZodTypeAny, {
-            type: "ref/prompt";
-            name: string;
-        }, {
-            type: "ref/prompt";
-            name: string;
-        }>, z.ZodObject<{
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            type: z.ZodLiteral<"ref/prompt">;
+            /**
+             * The name of the prompt or prompt template
+             */
+            name: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            type: z.ZodLiteral<"ref/prompt">;
+            /**
+             * The name of the prompt or prompt template
+             */
+            name: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">>, z.ZodObject<{
             type: z.ZodLiteral<"ref/resource">;
             /**
              * The URI or URI template of the resource.
              */
             uri: z.ZodString;
-        }, "strip", z.ZodTypeAny, {
-            type: "ref/resource";
-            uri: string;
-        }, {
-            type: "ref/resource";
-            uri: string;
-        }>]>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            type: z.ZodLiteral<"ref/resource">;
+            /**
+             * The URI or URI template of the resource.
+             */
+            uri: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            type: z.ZodLiteral<"ref/resource">;
+            /**
+             * The URI or URI template of the resource.
+             */
+            uri: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">>]>;
         /**
          * The argument's information
          */
@@ -5823,26 +8287,46 @@ export declare const CompleteRequestSchema: z.ZodObject<z.objectUtil.extendShape
              * The value of the argument to use for completion matching.
              */
             value: z.ZodString;
-        }, "strip", z.ZodTypeAny, {
-            value: string;
-            name: string;
-        }, {
-            value: string;
-            name: string;
-        }>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * The name of the argument
+             */
+            name: z.ZodString;
+            /**
+             * The value of the argument to use for completion matching.
+             */
+            value: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * The name of the argument
+             */
+            name: z.ZodString;
+            /**
+             * The value of the argument to use for completion matching.
+             */
+            value: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">>;
     }>, z.ZodTypeAny, "passthrough">>;
 }>, "strip", z.ZodTypeAny, {
     params: {
-        ref: {
-            type: "ref/resource";
-            uri: string;
-        } | {
-            type: "ref/prompt";
-            name: string;
-        };
+        ref: z.objectOutputType<{
+            type: z.ZodLiteral<"ref/resource">;
+            /**
+             * The URI or URI template of the resource.
+             */
+            uri: z.ZodString;
+        }, z.ZodTypeAny, "passthrough"> | z.objectOutputType<{
+            type: z.ZodLiteral<"ref/prompt">;
+            /**
+             * The name of the prompt or prompt template
+             */
+            name: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">;
         argument: {
             value: string;
             name: string;
+        } & {
+            [k: string]: unknown;
         };
         _meta?: z.objectOutputType<{
             /**
@@ -5856,16 +8340,24 @@ export declare const CompleteRequestSchema: z.ZodObject<z.objectUtil.extendShape
     method: "completion/complete";
 }, {
     params: {
-        ref: {
-            type: "ref/resource";
-            uri: string;
-        } | {
-            type: "ref/prompt";
-            name: string;
-        };
+        ref: z.objectInputType<{
+            type: z.ZodLiteral<"ref/resource">;
+            /**
+             * The URI or URI template of the resource.
+             */
+            uri: z.ZodString;
+        }, z.ZodTypeAny, "passthrough"> | z.objectInputType<{
+            type: z.ZodLiteral<"ref/prompt">;
+            /**
+             * The name of the prompt or prompt template
+             */
+            name: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">;
         argument: {
             value: string;
             name: string;
+        } & {
+            [k: string]: unknown;
         };
         _meta?: z.objectInputType<{
             /**
@@ -5900,15 +8392,33 @@ export declare const CompleteResultSchema: z.ZodObject<z.objectUtil.extendShape<
          * Indicates whether there are additional completion options beyond those provided in the current response, even if the exact total is unknown.
          */
         hasMore: z.ZodOptional<z.ZodBoolean>;
-    }, "strip", z.ZodTypeAny, {
-        values: string[];
-        total?: number | undefined;
-        hasMore?: boolean | undefined;
-    }, {
-        values: string[];
-        total?: number | undefined;
-        hasMore?: boolean | undefined;
-    }>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        /**
+         * An array of completion values. Must not exceed 100 items.
+         */
+        values: z.ZodArray<z.ZodString, "many">;
+        /**
+         * The total number of completion options available. This can exceed the number of values actually sent in the response.
+         */
+        total: z.ZodOptional<z.ZodNumber>;
+        /**
+         * Indicates whether there are additional completion options beyond those provided in the current response, even if the exact total is unknown.
+         */
+        hasMore: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        /**
+         * An array of completion values. Must not exceed 100 items.
+         */
+        values: z.ZodArray<z.ZodString, "many">;
+        /**
+         * The total number of completion options available. This can exceed the number of values actually sent in the response.
+         */
+        total: z.ZodOptional<z.ZodNumber>;
+        /**
+         * Indicates whether there are additional completion options beyond those provided in the current response, even if the exact total is unknown.
+         */
+        hasMore: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">>;
 }>, "passthrough", z.ZodTypeAny, z.objectOutputType<z.objectUtil.extendShape<{
     /**
      * This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses.
@@ -5928,15 +8438,33 @@ export declare const CompleteResultSchema: z.ZodObject<z.objectUtil.extendShape<
          * Indicates whether there are additional completion options beyond those provided in the current response, even if the exact total is unknown.
          */
         hasMore: z.ZodOptional<z.ZodBoolean>;
-    }, "strip", z.ZodTypeAny, {
-        values: string[];
-        total?: number | undefined;
-        hasMore?: boolean | undefined;
-    }, {
-        values: string[];
-        total?: number | undefined;
-        hasMore?: boolean | undefined;
-    }>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        /**
+         * An array of completion values. Must not exceed 100 items.
+         */
+        values: z.ZodArray<z.ZodString, "many">;
+        /**
+         * The total number of completion options available. This can exceed the number of values actually sent in the response.
+         */
+        total: z.ZodOptional<z.ZodNumber>;
+        /**
+         * Indicates whether there are additional completion options beyond those provided in the current response, even if the exact total is unknown.
+         */
+        hasMore: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        /**
+         * An array of completion values. Must not exceed 100 items.
+         */
+        values: z.ZodArray<z.ZodString, "many">;
+        /**
+         * The total number of completion options available. This can exceed the number of values actually sent in the response.
+         */
+        total: z.ZodOptional<z.ZodNumber>;
+        /**
+         * Indicates whether there are additional completion options beyond those provided in the current response, even if the exact total is unknown.
+         */
+        hasMore: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">>;
 }>, z.ZodTypeAny, "passthrough">, z.objectInputType<z.objectUtil.extendShape<{
     /**
      * This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses.
@@ -5956,15 +8484,33 @@ export declare const CompleteResultSchema: z.ZodObject<z.objectUtil.extendShape<
          * Indicates whether there are additional completion options beyond those provided in the current response, even if the exact total is unknown.
          */
         hasMore: z.ZodOptional<z.ZodBoolean>;
-    }, "strip", z.ZodTypeAny, {
-        values: string[];
-        total?: number | undefined;
-        hasMore?: boolean | undefined;
-    }, {
-        values: string[];
-        total?: number | undefined;
-        hasMore?: boolean | undefined;
-    }>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        /**
+         * An array of completion values. Must not exceed 100 items.
+         */
+        values: z.ZodArray<z.ZodString, "many">;
+        /**
+         * The total number of completion options available. This can exceed the number of values actually sent in the response.
+         */
+        total: z.ZodOptional<z.ZodNumber>;
+        /**
+         * Indicates whether there are additional completion options beyond those provided in the current response, even if the exact total is unknown.
+         */
+        hasMore: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        /**
+         * An array of completion values. Must not exceed 100 items.
+         */
+        values: z.ZodArray<z.ZodString, "many">;
+        /**
+         * The total number of completion options available. This can exceed the number of values actually sent in the response.
+         */
+        total: z.ZodOptional<z.ZodNumber>;
+        /**
+         * Indicates whether there are additional completion options beyond those provided in the current response, even if the exact total is unknown.
+         */
+        hasMore: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">>;
 }>, z.ZodTypeAny, "passthrough">>;
 export declare const ClientRequestSchema: z.ZodUnion<[z.ZodObject<z.objectUtil.extendShape<{
     method: z.ZodString;
@@ -6149,23 +8695,35 @@ export declare const ClientRequestSchema: z.ZodUnion<[z.ZodObject<z.objectUtil.e
              * Present if the client supports sampling from an LLM.
              */
             sampling: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
-        }, "strip", z.ZodTypeAny, {
-            experimental?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-            sampling?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        }, {
-            experimental?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-            sampling?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        }>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * Experimental, non-standard capabilities that the client supports.
+             */
+            experimental: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+            /**
+             * Present if the client supports sampling from an LLM.
+             */
+            sampling: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * Experimental, non-standard capabilities that the client supports.
+             */
+            experimental: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+            /**
+             * Present if the client supports sampling from an LLM.
+             */
+            sampling: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">>;
         clientInfo: z.ZodObject<{
             name: z.ZodString;
             version: z.ZodString;
-        }, "strip", z.ZodTypeAny, {
-            name: string;
-            version: string;
-        }, {
-            name: string;
-            version: string;
-        }>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            name: z.ZodString;
+            version: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            name: z.ZodString;
+            version: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">>;
     }>, "passthrough", z.ZodTypeAny, z.objectOutputType<z.objectUtil.extendShape<{
         _meta: z.ZodOptional<z.ZodObject<{
             /**
@@ -6197,23 +8755,35 @@ export declare const ClientRequestSchema: z.ZodUnion<[z.ZodObject<z.objectUtil.e
              * Present if the client supports sampling from an LLM.
              */
             sampling: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
-        }, "strip", z.ZodTypeAny, {
-            experimental?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-            sampling?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        }, {
-            experimental?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-            sampling?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        }>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * Experimental, non-standard capabilities that the client supports.
+             */
+            experimental: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+            /**
+             * Present if the client supports sampling from an LLM.
+             */
+            sampling: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * Experimental, non-standard capabilities that the client supports.
+             */
+            experimental: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+            /**
+             * Present if the client supports sampling from an LLM.
+             */
+            sampling: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">>;
         clientInfo: z.ZodObject<{
             name: z.ZodString;
             version: z.ZodString;
-        }, "strip", z.ZodTypeAny, {
-            name: string;
-            version: string;
-        }, {
-            name: string;
-            version: string;
-        }>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            name: z.ZodString;
+            version: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            name: z.ZodString;
+            version: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">>;
     }>, z.ZodTypeAny, "passthrough">, z.objectInputType<z.objectUtil.extendShape<{
         _meta: z.ZodOptional<z.ZodObject<{
             /**
@@ -6245,23 +8815,35 @@ export declare const ClientRequestSchema: z.ZodUnion<[z.ZodObject<z.objectUtil.e
              * Present if the client supports sampling from an LLM.
              */
             sampling: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
-        }, "strip", z.ZodTypeAny, {
-            experimental?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-            sampling?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        }, {
-            experimental?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-            sampling?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        }>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * Experimental, non-standard capabilities that the client supports.
+             */
+            experimental: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+            /**
+             * Present if the client supports sampling from an LLM.
+             */
+            sampling: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * Experimental, non-standard capabilities that the client supports.
+             */
+            experimental: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+            /**
+             * Present if the client supports sampling from an LLM.
+             */
+            sampling: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">>;
         clientInfo: z.ZodObject<{
             name: z.ZodString;
             version: z.ZodString;
-        }, "strip", z.ZodTypeAny, {
-            name: string;
-            version: string;
-        }, {
-            name: string;
-            version: string;
-        }>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            name: z.ZodString;
+            version: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            name: z.ZodString;
+            version: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">>;
     }>, z.ZodTypeAny, "passthrough">>;
 }>, "strip", z.ZodTypeAny, {
     params: {
@@ -6269,10 +8851,14 @@ export declare const ClientRequestSchema: z.ZodUnion<[z.ZodObject<z.objectUtil.e
         capabilities: {
             experimental?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
             sampling?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
+        } & {
+            [k: string]: unknown;
         };
         clientInfo: {
             name: string;
             version: string;
+        } & {
+            [k: string]: unknown;
         };
         _meta?: z.objectOutputType<{
             /**
@@ -6290,10 +8876,14 @@ export declare const ClientRequestSchema: z.ZodUnion<[z.ZodObject<z.objectUtil.e
         capabilities: {
             experimental?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
             sampling?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
+        } & {
+            [k: string]: unknown;
         };
         clientInfo: {
             name: string;
             version: string;
+        } & {
+            [k: string]: unknown;
         };
         _meta?: z.objectInputType<{
             /**
@@ -6385,25 +8975,37 @@ export declare const ClientRequestSchema: z.ZodUnion<[z.ZodObject<z.objectUtil.e
              * The name of the prompt or prompt template
              */
             name: z.ZodString;
-        }, "strip", z.ZodTypeAny, {
-            type: "ref/prompt";
-            name: string;
-        }, {
-            type: "ref/prompt";
-            name: string;
-        }>, z.ZodObject<{
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            type: z.ZodLiteral<"ref/prompt">;
+            /**
+             * The name of the prompt or prompt template
+             */
+            name: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            type: z.ZodLiteral<"ref/prompt">;
+            /**
+             * The name of the prompt or prompt template
+             */
+            name: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">>, z.ZodObject<{
             type: z.ZodLiteral<"ref/resource">;
             /**
              * The URI or URI template of the resource.
              */
             uri: z.ZodString;
-        }, "strip", z.ZodTypeAny, {
-            type: "ref/resource";
-            uri: string;
-        }, {
-            type: "ref/resource";
-            uri: string;
-        }>]>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            type: z.ZodLiteral<"ref/resource">;
+            /**
+             * The URI or URI template of the resource.
+             */
+            uri: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            type: z.ZodLiteral<"ref/resource">;
+            /**
+             * The URI or URI template of the resource.
+             */
+            uri: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">>]>;
         /**
          * The argument's information
          */
@@ -6416,13 +9018,25 @@ export declare const ClientRequestSchema: z.ZodUnion<[z.ZodObject<z.objectUtil.e
              * The value of the argument to use for completion matching.
              */
             value: z.ZodString;
-        }, "strip", z.ZodTypeAny, {
-            value: string;
-            name: string;
-        }, {
-            value: string;
-            name: string;
-        }>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * The name of the argument
+             */
+            name: z.ZodString;
+            /**
+             * The value of the argument to use for completion matching.
+             */
+            value: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * The name of the argument
+             */
+            name: z.ZodString;
+            /**
+             * The value of the argument to use for completion matching.
+             */
+            value: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">>;
     }>, "passthrough", z.ZodTypeAny, z.objectOutputType<z.objectUtil.extendShape<{
         _meta: z.ZodOptional<z.ZodObject<{
             /**
@@ -6447,25 +9061,37 @@ export declare const ClientRequestSchema: z.ZodUnion<[z.ZodObject<z.objectUtil.e
              * The name of the prompt or prompt template
              */
             name: z.ZodString;
-        }, "strip", z.ZodTypeAny, {
-            type: "ref/prompt";
-            name: string;
-        }, {
-            type: "ref/prompt";
-            name: string;
-        }>, z.ZodObject<{
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            type: z.ZodLiteral<"ref/prompt">;
+            /**
+             * The name of the prompt or prompt template
+             */
+            name: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            type: z.ZodLiteral<"ref/prompt">;
+            /**
+             * The name of the prompt or prompt template
+             */
+            name: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">>, z.ZodObject<{
             type: z.ZodLiteral<"ref/resource">;
             /**
              * The URI or URI template of the resource.
              */
             uri: z.ZodString;
-        }, "strip", z.ZodTypeAny, {
-            type: "ref/resource";
-            uri: string;
-        }, {
-            type: "ref/resource";
-            uri: string;
-        }>]>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            type: z.ZodLiteral<"ref/resource">;
+            /**
+             * The URI or URI template of the resource.
+             */
+            uri: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            type: z.ZodLiteral<"ref/resource">;
+            /**
+             * The URI or URI template of the resource.
+             */
+            uri: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">>]>;
         /**
          * The argument's information
          */
@@ -6478,13 +9104,25 @@ export declare const ClientRequestSchema: z.ZodUnion<[z.ZodObject<z.objectUtil.e
              * The value of the argument to use for completion matching.
              */
             value: z.ZodString;
-        }, "strip", z.ZodTypeAny, {
-            value: string;
-            name: string;
-        }, {
-            value: string;
-            name: string;
-        }>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * The name of the argument
+             */
+            name: z.ZodString;
+            /**
+             * The value of the argument to use for completion matching.
+             */
+            value: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * The name of the argument
+             */
+            name: z.ZodString;
+            /**
+             * The value of the argument to use for completion matching.
+             */
+            value: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">>;
     }>, z.ZodTypeAny, "passthrough">, z.objectInputType<z.objectUtil.extendShape<{
         _meta: z.ZodOptional<z.ZodObject<{
             /**
@@ -6509,25 +9147,37 @@ export declare const ClientRequestSchema: z.ZodUnion<[z.ZodObject<z.objectUtil.e
              * The name of the prompt or prompt template
              */
             name: z.ZodString;
-        }, "strip", z.ZodTypeAny, {
-            type: "ref/prompt";
-            name: string;
-        }, {
-            type: "ref/prompt";
-            name: string;
-        }>, z.ZodObject<{
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            type: z.ZodLiteral<"ref/prompt">;
+            /**
+             * The name of the prompt or prompt template
+             */
+            name: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            type: z.ZodLiteral<"ref/prompt">;
+            /**
+             * The name of the prompt or prompt template
+             */
+            name: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">>, z.ZodObject<{
             type: z.ZodLiteral<"ref/resource">;
             /**
              * The URI or URI template of the resource.
              */
             uri: z.ZodString;
-        }, "strip", z.ZodTypeAny, {
-            type: "ref/resource";
-            uri: string;
-        }, {
-            type: "ref/resource";
-            uri: string;
-        }>]>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            type: z.ZodLiteral<"ref/resource">;
+            /**
+             * The URI or URI template of the resource.
+             */
+            uri: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            type: z.ZodLiteral<"ref/resource">;
+            /**
+             * The URI or URI template of the resource.
+             */
+            uri: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">>]>;
         /**
          * The argument's information
          */
@@ -6540,26 +9190,46 @@ export declare const ClientRequestSchema: z.ZodUnion<[z.ZodObject<z.objectUtil.e
              * The value of the argument to use for completion matching.
              */
             value: z.ZodString;
-        }, "strip", z.ZodTypeAny, {
-            value: string;
-            name: string;
-        }, {
-            value: string;
-            name: string;
-        }>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * The name of the argument
+             */
+            name: z.ZodString;
+            /**
+             * The value of the argument to use for completion matching.
+             */
+            value: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * The name of the argument
+             */
+            name: z.ZodString;
+            /**
+             * The value of the argument to use for completion matching.
+             */
+            value: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">>;
     }>, z.ZodTypeAny, "passthrough">>;
 }>, "strip", z.ZodTypeAny, {
     params: {
-        ref: {
-            type: "ref/resource";
-            uri: string;
-        } | {
-            type: "ref/prompt";
-            name: string;
-        };
+        ref: z.objectOutputType<{
+            type: z.ZodLiteral<"ref/resource">;
+            /**
+             * The URI or URI template of the resource.
+             */
+            uri: z.ZodString;
+        }, z.ZodTypeAny, "passthrough"> | z.objectOutputType<{
+            type: z.ZodLiteral<"ref/prompt">;
+            /**
+             * The name of the prompt or prompt template
+             */
+            name: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">;
         argument: {
             value: string;
             name: string;
+        } & {
+            [k: string]: unknown;
         };
         _meta?: z.objectOutputType<{
             /**
@@ -6573,16 +9243,24 @@ export declare const ClientRequestSchema: z.ZodUnion<[z.ZodObject<z.objectUtil.e
     method: "completion/complete";
 }, {
     params: {
-        ref: {
-            type: "ref/resource";
-            uri: string;
-        } | {
-            type: "ref/prompt";
-            name: string;
-        };
+        ref: z.objectInputType<{
+            type: z.ZodLiteral<"ref/resource">;
+            /**
+             * The URI or URI template of the resource.
+             */
+            uri: z.ZodString;
+        }, z.ZodTypeAny, "passthrough"> | z.objectInputType<{
+            type: z.ZodLiteral<"ref/prompt">;
+            /**
+             * The name of the prompt or prompt template
+             */
+            name: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">;
         argument: {
             value: string;
             name: string;
+        } & {
+            [k: string]: unknown;
         };
         _meta?: z.objectInputType<{
             /**
@@ -7992,20 +10670,42 @@ export declare const ClientNotificationSchema: z.ZodUnion<[z.ZodObject<z.objectU
          * The progress token which was given in the initial request, used to associate this notification with the request that is proceeding.
          */
         progressToken: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodNumber]>>;
-    }>, "strip", z.ZodTypeAny, {
-        progress: number;
-        progressToken?: string | number | undefined;
-        total?: number | undefined;
+    }>, "passthrough", z.ZodTypeAny, z.objectOutputType<z.objectUtil.extendShape<{
+        /**
+         * The progress thus far. This should increase every time progress is made, even if the total is unknown.
+         */
+        progress: z.ZodNumber;
+        /**
+         * Total number of items to process (or total progress required), if known.
+         */
+        total: z.ZodOptional<z.ZodNumber>;
     }, {
-        progress: number;
-        progressToken?: string | number | undefined;
-        total?: number | undefined;
-    }>;
+        /**
+         * The progress token which was given in the initial request, used to associate this notification with the request that is proceeding.
+         */
+        progressToken: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodNumber]>>;
+    }>, z.ZodTypeAny, "passthrough">, z.objectInputType<z.objectUtil.extendShape<{
+        /**
+         * The progress thus far. This should increase every time progress is made, even if the total is unknown.
+         */
+        progress: z.ZodNumber;
+        /**
+         * Total number of items to process (or total progress required), if known.
+         */
+        total: z.ZodOptional<z.ZodNumber>;
+    }, {
+        /**
+         * The progress token which was given in the initial request, used to associate this notification with the request that is proceeding.
+         */
+        progressToken: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodNumber]>>;
+    }>, z.ZodTypeAny, "passthrough">>;
 }>, "strip", z.ZodTypeAny, {
     params: {
         progress: number;
         progressToken?: string | number | undefined;
         total?: number | undefined;
+    } & {
+        [k: string]: unknown;
     };
     method: "notifications/progress";
 }, {
@@ -8013,6 +10713,8 @@ export declare const ClientNotificationSchema: z.ZodUnion<[z.ZodObject<z.objectU
         progress: number;
         progressToken?: string | number | undefined;
         total?: number | undefined;
+    } & {
+        [k: string]: unknown;
     };
     method: "notifications/progress";
 }>, z.ZodObject<z.objectUtil.extendShape<{
@@ -8082,13 +10784,19 @@ export declare const ClientResultSchema: z.ZodUnion<[z.ZodObject<{
          * The text content of the message.
          */
         text: z.ZodString;
-    }, "strip", z.ZodTypeAny, {
-        type: "text";
-        text: string;
-    }, {
-        type: "text";
-        text: string;
-    }>, z.ZodObject<{
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        type: z.ZodLiteral<"text">;
+        /**
+         * The text content of the message.
+         */
+        text: z.ZodString;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        type: z.ZodLiteral<"text">;
+        /**
+         * The text content of the message.
+         */
+        text: z.ZodString;
+    }, z.ZodTypeAny, "passthrough">>, z.ZodObject<{
         type: z.ZodLiteral<"image">;
         /**
          * The base64-encoded image data.
@@ -8098,15 +10806,27 @@ export declare const ClientResultSchema: z.ZodUnion<[z.ZodObject<{
          * The MIME type of the image. Different providers may support different image types.
          */
         mimeType: z.ZodString;
-    }, "strip", z.ZodTypeAny, {
-        type: "image";
-        data: string;
-        mimeType: string;
-    }, {
-        type: "image";
-        data: string;
-        mimeType: string;
-    }>]>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        type: z.ZodLiteral<"image">;
+        /**
+         * The base64-encoded image data.
+         */
+        data: z.ZodString;
+        /**
+         * The MIME type of the image. Different providers may support different image types.
+         */
+        mimeType: z.ZodString;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        type: z.ZodLiteral<"image">;
+        /**
+         * The base64-encoded image data.
+         */
+        data: z.ZodString;
+        /**
+         * The MIME type of the image. Different providers may support different image types.
+         */
+        mimeType: z.ZodString;
+    }, z.ZodTypeAny, "passthrough">>]>;
 }>, "passthrough", z.ZodTypeAny, z.objectOutputType<z.objectUtil.extendShape<{
     /**
      * This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses.
@@ -8128,13 +10848,19 @@ export declare const ClientResultSchema: z.ZodUnion<[z.ZodObject<{
          * The text content of the message.
          */
         text: z.ZodString;
-    }, "strip", z.ZodTypeAny, {
-        type: "text";
-        text: string;
-    }, {
-        type: "text";
-        text: string;
-    }>, z.ZodObject<{
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        type: z.ZodLiteral<"text">;
+        /**
+         * The text content of the message.
+         */
+        text: z.ZodString;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        type: z.ZodLiteral<"text">;
+        /**
+         * The text content of the message.
+         */
+        text: z.ZodString;
+    }, z.ZodTypeAny, "passthrough">>, z.ZodObject<{
         type: z.ZodLiteral<"image">;
         /**
          * The base64-encoded image data.
@@ -8144,15 +10870,27 @@ export declare const ClientResultSchema: z.ZodUnion<[z.ZodObject<{
          * The MIME type of the image. Different providers may support different image types.
          */
         mimeType: z.ZodString;
-    }, "strip", z.ZodTypeAny, {
-        type: "image";
-        data: string;
-        mimeType: string;
-    }, {
-        type: "image";
-        data: string;
-        mimeType: string;
-    }>]>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        type: z.ZodLiteral<"image">;
+        /**
+         * The base64-encoded image data.
+         */
+        data: z.ZodString;
+        /**
+         * The MIME type of the image. Different providers may support different image types.
+         */
+        mimeType: z.ZodString;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        type: z.ZodLiteral<"image">;
+        /**
+         * The base64-encoded image data.
+         */
+        data: z.ZodString;
+        /**
+         * The MIME type of the image. Different providers may support different image types.
+         */
+        mimeType: z.ZodString;
+    }, z.ZodTypeAny, "passthrough">>]>;
 }>, z.ZodTypeAny, "passthrough">, z.objectInputType<z.objectUtil.extendShape<{
     /**
      * This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses.
@@ -8174,13 +10912,19 @@ export declare const ClientResultSchema: z.ZodUnion<[z.ZodObject<{
          * The text content of the message.
          */
         text: z.ZodString;
-    }, "strip", z.ZodTypeAny, {
-        type: "text";
-        text: string;
-    }, {
-        type: "text";
-        text: string;
-    }>, z.ZodObject<{
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        type: z.ZodLiteral<"text">;
+        /**
+         * The text content of the message.
+         */
+        text: z.ZodString;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        type: z.ZodLiteral<"text">;
+        /**
+         * The text content of the message.
+         */
+        text: z.ZodString;
+    }, z.ZodTypeAny, "passthrough">>, z.ZodObject<{
         type: z.ZodLiteral<"image">;
         /**
          * The base64-encoded image data.
@@ -8190,15 +10934,27 @@ export declare const ClientResultSchema: z.ZodUnion<[z.ZodObject<{
          * The MIME type of the image. Different providers may support different image types.
          */
         mimeType: z.ZodString;
-    }, "strip", z.ZodTypeAny, {
-        type: "image";
-        data: string;
-        mimeType: string;
-    }, {
-        type: "image";
-        data: string;
-        mimeType: string;
-    }>]>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        type: z.ZodLiteral<"image">;
+        /**
+         * The base64-encoded image data.
+         */
+        data: z.ZodString;
+        /**
+         * The MIME type of the image. Different providers may support different image types.
+         */
+        mimeType: z.ZodString;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        type: z.ZodLiteral<"image">;
+        /**
+         * The base64-encoded image data.
+         */
+        data: z.ZodString;
+        /**
+         * The MIME type of the image. Different providers may support different image types.
+         */
+        mimeType: z.ZodString;
+    }, z.ZodTypeAny, "passthrough">>]>;
 }>, z.ZodTypeAny, "passthrough">>]>;
 export declare const ServerRequestSchema: z.ZodUnion<[z.ZodObject<z.objectUtil.extendShape<{
     method: z.ZodString;
@@ -8378,13 +11134,19 @@ export declare const ServerRequestSchema: z.ZodUnion<[z.ZodObject<z.objectUtil.e
                  * The text content of the message.
                  */
                 text: z.ZodString;
-            }, "strip", z.ZodTypeAny, {
-                type: "text";
-                text: string;
-            }, {
-                type: "text";
-                text: string;
-            }>, z.ZodObject<{
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                type: z.ZodLiteral<"text">;
+                /**
+                 * The text content of the message.
+                 */
+                text: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                type: z.ZodLiteral<"text">;
+                /**
+                 * The text content of the message.
+                 */
+                text: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">>, z.ZodObject<{
                 type: z.ZodLiteral<"image">;
                 /**
                  * The base64-encoded image data.
@@ -8394,36 +11156,130 @@ export declare const ServerRequestSchema: z.ZodUnion<[z.ZodObject<z.objectUtil.e
                  * The MIME type of the image. Different providers may support different image types.
                  */
                 mimeType: z.ZodString;
-            }, "strip", z.ZodTypeAny, {
-                type: "image";
-                data: string;
-                mimeType: string;
-            }, {
-                type: "image";
-                data: string;
-                mimeType: string;
-            }>]>;
-        }, "strip", z.ZodTypeAny, {
-            role: "user" | "assistant";
-            content: {
-                type: "text";
-                text: string;
-            } | {
-                type: "image";
-                data: string;
-                mimeType: string;
-            };
-        }, {
-            role: "user" | "assistant";
-            content: {
-                type: "text";
-                text: string;
-            } | {
-                type: "image";
-                data: string;
-                mimeType: string;
-            };
-        }>, "many">;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                type: z.ZodLiteral<"image">;
+                /**
+                 * The base64-encoded image data.
+                 */
+                data: z.ZodString;
+                /**
+                 * The MIME type of the image. Different providers may support different image types.
+                 */
+                mimeType: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                type: z.ZodLiteral<"image">;
+                /**
+                 * The base64-encoded image data.
+                 */
+                data: z.ZodString;
+                /**
+                 * The MIME type of the image. Different providers may support different image types.
+                 */
+                mimeType: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">>]>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            role: z.ZodEnum<["user", "assistant"]>;
+            content: z.ZodUnion<[z.ZodObject<{
+                type: z.ZodLiteral<"text">;
+                /**
+                 * The text content of the message.
+                 */
+                text: z.ZodString;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                type: z.ZodLiteral<"text">;
+                /**
+                 * The text content of the message.
+                 */
+                text: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                type: z.ZodLiteral<"text">;
+                /**
+                 * The text content of the message.
+                 */
+                text: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">>, z.ZodObject<{
+                type: z.ZodLiteral<"image">;
+                /**
+                 * The base64-encoded image data.
+                 */
+                data: z.ZodString;
+                /**
+                 * The MIME type of the image. Different providers may support different image types.
+                 */
+                mimeType: z.ZodString;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                type: z.ZodLiteral<"image">;
+                /**
+                 * The base64-encoded image data.
+                 */
+                data: z.ZodString;
+                /**
+                 * The MIME type of the image. Different providers may support different image types.
+                 */
+                mimeType: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                type: z.ZodLiteral<"image">;
+                /**
+                 * The base64-encoded image data.
+                 */
+                data: z.ZodString;
+                /**
+                 * The MIME type of the image. Different providers may support different image types.
+                 */
+                mimeType: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">>]>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            role: z.ZodEnum<["user", "assistant"]>;
+            content: z.ZodUnion<[z.ZodObject<{
+                type: z.ZodLiteral<"text">;
+                /**
+                 * The text content of the message.
+                 */
+                text: z.ZodString;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                type: z.ZodLiteral<"text">;
+                /**
+                 * The text content of the message.
+                 */
+                text: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                type: z.ZodLiteral<"text">;
+                /**
+                 * The text content of the message.
+                 */
+                text: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">>, z.ZodObject<{
+                type: z.ZodLiteral<"image">;
+                /**
+                 * The base64-encoded image data.
+                 */
+                data: z.ZodString;
+                /**
+                 * The MIME type of the image. Different providers may support different image types.
+                 */
+                mimeType: z.ZodString;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                type: z.ZodLiteral<"image">;
+                /**
+                 * The base64-encoded image data.
+                 */
+                data: z.ZodString;
+                /**
+                 * The MIME type of the image. Different providers may support different image types.
+                 */
+                mimeType: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                type: z.ZodLiteral<"image">;
+                /**
+                 * The base64-encoded image data.
+                 */
+                data: z.ZodString;
+                /**
+                 * The MIME type of the image. Different providers may support different image types.
+                 */
+                mimeType: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">>]>;
+        }, z.ZodTypeAny, "passthrough">>, "many">;
         /**
          * An optional system prompt the server wants to use for sampling. The client MAY modify or omit this prompt.
          */
@@ -8468,13 +11324,19 @@ export declare const ServerRequestSchema: z.ZodUnion<[z.ZodObject<z.objectUtil.e
                  * The text content of the message.
                  */
                 text: z.ZodString;
-            }, "strip", z.ZodTypeAny, {
-                type: "text";
-                text: string;
-            }, {
-                type: "text";
-                text: string;
-            }>, z.ZodObject<{
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                type: z.ZodLiteral<"text">;
+                /**
+                 * The text content of the message.
+                 */
+                text: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                type: z.ZodLiteral<"text">;
+                /**
+                 * The text content of the message.
+                 */
+                text: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">>, z.ZodObject<{
                 type: z.ZodLiteral<"image">;
                 /**
                  * The base64-encoded image data.
@@ -8484,36 +11346,130 @@ export declare const ServerRequestSchema: z.ZodUnion<[z.ZodObject<z.objectUtil.e
                  * The MIME type of the image. Different providers may support different image types.
                  */
                 mimeType: z.ZodString;
-            }, "strip", z.ZodTypeAny, {
-                type: "image";
-                data: string;
-                mimeType: string;
-            }, {
-                type: "image";
-                data: string;
-                mimeType: string;
-            }>]>;
-        }, "strip", z.ZodTypeAny, {
-            role: "user" | "assistant";
-            content: {
-                type: "text";
-                text: string;
-            } | {
-                type: "image";
-                data: string;
-                mimeType: string;
-            };
-        }, {
-            role: "user" | "assistant";
-            content: {
-                type: "text";
-                text: string;
-            } | {
-                type: "image";
-                data: string;
-                mimeType: string;
-            };
-        }>, "many">;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                type: z.ZodLiteral<"image">;
+                /**
+                 * The base64-encoded image data.
+                 */
+                data: z.ZodString;
+                /**
+                 * The MIME type of the image. Different providers may support different image types.
+                 */
+                mimeType: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                type: z.ZodLiteral<"image">;
+                /**
+                 * The base64-encoded image data.
+                 */
+                data: z.ZodString;
+                /**
+                 * The MIME type of the image. Different providers may support different image types.
+                 */
+                mimeType: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">>]>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            role: z.ZodEnum<["user", "assistant"]>;
+            content: z.ZodUnion<[z.ZodObject<{
+                type: z.ZodLiteral<"text">;
+                /**
+                 * The text content of the message.
+                 */
+                text: z.ZodString;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                type: z.ZodLiteral<"text">;
+                /**
+                 * The text content of the message.
+                 */
+                text: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                type: z.ZodLiteral<"text">;
+                /**
+                 * The text content of the message.
+                 */
+                text: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">>, z.ZodObject<{
+                type: z.ZodLiteral<"image">;
+                /**
+                 * The base64-encoded image data.
+                 */
+                data: z.ZodString;
+                /**
+                 * The MIME type of the image. Different providers may support different image types.
+                 */
+                mimeType: z.ZodString;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                type: z.ZodLiteral<"image">;
+                /**
+                 * The base64-encoded image data.
+                 */
+                data: z.ZodString;
+                /**
+                 * The MIME type of the image. Different providers may support different image types.
+                 */
+                mimeType: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                type: z.ZodLiteral<"image">;
+                /**
+                 * The base64-encoded image data.
+                 */
+                data: z.ZodString;
+                /**
+                 * The MIME type of the image. Different providers may support different image types.
+                 */
+                mimeType: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">>]>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            role: z.ZodEnum<["user", "assistant"]>;
+            content: z.ZodUnion<[z.ZodObject<{
+                type: z.ZodLiteral<"text">;
+                /**
+                 * The text content of the message.
+                 */
+                text: z.ZodString;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                type: z.ZodLiteral<"text">;
+                /**
+                 * The text content of the message.
+                 */
+                text: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                type: z.ZodLiteral<"text">;
+                /**
+                 * The text content of the message.
+                 */
+                text: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">>, z.ZodObject<{
+                type: z.ZodLiteral<"image">;
+                /**
+                 * The base64-encoded image data.
+                 */
+                data: z.ZodString;
+                /**
+                 * The MIME type of the image. Different providers may support different image types.
+                 */
+                mimeType: z.ZodString;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                type: z.ZodLiteral<"image">;
+                /**
+                 * The base64-encoded image data.
+                 */
+                data: z.ZodString;
+                /**
+                 * The MIME type of the image. Different providers may support different image types.
+                 */
+                mimeType: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                type: z.ZodLiteral<"image">;
+                /**
+                 * The base64-encoded image data.
+                 */
+                data: z.ZodString;
+                /**
+                 * The MIME type of the image. Different providers may support different image types.
+                 */
+                mimeType: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">>]>;
+        }, z.ZodTypeAny, "passthrough">>, "many">;
         /**
          * An optional system prompt the server wants to use for sampling. The client MAY modify or omit this prompt.
          */
@@ -8558,13 +11514,19 @@ export declare const ServerRequestSchema: z.ZodUnion<[z.ZodObject<z.objectUtil.e
                  * The text content of the message.
                  */
                 text: z.ZodString;
-            }, "strip", z.ZodTypeAny, {
-                type: "text";
-                text: string;
-            }, {
-                type: "text";
-                text: string;
-            }>, z.ZodObject<{
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                type: z.ZodLiteral<"text">;
+                /**
+                 * The text content of the message.
+                 */
+                text: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                type: z.ZodLiteral<"text">;
+                /**
+                 * The text content of the message.
+                 */
+                text: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">>, z.ZodObject<{
                 type: z.ZodLiteral<"image">;
                 /**
                  * The base64-encoded image data.
@@ -8574,36 +11536,130 @@ export declare const ServerRequestSchema: z.ZodUnion<[z.ZodObject<z.objectUtil.e
                  * The MIME type of the image. Different providers may support different image types.
                  */
                 mimeType: z.ZodString;
-            }, "strip", z.ZodTypeAny, {
-                type: "image";
-                data: string;
-                mimeType: string;
-            }, {
-                type: "image";
-                data: string;
-                mimeType: string;
-            }>]>;
-        }, "strip", z.ZodTypeAny, {
-            role: "user" | "assistant";
-            content: {
-                type: "text";
-                text: string;
-            } | {
-                type: "image";
-                data: string;
-                mimeType: string;
-            };
-        }, {
-            role: "user" | "assistant";
-            content: {
-                type: "text";
-                text: string;
-            } | {
-                type: "image";
-                data: string;
-                mimeType: string;
-            };
-        }>, "many">;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                type: z.ZodLiteral<"image">;
+                /**
+                 * The base64-encoded image data.
+                 */
+                data: z.ZodString;
+                /**
+                 * The MIME type of the image. Different providers may support different image types.
+                 */
+                mimeType: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                type: z.ZodLiteral<"image">;
+                /**
+                 * The base64-encoded image data.
+                 */
+                data: z.ZodString;
+                /**
+                 * The MIME type of the image. Different providers may support different image types.
+                 */
+                mimeType: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">>]>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            role: z.ZodEnum<["user", "assistant"]>;
+            content: z.ZodUnion<[z.ZodObject<{
+                type: z.ZodLiteral<"text">;
+                /**
+                 * The text content of the message.
+                 */
+                text: z.ZodString;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                type: z.ZodLiteral<"text">;
+                /**
+                 * The text content of the message.
+                 */
+                text: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                type: z.ZodLiteral<"text">;
+                /**
+                 * The text content of the message.
+                 */
+                text: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">>, z.ZodObject<{
+                type: z.ZodLiteral<"image">;
+                /**
+                 * The base64-encoded image data.
+                 */
+                data: z.ZodString;
+                /**
+                 * The MIME type of the image. Different providers may support different image types.
+                 */
+                mimeType: z.ZodString;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                type: z.ZodLiteral<"image">;
+                /**
+                 * The base64-encoded image data.
+                 */
+                data: z.ZodString;
+                /**
+                 * The MIME type of the image. Different providers may support different image types.
+                 */
+                mimeType: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                type: z.ZodLiteral<"image">;
+                /**
+                 * The base64-encoded image data.
+                 */
+                data: z.ZodString;
+                /**
+                 * The MIME type of the image. Different providers may support different image types.
+                 */
+                mimeType: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">>]>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            role: z.ZodEnum<["user", "assistant"]>;
+            content: z.ZodUnion<[z.ZodObject<{
+                type: z.ZodLiteral<"text">;
+                /**
+                 * The text content of the message.
+                 */
+                text: z.ZodString;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                type: z.ZodLiteral<"text">;
+                /**
+                 * The text content of the message.
+                 */
+                text: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                type: z.ZodLiteral<"text">;
+                /**
+                 * The text content of the message.
+                 */
+                text: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">>, z.ZodObject<{
+                type: z.ZodLiteral<"image">;
+                /**
+                 * The base64-encoded image data.
+                 */
+                data: z.ZodString;
+                /**
+                 * The MIME type of the image. Different providers may support different image types.
+                 */
+                mimeType: z.ZodString;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                type: z.ZodLiteral<"image">;
+                /**
+                 * The base64-encoded image data.
+                 */
+                data: z.ZodString;
+                /**
+                 * The MIME type of the image. Different providers may support different image types.
+                 */
+                mimeType: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                type: z.ZodLiteral<"image">;
+                /**
+                 * The base64-encoded image data.
+                 */
+                data: z.ZodString;
+                /**
+                 * The MIME type of the image. Different providers may support different image types.
+                 */
+                mimeType: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">>]>;
+        }, z.ZodTypeAny, "passthrough">>, "many">;
         /**
          * An optional system prompt the server wants to use for sampling. The client MAY modify or omit this prompt.
          */
@@ -8625,17 +11681,58 @@ export declare const ServerRequestSchema: z.ZodUnion<[z.ZodObject<z.objectUtil.e
     }>, z.ZodTypeAny, "passthrough">>;
 }>, "strip", z.ZodTypeAny, {
     params: {
-        messages: {
-            role: "user" | "assistant";
-            content: {
-                type: "text";
-                text: string;
-            } | {
-                type: "image";
-                data: string;
-                mimeType: string;
-            };
-        }[];
+        messages: z.objectOutputType<{
+            role: z.ZodEnum<["user", "assistant"]>;
+            content: z.ZodUnion<[z.ZodObject<{
+                type: z.ZodLiteral<"text">;
+                /**
+                 * The text content of the message.
+                 */
+                text: z.ZodString;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                type: z.ZodLiteral<"text">;
+                /**
+                 * The text content of the message.
+                 */
+                text: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                type: z.ZodLiteral<"text">;
+                /**
+                 * The text content of the message.
+                 */
+                text: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">>, z.ZodObject<{
+                type: z.ZodLiteral<"image">;
+                /**
+                 * The base64-encoded image data.
+                 */
+                data: z.ZodString;
+                /**
+                 * The MIME type of the image. Different providers may support different image types.
+                 */
+                mimeType: z.ZodString;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                type: z.ZodLiteral<"image">;
+                /**
+                 * The base64-encoded image data.
+                 */
+                data: z.ZodString;
+                /**
+                 * The MIME type of the image. Different providers may support different image types.
+                 */
+                mimeType: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                type: z.ZodLiteral<"image">;
+                /**
+                 * The base64-encoded image data.
+                 */
+                data: z.ZodString;
+                /**
+                 * The MIME type of the image. Different providers may support different image types.
+                 */
+                mimeType: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">>]>;
+        }, z.ZodTypeAny, "passthrough">[];
         maxTokens: number;
         _meta?: z.objectOutputType<{
             /**
@@ -8654,17 +11751,58 @@ export declare const ServerRequestSchema: z.ZodUnion<[z.ZodObject<z.objectUtil.e
     method: "sampling/createMessage";
 }, {
     params: {
-        messages: {
-            role: "user" | "assistant";
-            content: {
-                type: "text";
-                text: string;
-            } | {
-                type: "image";
-                data: string;
-                mimeType: string;
-            };
-        }[];
+        messages: z.objectInputType<{
+            role: z.ZodEnum<["user", "assistant"]>;
+            content: z.ZodUnion<[z.ZodObject<{
+                type: z.ZodLiteral<"text">;
+                /**
+                 * The text content of the message.
+                 */
+                text: z.ZodString;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                type: z.ZodLiteral<"text">;
+                /**
+                 * The text content of the message.
+                 */
+                text: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                type: z.ZodLiteral<"text">;
+                /**
+                 * The text content of the message.
+                 */
+                text: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">>, z.ZodObject<{
+                type: z.ZodLiteral<"image">;
+                /**
+                 * The base64-encoded image data.
+                 */
+                data: z.ZodString;
+                /**
+                 * The MIME type of the image. Different providers may support different image types.
+                 */
+                mimeType: z.ZodString;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                type: z.ZodLiteral<"image">;
+                /**
+                 * The base64-encoded image data.
+                 */
+                data: z.ZodString;
+                /**
+                 * The MIME type of the image. Different providers may support different image types.
+                 */
+                mimeType: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                type: z.ZodLiteral<"image">;
+                /**
+                 * The base64-encoded image data.
+                 */
+                data: z.ZodString;
+                /**
+                 * The MIME type of the image. Different providers may support different image types.
+                 */
+                mimeType: z.ZodString;
+            }, z.ZodTypeAny, "passthrough">>]>;
+        }, z.ZodTypeAny, "passthrough">[];
         maxTokens: number;
         _meta?: z.objectInputType<{
             /**
@@ -8716,20 +11854,42 @@ export declare const ServerNotificationSchema: z.ZodUnion<[z.ZodObject<z.objectU
          * The progress token which was given in the initial request, used to associate this notification with the request that is proceeding.
          */
         progressToken: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodNumber]>>;
-    }>, "strip", z.ZodTypeAny, {
-        progress: number;
-        progressToken?: string | number | undefined;
-        total?: number | undefined;
+    }>, "passthrough", z.ZodTypeAny, z.objectOutputType<z.objectUtil.extendShape<{
+        /**
+         * The progress thus far. This should increase every time progress is made, even if the total is unknown.
+         */
+        progress: z.ZodNumber;
+        /**
+         * Total number of items to process (or total progress required), if known.
+         */
+        total: z.ZodOptional<z.ZodNumber>;
     }, {
-        progress: number;
-        progressToken?: string | number | undefined;
-        total?: number | undefined;
-    }>;
+        /**
+         * The progress token which was given in the initial request, used to associate this notification with the request that is proceeding.
+         */
+        progressToken: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodNumber]>>;
+    }>, z.ZodTypeAny, "passthrough">, z.objectInputType<z.objectUtil.extendShape<{
+        /**
+         * The progress thus far. This should increase every time progress is made, even if the total is unknown.
+         */
+        progress: z.ZodNumber;
+        /**
+         * Total number of items to process (or total progress required), if known.
+         */
+        total: z.ZodOptional<z.ZodNumber>;
+    }, {
+        /**
+         * The progress token which was given in the initial request, used to associate this notification with the request that is proceeding.
+         */
+        progressToken: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodNumber]>>;
+    }>, z.ZodTypeAny, "passthrough">>;
 }>, "strip", z.ZodTypeAny, {
     params: {
         progress: number;
         progressToken?: string | number | undefined;
         total?: number | undefined;
+    } & {
+        [k: string]: unknown;
     };
     method: "notifications/progress";
 }, {
@@ -8737,6 +11897,8 @@ export declare const ServerNotificationSchema: z.ZodUnion<[z.ZodObject<z.objectU
         progress: number;
         progressToken?: string | number | undefined;
         total?: number | undefined;
+    } & {
+        [k: string]: unknown;
     };
     method: "notifications/progress";
 }>, z.ZodObject<z.objectUtil.extendShape<{
@@ -8772,20 +11934,40 @@ export declare const ServerNotificationSchema: z.ZodUnion<[z.ZodObject<z.objectU
          * The data to be logged, such as a string message or an object. Any JSON serializable type is allowed here.
          */
         data: z.ZodUnknown;
-    }, "strip", z.ZodTypeAny, {
-        level: "error" | "debug" | "info" | "warning";
-        data?: unknown;
-        logger?: string | undefined;
-    }, {
-        level: "error" | "debug" | "info" | "warning";
-        data?: unknown;
-        logger?: string | undefined;
-    }>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        /**
+         * The severity of this log message.
+         */
+        level: z.ZodEnum<["debug", "info", "warning", "error"]>;
+        /**
+         * An optional name of the logger issuing this message.
+         */
+        logger: z.ZodOptional<z.ZodString>;
+        /**
+         * The data to be logged, such as a string message or an object. Any JSON serializable type is allowed here.
+         */
+        data: z.ZodUnknown;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        /**
+         * The severity of this log message.
+         */
+        level: z.ZodEnum<["debug", "info", "warning", "error"]>;
+        /**
+         * An optional name of the logger issuing this message.
+         */
+        logger: z.ZodOptional<z.ZodString>;
+        /**
+         * The data to be logged, such as a string message or an object. Any JSON serializable type is allowed here.
+         */
+        data: z.ZodUnknown;
+    }, z.ZodTypeAny, "passthrough">>;
 }>, "strip", z.ZodTypeAny, {
     params: {
         level: "error" | "debug" | "info" | "warning";
         data?: unknown;
         logger?: string | undefined;
+    } & {
+        [k: string]: unknown;
     };
     method: "notifications/message";
 }, {
@@ -8793,6 +11975,8 @@ export declare const ServerNotificationSchema: z.ZodUnion<[z.ZodObject<z.objectU
         level: "error" | "debug" | "info" | "warning";
         data?: unknown;
         logger?: string | undefined;
+    } & {
+        [k: string]: unknown;
     };
     method: "notifications/message";
 }>, z.ZodObject<z.objectUtil.extendShape<{
@@ -8820,19 +12004,29 @@ export declare const ServerNotificationSchema: z.ZodUnion<[z.ZodObject<z.objectU
          * The URI of the resource that has been updated. This might be a sub-resource of the one that the client actually subscribed to.
          */
         uri: z.ZodString;
-    }, "strip", z.ZodTypeAny, {
-        uri: string;
-    }, {
-        uri: string;
-    }>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        /**
+         * The URI of the resource that has been updated. This might be a sub-resource of the one that the client actually subscribed to.
+         */
+        uri: z.ZodString;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        /**
+         * The URI of the resource that has been updated. This might be a sub-resource of the one that the client actually subscribed to.
+         */
+        uri: z.ZodString;
+    }, z.ZodTypeAny, "passthrough">>;
 }>, "strip", z.ZodTypeAny, {
     params: {
         uri: string;
+    } & {
+        [k: string]: unknown;
     };
     method: "notifications/resources/updated";
 }, {
     params: {
         uri: string;
+    } & {
+        [k: string]: unknown;
     };
     method: "notifications/resources/updated";
 }>, z.ZodObject<z.objectUtil.extendShape<{
@@ -9041,16 +12235,38 @@ export declare const ServerResultSchema: z.ZodUnion<[z.ZodObject<{
              */
             listChanged: z.ZodOptional<z.ZodBoolean>;
         }, z.ZodTypeAny, "passthrough">>>;
-    }, "strip", z.ZodTypeAny, {
-        experimental?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        logging?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        prompts?: z.objectOutputType<{
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        /**
+         * Experimental, non-standard capabilities that the server supports.
+         */
+        experimental: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        /**
+         * Present if the server supports sending log messages to the client.
+         */
+        logging: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        /**
+         * Present if the server offers any prompt templates.
+         */
+        prompts: z.ZodOptional<z.ZodObject<{
             /**
              * Whether this server supports notifications for changes to the prompt list.
              */
             listChanged: z.ZodOptional<z.ZodBoolean>;
-        }, z.ZodTypeAny, "passthrough"> | undefined;
-        resources?: z.objectOutputType<{
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * Whether this server supports notifications for changes to the prompt list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * Whether this server supports notifications for changes to the prompt list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">>>;
+        /**
+         * Present if the server offers any resources to read.
+         */
+        resources: z.ZodOptional<z.ZodObject<{
             /**
              * Whether this server supports subscribing to resource updates.
              */
@@ -9059,23 +12275,7 @@ export declare const ServerResultSchema: z.ZodUnion<[z.ZodObject<{
              * Whether this server supports notifications for changes to the resource list.
              */
             listChanged: z.ZodOptional<z.ZodBoolean>;
-        }, z.ZodTypeAny, "passthrough"> | undefined;
-        tools?: z.objectOutputType<{
-            /**
-             * Whether this server supports notifications for changes to the tool list.
-             */
-            listChanged: z.ZodOptional<z.ZodBoolean>;
-        }, z.ZodTypeAny, "passthrough"> | undefined;
-    }, {
-        experimental?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        logging?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        prompts?: z.objectInputType<{
-            /**
-             * Whether this server supports notifications for changes to the prompt list.
-             */
-            listChanged: z.ZodOptional<z.ZodBoolean>;
-        }, z.ZodTypeAny, "passthrough"> | undefined;
-        resources?: z.objectInputType<{
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
             /**
              * Whether this server supports subscribing to resource updates.
              */
@@ -9084,24 +12284,124 @@ export declare const ServerResultSchema: z.ZodUnion<[z.ZodObject<{
              * Whether this server supports notifications for changes to the resource list.
              */
             listChanged: z.ZodOptional<z.ZodBoolean>;
-        }, z.ZodTypeAny, "passthrough"> | undefined;
-        tools?: z.objectInputType<{
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * Whether this server supports subscribing to resource updates.
+             */
+            subscribe: z.ZodOptional<z.ZodBoolean>;
+            /**
+             * Whether this server supports notifications for changes to the resource list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">>>;
+        /**
+         * Present if the server offers any tools to call.
+         */
+        tools: z.ZodOptional<z.ZodObject<{
             /**
              * Whether this server supports notifications for changes to the tool list.
              */
             listChanged: z.ZodOptional<z.ZodBoolean>;
-        }, z.ZodTypeAny, "passthrough"> | undefined;
-    }>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * Whether this server supports notifications for changes to the tool list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * Whether this server supports notifications for changes to the tool list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">>>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        /**
+         * Experimental, non-standard capabilities that the server supports.
+         */
+        experimental: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        /**
+         * Present if the server supports sending log messages to the client.
+         */
+        logging: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        /**
+         * Present if the server offers any prompt templates.
+         */
+        prompts: z.ZodOptional<z.ZodObject<{
+            /**
+             * Whether this server supports notifications for changes to the prompt list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * Whether this server supports notifications for changes to the prompt list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * Whether this server supports notifications for changes to the prompt list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">>>;
+        /**
+         * Present if the server offers any resources to read.
+         */
+        resources: z.ZodOptional<z.ZodObject<{
+            /**
+             * Whether this server supports subscribing to resource updates.
+             */
+            subscribe: z.ZodOptional<z.ZodBoolean>;
+            /**
+             * Whether this server supports notifications for changes to the resource list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * Whether this server supports subscribing to resource updates.
+             */
+            subscribe: z.ZodOptional<z.ZodBoolean>;
+            /**
+             * Whether this server supports notifications for changes to the resource list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * Whether this server supports subscribing to resource updates.
+             */
+            subscribe: z.ZodOptional<z.ZodBoolean>;
+            /**
+             * Whether this server supports notifications for changes to the resource list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">>>;
+        /**
+         * Present if the server offers any tools to call.
+         */
+        tools: z.ZodOptional<z.ZodObject<{
+            /**
+             * Whether this server supports notifications for changes to the tool list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * Whether this server supports notifications for changes to the tool list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * Whether this server supports notifications for changes to the tool list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">>>;
+    }, z.ZodTypeAny, "passthrough">>;
     serverInfo: z.ZodObject<{
         name: z.ZodString;
         version: z.ZodString;
-    }, "strip", z.ZodTypeAny, {
-        name: string;
-        version: string;
-    }, {
-        name: string;
-        version: string;
-    }>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        name: z.ZodString;
+        version: z.ZodString;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        name: z.ZodString;
+        version: z.ZodString;
+    }, z.ZodTypeAny, "passthrough">>;
 }>, "passthrough", z.ZodTypeAny, z.objectOutputType<z.objectUtil.extendShape<{
     /**
      * This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses.
@@ -9190,16 +12490,38 @@ export declare const ServerResultSchema: z.ZodUnion<[z.ZodObject<{
              */
             listChanged: z.ZodOptional<z.ZodBoolean>;
         }, z.ZodTypeAny, "passthrough">>>;
-    }, "strip", z.ZodTypeAny, {
-        experimental?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        logging?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        prompts?: z.objectOutputType<{
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        /**
+         * Experimental, non-standard capabilities that the server supports.
+         */
+        experimental: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        /**
+         * Present if the server supports sending log messages to the client.
+         */
+        logging: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        /**
+         * Present if the server offers any prompt templates.
+         */
+        prompts: z.ZodOptional<z.ZodObject<{
             /**
              * Whether this server supports notifications for changes to the prompt list.
              */
             listChanged: z.ZodOptional<z.ZodBoolean>;
-        }, z.ZodTypeAny, "passthrough"> | undefined;
-        resources?: z.objectOutputType<{
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * Whether this server supports notifications for changes to the prompt list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * Whether this server supports notifications for changes to the prompt list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">>>;
+        /**
+         * Present if the server offers any resources to read.
+         */
+        resources: z.ZodOptional<z.ZodObject<{
             /**
              * Whether this server supports subscribing to resource updates.
              */
@@ -9208,23 +12530,7 @@ export declare const ServerResultSchema: z.ZodUnion<[z.ZodObject<{
              * Whether this server supports notifications for changes to the resource list.
              */
             listChanged: z.ZodOptional<z.ZodBoolean>;
-        }, z.ZodTypeAny, "passthrough"> | undefined;
-        tools?: z.objectOutputType<{
-            /**
-             * Whether this server supports notifications for changes to the tool list.
-             */
-            listChanged: z.ZodOptional<z.ZodBoolean>;
-        }, z.ZodTypeAny, "passthrough"> | undefined;
-    }, {
-        experimental?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        logging?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        prompts?: z.objectInputType<{
-            /**
-             * Whether this server supports notifications for changes to the prompt list.
-             */
-            listChanged: z.ZodOptional<z.ZodBoolean>;
-        }, z.ZodTypeAny, "passthrough"> | undefined;
-        resources?: z.objectInputType<{
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
             /**
              * Whether this server supports subscribing to resource updates.
              */
@@ -9233,24 +12539,124 @@ export declare const ServerResultSchema: z.ZodUnion<[z.ZodObject<{
              * Whether this server supports notifications for changes to the resource list.
              */
             listChanged: z.ZodOptional<z.ZodBoolean>;
-        }, z.ZodTypeAny, "passthrough"> | undefined;
-        tools?: z.objectInputType<{
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * Whether this server supports subscribing to resource updates.
+             */
+            subscribe: z.ZodOptional<z.ZodBoolean>;
+            /**
+             * Whether this server supports notifications for changes to the resource list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">>>;
+        /**
+         * Present if the server offers any tools to call.
+         */
+        tools: z.ZodOptional<z.ZodObject<{
             /**
              * Whether this server supports notifications for changes to the tool list.
              */
             listChanged: z.ZodOptional<z.ZodBoolean>;
-        }, z.ZodTypeAny, "passthrough"> | undefined;
-    }>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * Whether this server supports notifications for changes to the tool list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * Whether this server supports notifications for changes to the tool list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">>>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        /**
+         * Experimental, non-standard capabilities that the server supports.
+         */
+        experimental: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        /**
+         * Present if the server supports sending log messages to the client.
+         */
+        logging: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        /**
+         * Present if the server offers any prompt templates.
+         */
+        prompts: z.ZodOptional<z.ZodObject<{
+            /**
+             * Whether this server supports notifications for changes to the prompt list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * Whether this server supports notifications for changes to the prompt list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * Whether this server supports notifications for changes to the prompt list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">>>;
+        /**
+         * Present if the server offers any resources to read.
+         */
+        resources: z.ZodOptional<z.ZodObject<{
+            /**
+             * Whether this server supports subscribing to resource updates.
+             */
+            subscribe: z.ZodOptional<z.ZodBoolean>;
+            /**
+             * Whether this server supports notifications for changes to the resource list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * Whether this server supports subscribing to resource updates.
+             */
+            subscribe: z.ZodOptional<z.ZodBoolean>;
+            /**
+             * Whether this server supports notifications for changes to the resource list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * Whether this server supports subscribing to resource updates.
+             */
+            subscribe: z.ZodOptional<z.ZodBoolean>;
+            /**
+             * Whether this server supports notifications for changes to the resource list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">>>;
+        /**
+         * Present if the server offers any tools to call.
+         */
+        tools: z.ZodOptional<z.ZodObject<{
+            /**
+             * Whether this server supports notifications for changes to the tool list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * Whether this server supports notifications for changes to the tool list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * Whether this server supports notifications for changes to the tool list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">>>;
+    }, z.ZodTypeAny, "passthrough">>;
     serverInfo: z.ZodObject<{
         name: z.ZodString;
         version: z.ZodString;
-    }, "strip", z.ZodTypeAny, {
-        name: string;
-        version: string;
-    }, {
-        name: string;
-        version: string;
-    }>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        name: z.ZodString;
+        version: z.ZodString;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        name: z.ZodString;
+        version: z.ZodString;
+    }, z.ZodTypeAny, "passthrough">>;
 }>, z.ZodTypeAny, "passthrough">, z.objectInputType<z.objectUtil.extendShape<{
     /**
      * This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses.
@@ -9339,16 +12745,38 @@ export declare const ServerResultSchema: z.ZodUnion<[z.ZodObject<{
              */
             listChanged: z.ZodOptional<z.ZodBoolean>;
         }, z.ZodTypeAny, "passthrough">>>;
-    }, "strip", z.ZodTypeAny, {
-        experimental?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        logging?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        prompts?: z.objectOutputType<{
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        /**
+         * Experimental, non-standard capabilities that the server supports.
+         */
+        experimental: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        /**
+         * Present if the server supports sending log messages to the client.
+         */
+        logging: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        /**
+         * Present if the server offers any prompt templates.
+         */
+        prompts: z.ZodOptional<z.ZodObject<{
             /**
              * Whether this server supports notifications for changes to the prompt list.
              */
             listChanged: z.ZodOptional<z.ZodBoolean>;
-        }, z.ZodTypeAny, "passthrough"> | undefined;
-        resources?: z.objectOutputType<{
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * Whether this server supports notifications for changes to the prompt list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * Whether this server supports notifications for changes to the prompt list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">>>;
+        /**
+         * Present if the server offers any resources to read.
+         */
+        resources: z.ZodOptional<z.ZodObject<{
             /**
              * Whether this server supports subscribing to resource updates.
              */
@@ -9357,23 +12785,7 @@ export declare const ServerResultSchema: z.ZodUnion<[z.ZodObject<{
              * Whether this server supports notifications for changes to the resource list.
              */
             listChanged: z.ZodOptional<z.ZodBoolean>;
-        }, z.ZodTypeAny, "passthrough"> | undefined;
-        tools?: z.objectOutputType<{
-            /**
-             * Whether this server supports notifications for changes to the tool list.
-             */
-            listChanged: z.ZodOptional<z.ZodBoolean>;
-        }, z.ZodTypeAny, "passthrough"> | undefined;
-    }, {
-        experimental?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        logging?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        prompts?: z.objectInputType<{
-            /**
-             * Whether this server supports notifications for changes to the prompt list.
-             */
-            listChanged: z.ZodOptional<z.ZodBoolean>;
-        }, z.ZodTypeAny, "passthrough"> | undefined;
-        resources?: z.objectInputType<{
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
             /**
              * Whether this server supports subscribing to resource updates.
              */
@@ -9382,24 +12794,124 @@ export declare const ServerResultSchema: z.ZodUnion<[z.ZodObject<{
              * Whether this server supports notifications for changes to the resource list.
              */
             listChanged: z.ZodOptional<z.ZodBoolean>;
-        }, z.ZodTypeAny, "passthrough"> | undefined;
-        tools?: z.objectInputType<{
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * Whether this server supports subscribing to resource updates.
+             */
+            subscribe: z.ZodOptional<z.ZodBoolean>;
+            /**
+             * Whether this server supports notifications for changes to the resource list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">>>;
+        /**
+         * Present if the server offers any tools to call.
+         */
+        tools: z.ZodOptional<z.ZodObject<{
             /**
              * Whether this server supports notifications for changes to the tool list.
              */
             listChanged: z.ZodOptional<z.ZodBoolean>;
-        }, z.ZodTypeAny, "passthrough"> | undefined;
-    }>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * Whether this server supports notifications for changes to the tool list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * Whether this server supports notifications for changes to the tool list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">>>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        /**
+         * Experimental, non-standard capabilities that the server supports.
+         */
+        experimental: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        /**
+         * Present if the server supports sending log messages to the client.
+         */
+        logging: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        /**
+         * Present if the server offers any prompt templates.
+         */
+        prompts: z.ZodOptional<z.ZodObject<{
+            /**
+             * Whether this server supports notifications for changes to the prompt list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * Whether this server supports notifications for changes to the prompt list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * Whether this server supports notifications for changes to the prompt list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">>>;
+        /**
+         * Present if the server offers any resources to read.
+         */
+        resources: z.ZodOptional<z.ZodObject<{
+            /**
+             * Whether this server supports subscribing to resource updates.
+             */
+            subscribe: z.ZodOptional<z.ZodBoolean>;
+            /**
+             * Whether this server supports notifications for changes to the resource list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * Whether this server supports subscribing to resource updates.
+             */
+            subscribe: z.ZodOptional<z.ZodBoolean>;
+            /**
+             * Whether this server supports notifications for changes to the resource list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * Whether this server supports subscribing to resource updates.
+             */
+            subscribe: z.ZodOptional<z.ZodBoolean>;
+            /**
+             * Whether this server supports notifications for changes to the resource list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">>>;
+        /**
+         * Present if the server offers any tools to call.
+         */
+        tools: z.ZodOptional<z.ZodObject<{
+            /**
+             * Whether this server supports notifications for changes to the tool list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * Whether this server supports notifications for changes to the tool list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * Whether this server supports notifications for changes to the tool list.
+             */
+            listChanged: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">>>;
+    }, z.ZodTypeAny, "passthrough">>;
     serverInfo: z.ZodObject<{
         name: z.ZodString;
         version: z.ZodString;
-    }, "strip", z.ZodTypeAny, {
-        name: string;
-        version: string;
-    }, {
-        name: string;
-        version: string;
-    }>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        name: z.ZodString;
+        version: z.ZodString;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        name: z.ZodString;
+        version: z.ZodString;
+    }, z.ZodTypeAny, "passthrough">>;
 }>, z.ZodTypeAny, "passthrough">>, z.ZodObject<z.objectUtil.extendShape<{
     /**
      * This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses.
@@ -9419,15 +12931,33 @@ export declare const ServerResultSchema: z.ZodUnion<[z.ZodObject<{
          * Indicates whether there are additional completion options beyond those provided in the current response, even if the exact total is unknown.
          */
         hasMore: z.ZodOptional<z.ZodBoolean>;
-    }, "strip", z.ZodTypeAny, {
-        values: string[];
-        total?: number | undefined;
-        hasMore?: boolean | undefined;
-    }, {
-        values: string[];
-        total?: number | undefined;
-        hasMore?: boolean | undefined;
-    }>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        /**
+         * An array of completion values. Must not exceed 100 items.
+         */
+        values: z.ZodArray<z.ZodString, "many">;
+        /**
+         * The total number of completion options available. This can exceed the number of values actually sent in the response.
+         */
+        total: z.ZodOptional<z.ZodNumber>;
+        /**
+         * Indicates whether there are additional completion options beyond those provided in the current response, even if the exact total is unknown.
+         */
+        hasMore: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        /**
+         * An array of completion values. Must not exceed 100 items.
+         */
+        values: z.ZodArray<z.ZodString, "many">;
+        /**
+         * The total number of completion options available. This can exceed the number of values actually sent in the response.
+         */
+        total: z.ZodOptional<z.ZodNumber>;
+        /**
+         * Indicates whether there are additional completion options beyond those provided in the current response, even if the exact total is unknown.
+         */
+        hasMore: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">>;
 }>, "passthrough", z.ZodTypeAny, z.objectOutputType<z.objectUtil.extendShape<{
     /**
      * This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses.
@@ -9447,15 +12977,33 @@ export declare const ServerResultSchema: z.ZodUnion<[z.ZodObject<{
          * Indicates whether there are additional completion options beyond those provided in the current response, even if the exact total is unknown.
          */
         hasMore: z.ZodOptional<z.ZodBoolean>;
-    }, "strip", z.ZodTypeAny, {
-        values: string[];
-        total?: number | undefined;
-        hasMore?: boolean | undefined;
-    }, {
-        values: string[];
-        total?: number | undefined;
-        hasMore?: boolean | undefined;
-    }>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        /**
+         * An array of completion values. Must not exceed 100 items.
+         */
+        values: z.ZodArray<z.ZodString, "many">;
+        /**
+         * The total number of completion options available. This can exceed the number of values actually sent in the response.
+         */
+        total: z.ZodOptional<z.ZodNumber>;
+        /**
+         * Indicates whether there are additional completion options beyond those provided in the current response, even if the exact total is unknown.
+         */
+        hasMore: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        /**
+         * An array of completion values. Must not exceed 100 items.
+         */
+        values: z.ZodArray<z.ZodString, "many">;
+        /**
+         * The total number of completion options available. This can exceed the number of values actually sent in the response.
+         */
+        total: z.ZodOptional<z.ZodNumber>;
+        /**
+         * Indicates whether there are additional completion options beyond those provided in the current response, even if the exact total is unknown.
+         */
+        hasMore: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">>;
 }>, z.ZodTypeAny, "passthrough">, z.objectInputType<z.objectUtil.extendShape<{
     /**
      * This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses.
@@ -9475,15 +13023,33 @@ export declare const ServerResultSchema: z.ZodUnion<[z.ZodObject<{
          * Indicates whether there are additional completion options beyond those provided in the current response, even if the exact total is unknown.
          */
         hasMore: z.ZodOptional<z.ZodBoolean>;
-    }, "strip", z.ZodTypeAny, {
-        values: string[];
-        total?: number | undefined;
-        hasMore?: boolean | undefined;
-    }, {
-        values: string[];
-        total?: number | undefined;
-        hasMore?: boolean | undefined;
-    }>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        /**
+         * An array of completion values. Must not exceed 100 items.
+         */
+        values: z.ZodArray<z.ZodString, "many">;
+        /**
+         * The total number of completion options available. This can exceed the number of values actually sent in the response.
+         */
+        total: z.ZodOptional<z.ZodNumber>;
+        /**
+         * Indicates whether there are additional completion options beyond those provided in the current response, even if the exact total is unknown.
+         */
+        hasMore: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        /**
+         * An array of completion values. Must not exceed 100 items.
+         */
+        values: z.ZodArray<z.ZodString, "many">;
+        /**
+         * The total number of completion options available. This can exceed the number of values actually sent in the response.
+         */
+        total: z.ZodOptional<z.ZodNumber>;
+        /**
+         * Indicates whether there are additional completion options beyond those provided in the current response, even if the exact total is unknown.
+         */
+        hasMore: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">>;
 }>, z.ZodTypeAny, "passthrough">>, z.ZodObject<z.objectUtil.extendShape<{
     /**
      * This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses.
@@ -9502,13 +13068,19 @@ export declare const ServerResultSchema: z.ZodUnion<[z.ZodObject<{
              * The text content of the message.
              */
             text: z.ZodString;
-        }, "strip", z.ZodTypeAny, {
-            type: "text";
-            text: string;
-        }, {
-            type: "text";
-            text: string;
-        }>, z.ZodObject<{
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            type: z.ZodLiteral<"text">;
+            /**
+             * The text content of the message.
+             */
+            text: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            type: z.ZodLiteral<"text">;
+            /**
+             * The text content of the message.
+             */
+            text: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">>, z.ZodObject<{
             type: z.ZodLiteral<"image">;
             /**
              * The base64-encoded image data.
@@ -9518,36 +13090,130 @@ export declare const ServerResultSchema: z.ZodUnion<[z.ZodObject<{
              * The MIME type of the image. Different providers may support different image types.
              */
             mimeType: z.ZodString;
-        }, "strip", z.ZodTypeAny, {
-            type: "image";
-            data: string;
-            mimeType: string;
-        }, {
-            type: "image";
-            data: string;
-            mimeType: string;
-        }>]>;
-    }, "strip", z.ZodTypeAny, {
-        role: "user" | "assistant";
-        content: {
-            type: "text";
-            text: string;
-        } | {
-            type: "image";
-            data: string;
-            mimeType: string;
-        };
-    }, {
-        role: "user" | "assistant";
-        content: {
-            type: "text";
-            text: string;
-        } | {
-            type: "image";
-            data: string;
-            mimeType: string;
-        };
-    }>, "many">;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            type: z.ZodLiteral<"image">;
+            /**
+             * The base64-encoded image data.
+             */
+            data: z.ZodString;
+            /**
+             * The MIME type of the image. Different providers may support different image types.
+             */
+            mimeType: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            type: z.ZodLiteral<"image">;
+            /**
+             * The base64-encoded image data.
+             */
+            data: z.ZodString;
+            /**
+             * The MIME type of the image. Different providers may support different image types.
+             */
+            mimeType: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">>]>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        role: z.ZodEnum<["user", "assistant"]>;
+        content: z.ZodUnion<[z.ZodObject<{
+            type: z.ZodLiteral<"text">;
+            /**
+             * The text content of the message.
+             */
+            text: z.ZodString;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            type: z.ZodLiteral<"text">;
+            /**
+             * The text content of the message.
+             */
+            text: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            type: z.ZodLiteral<"text">;
+            /**
+             * The text content of the message.
+             */
+            text: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">>, z.ZodObject<{
+            type: z.ZodLiteral<"image">;
+            /**
+             * The base64-encoded image data.
+             */
+            data: z.ZodString;
+            /**
+             * The MIME type of the image. Different providers may support different image types.
+             */
+            mimeType: z.ZodString;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            type: z.ZodLiteral<"image">;
+            /**
+             * The base64-encoded image data.
+             */
+            data: z.ZodString;
+            /**
+             * The MIME type of the image. Different providers may support different image types.
+             */
+            mimeType: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            type: z.ZodLiteral<"image">;
+            /**
+             * The base64-encoded image data.
+             */
+            data: z.ZodString;
+            /**
+             * The MIME type of the image. Different providers may support different image types.
+             */
+            mimeType: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">>]>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        role: z.ZodEnum<["user", "assistant"]>;
+        content: z.ZodUnion<[z.ZodObject<{
+            type: z.ZodLiteral<"text">;
+            /**
+             * The text content of the message.
+             */
+            text: z.ZodString;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            type: z.ZodLiteral<"text">;
+            /**
+             * The text content of the message.
+             */
+            text: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            type: z.ZodLiteral<"text">;
+            /**
+             * The text content of the message.
+             */
+            text: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">>, z.ZodObject<{
+            type: z.ZodLiteral<"image">;
+            /**
+             * The base64-encoded image data.
+             */
+            data: z.ZodString;
+            /**
+             * The MIME type of the image. Different providers may support different image types.
+             */
+            mimeType: z.ZodString;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            type: z.ZodLiteral<"image">;
+            /**
+             * The base64-encoded image data.
+             */
+            data: z.ZodString;
+            /**
+             * The MIME type of the image. Different providers may support different image types.
+             */
+            mimeType: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            type: z.ZodLiteral<"image">;
+            /**
+             * The base64-encoded image data.
+             */
+            data: z.ZodString;
+            /**
+             * The MIME type of the image. Different providers may support different image types.
+             */
+            mimeType: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">>]>;
+    }, z.ZodTypeAny, "passthrough">>, "many">;
 }>, "passthrough", z.ZodTypeAny, z.objectOutputType<z.objectUtil.extendShape<{
     /**
      * This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses.
@@ -9566,13 +13232,19 @@ export declare const ServerResultSchema: z.ZodUnion<[z.ZodObject<{
              * The text content of the message.
              */
             text: z.ZodString;
-        }, "strip", z.ZodTypeAny, {
-            type: "text";
-            text: string;
-        }, {
-            type: "text";
-            text: string;
-        }>, z.ZodObject<{
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            type: z.ZodLiteral<"text">;
+            /**
+             * The text content of the message.
+             */
+            text: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            type: z.ZodLiteral<"text">;
+            /**
+             * The text content of the message.
+             */
+            text: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">>, z.ZodObject<{
             type: z.ZodLiteral<"image">;
             /**
              * The base64-encoded image data.
@@ -9582,36 +13254,130 @@ export declare const ServerResultSchema: z.ZodUnion<[z.ZodObject<{
              * The MIME type of the image. Different providers may support different image types.
              */
             mimeType: z.ZodString;
-        }, "strip", z.ZodTypeAny, {
-            type: "image";
-            data: string;
-            mimeType: string;
-        }, {
-            type: "image";
-            data: string;
-            mimeType: string;
-        }>]>;
-    }, "strip", z.ZodTypeAny, {
-        role: "user" | "assistant";
-        content: {
-            type: "text";
-            text: string;
-        } | {
-            type: "image";
-            data: string;
-            mimeType: string;
-        };
-    }, {
-        role: "user" | "assistant";
-        content: {
-            type: "text";
-            text: string;
-        } | {
-            type: "image";
-            data: string;
-            mimeType: string;
-        };
-    }>, "many">;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            type: z.ZodLiteral<"image">;
+            /**
+             * The base64-encoded image data.
+             */
+            data: z.ZodString;
+            /**
+             * The MIME type of the image. Different providers may support different image types.
+             */
+            mimeType: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            type: z.ZodLiteral<"image">;
+            /**
+             * The base64-encoded image data.
+             */
+            data: z.ZodString;
+            /**
+             * The MIME type of the image. Different providers may support different image types.
+             */
+            mimeType: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">>]>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        role: z.ZodEnum<["user", "assistant"]>;
+        content: z.ZodUnion<[z.ZodObject<{
+            type: z.ZodLiteral<"text">;
+            /**
+             * The text content of the message.
+             */
+            text: z.ZodString;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            type: z.ZodLiteral<"text">;
+            /**
+             * The text content of the message.
+             */
+            text: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            type: z.ZodLiteral<"text">;
+            /**
+             * The text content of the message.
+             */
+            text: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">>, z.ZodObject<{
+            type: z.ZodLiteral<"image">;
+            /**
+             * The base64-encoded image data.
+             */
+            data: z.ZodString;
+            /**
+             * The MIME type of the image. Different providers may support different image types.
+             */
+            mimeType: z.ZodString;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            type: z.ZodLiteral<"image">;
+            /**
+             * The base64-encoded image data.
+             */
+            data: z.ZodString;
+            /**
+             * The MIME type of the image. Different providers may support different image types.
+             */
+            mimeType: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            type: z.ZodLiteral<"image">;
+            /**
+             * The base64-encoded image data.
+             */
+            data: z.ZodString;
+            /**
+             * The MIME type of the image. Different providers may support different image types.
+             */
+            mimeType: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">>]>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        role: z.ZodEnum<["user", "assistant"]>;
+        content: z.ZodUnion<[z.ZodObject<{
+            type: z.ZodLiteral<"text">;
+            /**
+             * The text content of the message.
+             */
+            text: z.ZodString;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            type: z.ZodLiteral<"text">;
+            /**
+             * The text content of the message.
+             */
+            text: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            type: z.ZodLiteral<"text">;
+            /**
+             * The text content of the message.
+             */
+            text: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">>, z.ZodObject<{
+            type: z.ZodLiteral<"image">;
+            /**
+             * The base64-encoded image data.
+             */
+            data: z.ZodString;
+            /**
+             * The MIME type of the image. Different providers may support different image types.
+             */
+            mimeType: z.ZodString;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            type: z.ZodLiteral<"image">;
+            /**
+             * The base64-encoded image data.
+             */
+            data: z.ZodString;
+            /**
+             * The MIME type of the image. Different providers may support different image types.
+             */
+            mimeType: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            type: z.ZodLiteral<"image">;
+            /**
+             * The base64-encoded image data.
+             */
+            data: z.ZodString;
+            /**
+             * The MIME type of the image. Different providers may support different image types.
+             */
+            mimeType: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">>]>;
+    }, z.ZodTypeAny, "passthrough">>, "many">;
 }>, z.ZodTypeAny, "passthrough">, z.objectInputType<z.objectUtil.extendShape<{
     /**
      * This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses.
@@ -9630,13 +13396,19 @@ export declare const ServerResultSchema: z.ZodUnion<[z.ZodObject<{
              * The text content of the message.
              */
             text: z.ZodString;
-        }, "strip", z.ZodTypeAny, {
-            type: "text";
-            text: string;
-        }, {
-            type: "text";
-            text: string;
-        }>, z.ZodObject<{
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            type: z.ZodLiteral<"text">;
+            /**
+             * The text content of the message.
+             */
+            text: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            type: z.ZodLiteral<"text">;
+            /**
+             * The text content of the message.
+             */
+            text: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">>, z.ZodObject<{
             type: z.ZodLiteral<"image">;
             /**
              * The base64-encoded image data.
@@ -9646,36 +13418,130 @@ export declare const ServerResultSchema: z.ZodUnion<[z.ZodObject<{
              * The MIME type of the image. Different providers may support different image types.
              */
             mimeType: z.ZodString;
-        }, "strip", z.ZodTypeAny, {
-            type: "image";
-            data: string;
-            mimeType: string;
-        }, {
-            type: "image";
-            data: string;
-            mimeType: string;
-        }>]>;
-    }, "strip", z.ZodTypeAny, {
-        role: "user" | "assistant";
-        content: {
-            type: "text";
-            text: string;
-        } | {
-            type: "image";
-            data: string;
-            mimeType: string;
-        };
-    }, {
-        role: "user" | "assistant";
-        content: {
-            type: "text";
-            text: string;
-        } | {
-            type: "image";
-            data: string;
-            mimeType: string;
-        };
-    }>, "many">;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            type: z.ZodLiteral<"image">;
+            /**
+             * The base64-encoded image data.
+             */
+            data: z.ZodString;
+            /**
+             * The MIME type of the image. Different providers may support different image types.
+             */
+            mimeType: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            type: z.ZodLiteral<"image">;
+            /**
+             * The base64-encoded image data.
+             */
+            data: z.ZodString;
+            /**
+             * The MIME type of the image. Different providers may support different image types.
+             */
+            mimeType: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">>]>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        role: z.ZodEnum<["user", "assistant"]>;
+        content: z.ZodUnion<[z.ZodObject<{
+            type: z.ZodLiteral<"text">;
+            /**
+             * The text content of the message.
+             */
+            text: z.ZodString;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            type: z.ZodLiteral<"text">;
+            /**
+             * The text content of the message.
+             */
+            text: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            type: z.ZodLiteral<"text">;
+            /**
+             * The text content of the message.
+             */
+            text: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">>, z.ZodObject<{
+            type: z.ZodLiteral<"image">;
+            /**
+             * The base64-encoded image data.
+             */
+            data: z.ZodString;
+            /**
+             * The MIME type of the image. Different providers may support different image types.
+             */
+            mimeType: z.ZodString;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            type: z.ZodLiteral<"image">;
+            /**
+             * The base64-encoded image data.
+             */
+            data: z.ZodString;
+            /**
+             * The MIME type of the image. Different providers may support different image types.
+             */
+            mimeType: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            type: z.ZodLiteral<"image">;
+            /**
+             * The base64-encoded image data.
+             */
+            data: z.ZodString;
+            /**
+             * The MIME type of the image. Different providers may support different image types.
+             */
+            mimeType: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">>]>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        role: z.ZodEnum<["user", "assistant"]>;
+        content: z.ZodUnion<[z.ZodObject<{
+            type: z.ZodLiteral<"text">;
+            /**
+             * The text content of the message.
+             */
+            text: z.ZodString;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            type: z.ZodLiteral<"text">;
+            /**
+             * The text content of the message.
+             */
+            text: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            type: z.ZodLiteral<"text">;
+            /**
+             * The text content of the message.
+             */
+            text: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">>, z.ZodObject<{
+            type: z.ZodLiteral<"image">;
+            /**
+             * The base64-encoded image data.
+             */
+            data: z.ZodString;
+            /**
+             * The MIME type of the image. Different providers may support different image types.
+             */
+            mimeType: z.ZodString;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            type: z.ZodLiteral<"image">;
+            /**
+             * The base64-encoded image data.
+             */
+            data: z.ZodString;
+            /**
+             * The MIME type of the image. Different providers may support different image types.
+             */
+            mimeType: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            type: z.ZodLiteral<"image">;
+            /**
+             * The base64-encoded image data.
+             */
+            data: z.ZodString;
+            /**
+             * The MIME type of the image. Different providers may support different image types.
+             */
+            mimeType: z.ZodString;
+        }, z.ZodTypeAny, "passthrough">>]>;
+    }, z.ZodTypeAny, "passthrough">>, "many">;
 }>, z.ZodTypeAny, "passthrough">>, z.ZodObject<z.objectUtil.extendShape<z.objectUtil.extendShape<{
     /**
      * This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses.
@@ -9713,32 +13579,138 @@ export declare const ServerResultSchema: z.ZodUnion<[z.ZodObject<{
              * Whether this argument must be provided.
              */
             required: z.ZodOptional<z.ZodBoolean>;
-        }, "strip", z.ZodTypeAny, {
-            name: string;
-            description?: string | undefined;
-            required?: boolean | undefined;
-        }, {
-            name: string;
-            description?: string | undefined;
-            required?: boolean | undefined;
-        }>, "many">>;
-    }, "strip", z.ZodTypeAny, {
-        name: string;
-        description?: string | undefined;
-        arguments?: {
-            name: string;
-            description?: string | undefined;
-            required?: boolean | undefined;
-        }[] | undefined;
-    }, {
-        name: string;
-        description?: string | undefined;
-        arguments?: {
-            name: string;
-            description?: string | undefined;
-            required?: boolean | undefined;
-        }[] | undefined;
-    }>, "many">;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * The name of the argument.
+             */
+            name: z.ZodString;
+            /**
+             * A human-readable description of the argument.
+             */
+            description: z.ZodOptional<z.ZodString>;
+            /**
+             * Whether this argument must be provided.
+             */
+            required: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * The name of the argument.
+             */
+            name: z.ZodString;
+            /**
+             * A human-readable description of the argument.
+             */
+            description: z.ZodOptional<z.ZodString>;
+            /**
+             * Whether this argument must be provided.
+             */
+            required: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">>, "many">>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        /**
+         * The name of the prompt or prompt template.
+         */
+        name: z.ZodString;
+        /**
+         * An optional description of what this prompt provides
+         */
+        description: z.ZodOptional<z.ZodString>;
+        /**
+         * A list of arguments to use for templating the prompt.
+         */
+        arguments: z.ZodOptional<z.ZodArray<z.ZodObject<{
+            /**
+             * The name of the argument.
+             */
+            name: z.ZodString;
+            /**
+             * A human-readable description of the argument.
+             */
+            description: z.ZodOptional<z.ZodString>;
+            /**
+             * Whether this argument must be provided.
+             */
+            required: z.ZodOptional<z.ZodBoolean>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * The name of the argument.
+             */
+            name: z.ZodString;
+            /**
+             * A human-readable description of the argument.
+             */
+            description: z.ZodOptional<z.ZodString>;
+            /**
+             * Whether this argument must be provided.
+             */
+            required: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * The name of the argument.
+             */
+            name: z.ZodString;
+            /**
+             * A human-readable description of the argument.
+             */
+            description: z.ZodOptional<z.ZodString>;
+            /**
+             * Whether this argument must be provided.
+             */
+            required: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">>, "many">>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        /**
+         * The name of the prompt or prompt template.
+         */
+        name: z.ZodString;
+        /**
+         * An optional description of what this prompt provides
+         */
+        description: z.ZodOptional<z.ZodString>;
+        /**
+         * A list of arguments to use for templating the prompt.
+         */
+        arguments: z.ZodOptional<z.ZodArray<z.ZodObject<{
+            /**
+             * The name of the argument.
+             */
+            name: z.ZodString;
+            /**
+             * A human-readable description of the argument.
+             */
+            description: z.ZodOptional<z.ZodString>;
+            /**
+             * Whether this argument must be provided.
+             */
+            required: z.ZodOptional<z.ZodBoolean>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * The name of the argument.
+             */
+            name: z.ZodString;
+            /**
+             * A human-readable description of the argument.
+             */
+            description: z.ZodOptional<z.ZodString>;
+            /**
+             * Whether this argument must be provided.
+             */
+            required: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * The name of the argument.
+             */
+            name: z.ZodString;
+            /**
+             * A human-readable description of the argument.
+             */
+            description: z.ZodOptional<z.ZodString>;
+            /**
+             * Whether this argument must be provided.
+             */
+            required: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">>, "many">>;
+    }, z.ZodTypeAny, "passthrough">>, "many">;
 }>, "passthrough", z.ZodTypeAny, z.objectOutputType<z.objectUtil.extendShape<z.objectUtil.extendShape<{
     /**
      * This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses.
@@ -9776,32 +13748,138 @@ export declare const ServerResultSchema: z.ZodUnion<[z.ZodObject<{
              * Whether this argument must be provided.
              */
             required: z.ZodOptional<z.ZodBoolean>;
-        }, "strip", z.ZodTypeAny, {
-            name: string;
-            description?: string | undefined;
-            required?: boolean | undefined;
-        }, {
-            name: string;
-            description?: string | undefined;
-            required?: boolean | undefined;
-        }>, "many">>;
-    }, "strip", z.ZodTypeAny, {
-        name: string;
-        description?: string | undefined;
-        arguments?: {
-            name: string;
-            description?: string | undefined;
-            required?: boolean | undefined;
-        }[] | undefined;
-    }, {
-        name: string;
-        description?: string | undefined;
-        arguments?: {
-            name: string;
-            description?: string | undefined;
-            required?: boolean | undefined;
-        }[] | undefined;
-    }>, "many">;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * The name of the argument.
+             */
+            name: z.ZodString;
+            /**
+             * A human-readable description of the argument.
+             */
+            description: z.ZodOptional<z.ZodString>;
+            /**
+             * Whether this argument must be provided.
+             */
+            required: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * The name of the argument.
+             */
+            name: z.ZodString;
+            /**
+             * A human-readable description of the argument.
+             */
+            description: z.ZodOptional<z.ZodString>;
+            /**
+             * Whether this argument must be provided.
+             */
+            required: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">>, "many">>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        /**
+         * The name of the prompt or prompt template.
+         */
+        name: z.ZodString;
+        /**
+         * An optional description of what this prompt provides
+         */
+        description: z.ZodOptional<z.ZodString>;
+        /**
+         * A list of arguments to use for templating the prompt.
+         */
+        arguments: z.ZodOptional<z.ZodArray<z.ZodObject<{
+            /**
+             * The name of the argument.
+             */
+            name: z.ZodString;
+            /**
+             * A human-readable description of the argument.
+             */
+            description: z.ZodOptional<z.ZodString>;
+            /**
+             * Whether this argument must be provided.
+             */
+            required: z.ZodOptional<z.ZodBoolean>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * The name of the argument.
+             */
+            name: z.ZodString;
+            /**
+             * A human-readable description of the argument.
+             */
+            description: z.ZodOptional<z.ZodString>;
+            /**
+             * Whether this argument must be provided.
+             */
+            required: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * The name of the argument.
+             */
+            name: z.ZodString;
+            /**
+             * A human-readable description of the argument.
+             */
+            description: z.ZodOptional<z.ZodString>;
+            /**
+             * Whether this argument must be provided.
+             */
+            required: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">>, "many">>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        /**
+         * The name of the prompt or prompt template.
+         */
+        name: z.ZodString;
+        /**
+         * An optional description of what this prompt provides
+         */
+        description: z.ZodOptional<z.ZodString>;
+        /**
+         * A list of arguments to use for templating the prompt.
+         */
+        arguments: z.ZodOptional<z.ZodArray<z.ZodObject<{
+            /**
+             * The name of the argument.
+             */
+            name: z.ZodString;
+            /**
+             * A human-readable description of the argument.
+             */
+            description: z.ZodOptional<z.ZodString>;
+            /**
+             * Whether this argument must be provided.
+             */
+            required: z.ZodOptional<z.ZodBoolean>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * The name of the argument.
+             */
+            name: z.ZodString;
+            /**
+             * A human-readable description of the argument.
+             */
+            description: z.ZodOptional<z.ZodString>;
+            /**
+             * Whether this argument must be provided.
+             */
+            required: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * The name of the argument.
+             */
+            name: z.ZodString;
+            /**
+             * A human-readable description of the argument.
+             */
+            description: z.ZodOptional<z.ZodString>;
+            /**
+             * Whether this argument must be provided.
+             */
+            required: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">>, "many">>;
+    }, z.ZodTypeAny, "passthrough">>, "many">;
 }>, z.ZodTypeAny, "passthrough">, z.objectInputType<z.objectUtil.extendShape<z.objectUtil.extendShape<{
     /**
      * This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses.
@@ -9839,32 +13917,138 @@ export declare const ServerResultSchema: z.ZodUnion<[z.ZodObject<{
              * Whether this argument must be provided.
              */
             required: z.ZodOptional<z.ZodBoolean>;
-        }, "strip", z.ZodTypeAny, {
-            name: string;
-            description?: string | undefined;
-            required?: boolean | undefined;
-        }, {
-            name: string;
-            description?: string | undefined;
-            required?: boolean | undefined;
-        }>, "many">>;
-    }, "strip", z.ZodTypeAny, {
-        name: string;
-        description?: string | undefined;
-        arguments?: {
-            name: string;
-            description?: string | undefined;
-            required?: boolean | undefined;
-        }[] | undefined;
-    }, {
-        name: string;
-        description?: string | undefined;
-        arguments?: {
-            name: string;
-            description?: string | undefined;
-            required?: boolean | undefined;
-        }[] | undefined;
-    }>, "many">;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * The name of the argument.
+             */
+            name: z.ZodString;
+            /**
+             * A human-readable description of the argument.
+             */
+            description: z.ZodOptional<z.ZodString>;
+            /**
+             * Whether this argument must be provided.
+             */
+            required: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * The name of the argument.
+             */
+            name: z.ZodString;
+            /**
+             * A human-readable description of the argument.
+             */
+            description: z.ZodOptional<z.ZodString>;
+            /**
+             * Whether this argument must be provided.
+             */
+            required: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">>, "many">>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        /**
+         * The name of the prompt or prompt template.
+         */
+        name: z.ZodString;
+        /**
+         * An optional description of what this prompt provides
+         */
+        description: z.ZodOptional<z.ZodString>;
+        /**
+         * A list of arguments to use for templating the prompt.
+         */
+        arguments: z.ZodOptional<z.ZodArray<z.ZodObject<{
+            /**
+             * The name of the argument.
+             */
+            name: z.ZodString;
+            /**
+             * A human-readable description of the argument.
+             */
+            description: z.ZodOptional<z.ZodString>;
+            /**
+             * Whether this argument must be provided.
+             */
+            required: z.ZodOptional<z.ZodBoolean>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * The name of the argument.
+             */
+            name: z.ZodString;
+            /**
+             * A human-readable description of the argument.
+             */
+            description: z.ZodOptional<z.ZodString>;
+            /**
+             * Whether this argument must be provided.
+             */
+            required: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * The name of the argument.
+             */
+            name: z.ZodString;
+            /**
+             * A human-readable description of the argument.
+             */
+            description: z.ZodOptional<z.ZodString>;
+            /**
+             * Whether this argument must be provided.
+             */
+            required: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">>, "many">>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        /**
+         * The name of the prompt or prompt template.
+         */
+        name: z.ZodString;
+        /**
+         * An optional description of what this prompt provides
+         */
+        description: z.ZodOptional<z.ZodString>;
+        /**
+         * A list of arguments to use for templating the prompt.
+         */
+        arguments: z.ZodOptional<z.ZodArray<z.ZodObject<{
+            /**
+             * The name of the argument.
+             */
+            name: z.ZodString;
+            /**
+             * A human-readable description of the argument.
+             */
+            description: z.ZodOptional<z.ZodString>;
+            /**
+             * Whether this argument must be provided.
+             */
+            required: z.ZodOptional<z.ZodBoolean>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            /**
+             * The name of the argument.
+             */
+            name: z.ZodString;
+            /**
+             * A human-readable description of the argument.
+             */
+            description: z.ZodOptional<z.ZodString>;
+            /**
+             * Whether this argument must be provided.
+             */
+            required: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            /**
+             * The name of the argument.
+             */
+            name: z.ZodString;
+            /**
+             * A human-readable description of the argument.
+             */
+            description: z.ZodOptional<z.ZodString>;
+            /**
+             * Whether this argument must be provided.
+             */
+            required: z.ZodOptional<z.ZodBoolean>;
+        }, z.ZodTypeAny, "passthrough">>, "many">>;
+    }, z.ZodTypeAny, "passthrough">>, "many">;
 }>, z.ZodTypeAny, "passthrough">>, z.ZodObject<z.objectUtil.extendShape<z.objectUtil.extendShape<{
     /**
      * This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses.
@@ -9898,17 +14082,49 @@ export declare const ServerResultSchema: z.ZodUnion<[z.ZodObject<{
          * The MIME type of this resource, if known.
          */
         mimeType: z.ZodOptional<z.ZodString>;
-    }, "strip", z.ZodTypeAny, {
-        name: string;
-        uri: string;
-        mimeType?: string | undefined;
-        description?: string | undefined;
-    }, {
-        name: string;
-        uri: string;
-        mimeType?: string | undefined;
-        description?: string | undefined;
-    }>, "many">;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        /**
+         * The URI of this resource.
+         */
+        uri: z.ZodString;
+        /**
+         * A human-readable name for this resource.
+         *
+         * This can be used by clients to populate UI elements.
+         */
+        name: z.ZodString;
+        /**
+         * A description of what this resource represents.
+         *
+         * This can be used by clients to improve the LLM's understanding of available resources. It can be thought of like a "hint" to the model.
+         */
+        description: z.ZodOptional<z.ZodString>;
+        /**
+         * The MIME type of this resource, if known.
+         */
+        mimeType: z.ZodOptional<z.ZodString>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        /**
+         * The URI of this resource.
+         */
+        uri: z.ZodString;
+        /**
+         * A human-readable name for this resource.
+         *
+         * This can be used by clients to populate UI elements.
+         */
+        name: z.ZodString;
+        /**
+         * A description of what this resource represents.
+         *
+         * This can be used by clients to improve the LLM's understanding of available resources. It can be thought of like a "hint" to the model.
+         */
+        description: z.ZodOptional<z.ZodString>;
+        /**
+         * The MIME type of this resource, if known.
+         */
+        mimeType: z.ZodOptional<z.ZodString>;
+    }, z.ZodTypeAny, "passthrough">>, "many">;
 }>, "passthrough", z.ZodTypeAny, z.objectOutputType<z.objectUtil.extendShape<z.objectUtil.extendShape<{
     /**
      * This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses.
@@ -9942,17 +14158,49 @@ export declare const ServerResultSchema: z.ZodUnion<[z.ZodObject<{
          * The MIME type of this resource, if known.
          */
         mimeType: z.ZodOptional<z.ZodString>;
-    }, "strip", z.ZodTypeAny, {
-        name: string;
-        uri: string;
-        mimeType?: string | undefined;
-        description?: string | undefined;
-    }, {
-        name: string;
-        uri: string;
-        mimeType?: string | undefined;
-        description?: string | undefined;
-    }>, "many">;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        /**
+         * The URI of this resource.
+         */
+        uri: z.ZodString;
+        /**
+         * A human-readable name for this resource.
+         *
+         * This can be used by clients to populate UI elements.
+         */
+        name: z.ZodString;
+        /**
+         * A description of what this resource represents.
+         *
+         * This can be used by clients to improve the LLM's understanding of available resources. It can be thought of like a "hint" to the model.
+         */
+        description: z.ZodOptional<z.ZodString>;
+        /**
+         * The MIME type of this resource, if known.
+         */
+        mimeType: z.ZodOptional<z.ZodString>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        /**
+         * The URI of this resource.
+         */
+        uri: z.ZodString;
+        /**
+         * A human-readable name for this resource.
+         *
+         * This can be used by clients to populate UI elements.
+         */
+        name: z.ZodString;
+        /**
+         * A description of what this resource represents.
+         *
+         * This can be used by clients to improve the LLM's understanding of available resources. It can be thought of like a "hint" to the model.
+         */
+        description: z.ZodOptional<z.ZodString>;
+        /**
+         * The MIME type of this resource, if known.
+         */
+        mimeType: z.ZodOptional<z.ZodString>;
+    }, z.ZodTypeAny, "passthrough">>, "many">;
 }>, z.ZodTypeAny, "passthrough">, z.objectInputType<z.objectUtil.extendShape<z.objectUtil.extendShape<{
     /**
      * This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses.
@@ -9986,17 +14234,49 @@ export declare const ServerResultSchema: z.ZodUnion<[z.ZodObject<{
          * The MIME type of this resource, if known.
          */
         mimeType: z.ZodOptional<z.ZodString>;
-    }, "strip", z.ZodTypeAny, {
-        name: string;
-        uri: string;
-        mimeType?: string | undefined;
-        description?: string | undefined;
-    }, {
-        name: string;
-        uri: string;
-        mimeType?: string | undefined;
-        description?: string | undefined;
-    }>, "many">;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        /**
+         * The URI of this resource.
+         */
+        uri: z.ZodString;
+        /**
+         * A human-readable name for this resource.
+         *
+         * This can be used by clients to populate UI elements.
+         */
+        name: z.ZodString;
+        /**
+         * A description of what this resource represents.
+         *
+         * This can be used by clients to improve the LLM's understanding of available resources. It can be thought of like a "hint" to the model.
+         */
+        description: z.ZodOptional<z.ZodString>;
+        /**
+         * The MIME type of this resource, if known.
+         */
+        mimeType: z.ZodOptional<z.ZodString>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        /**
+         * The URI of this resource.
+         */
+        uri: z.ZodString;
+        /**
+         * A human-readable name for this resource.
+         *
+         * This can be used by clients to populate UI elements.
+         */
+        name: z.ZodString;
+        /**
+         * A description of what this resource represents.
+         *
+         * This can be used by clients to improve the LLM's understanding of available resources. It can be thought of like a "hint" to the model.
+         */
+        description: z.ZodOptional<z.ZodString>;
+        /**
+         * The MIME type of this resource, if known.
+         */
+        mimeType: z.ZodOptional<z.ZodString>;
+    }, z.ZodTypeAny, "passthrough">>, "many">;
 }>, z.ZodTypeAny, "passthrough">>, z.ZodObject<z.objectUtil.extendShape<{
     /**
      * This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses.
@@ -10017,15 +14297,35 @@ export declare const ServerResultSchema: z.ZodUnion<[z.ZodObject<{
          * The text of the item. This must only be set if the item can actually be represented as text (not binary data).
          */
         text: z.ZodString;
-    }>, "strip", z.ZodTypeAny, {
-        text: string;
-        uri: string;
-        mimeType?: string | undefined;
+    }>, "passthrough", z.ZodTypeAny, z.objectOutputType<z.objectUtil.extendShape<{
+        /**
+         * The URI of this resource.
+         */
+        uri: z.ZodString;
+        /**
+         * The MIME type of this resource, if known.
+         */
+        mimeType: z.ZodOptional<z.ZodString>;
     }, {
-        text: string;
-        uri: string;
-        mimeType?: string | undefined;
-    }>, z.ZodObject<z.objectUtil.extendShape<{
+        /**
+         * The text of the item. This must only be set if the item can actually be represented as text (not binary data).
+         */
+        text: z.ZodString;
+    }>, z.ZodTypeAny, "passthrough">, z.objectInputType<z.objectUtil.extendShape<{
+        /**
+         * The URI of this resource.
+         */
+        uri: z.ZodString;
+        /**
+         * The MIME type of this resource, if known.
+         */
+        mimeType: z.ZodOptional<z.ZodString>;
+    }, {
+        /**
+         * The text of the item. This must only be set if the item can actually be represented as text (not binary data).
+         */
+        text: z.ZodString;
+    }>, z.ZodTypeAny, "passthrough">>, z.ZodObject<z.objectUtil.extendShape<{
         /**
          * The URI of this resource.
          */
@@ -10039,15 +14339,35 @@ export declare const ServerResultSchema: z.ZodUnion<[z.ZodObject<{
          * A base64-encoded string representing the binary data of the item.
          */
         blob: z.ZodString;
-    }>, "strip", z.ZodTypeAny, {
-        uri: string;
-        blob: string;
-        mimeType?: string | undefined;
+    }>, "passthrough", z.ZodTypeAny, z.objectOutputType<z.objectUtil.extendShape<{
+        /**
+         * The URI of this resource.
+         */
+        uri: z.ZodString;
+        /**
+         * The MIME type of this resource, if known.
+         */
+        mimeType: z.ZodOptional<z.ZodString>;
     }, {
-        uri: string;
-        blob: string;
-        mimeType?: string | undefined;
-    }>]>, "many">;
+        /**
+         * A base64-encoded string representing the binary data of the item.
+         */
+        blob: z.ZodString;
+    }>, z.ZodTypeAny, "passthrough">, z.objectInputType<z.objectUtil.extendShape<{
+        /**
+         * The URI of this resource.
+         */
+        uri: z.ZodString;
+        /**
+         * The MIME type of this resource, if known.
+         */
+        mimeType: z.ZodOptional<z.ZodString>;
+    }, {
+        /**
+         * A base64-encoded string representing the binary data of the item.
+         */
+        blob: z.ZodString;
+    }>, z.ZodTypeAny, "passthrough">>]>, "many">;
 }>, "passthrough", z.ZodTypeAny, z.objectOutputType<z.objectUtil.extendShape<{
     /**
      * This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses.
@@ -10068,15 +14388,35 @@ export declare const ServerResultSchema: z.ZodUnion<[z.ZodObject<{
          * The text of the item. This must only be set if the item can actually be represented as text (not binary data).
          */
         text: z.ZodString;
-    }>, "strip", z.ZodTypeAny, {
-        text: string;
-        uri: string;
-        mimeType?: string | undefined;
+    }>, "passthrough", z.ZodTypeAny, z.objectOutputType<z.objectUtil.extendShape<{
+        /**
+         * The URI of this resource.
+         */
+        uri: z.ZodString;
+        /**
+         * The MIME type of this resource, if known.
+         */
+        mimeType: z.ZodOptional<z.ZodString>;
     }, {
-        text: string;
-        uri: string;
-        mimeType?: string | undefined;
-    }>, z.ZodObject<z.objectUtil.extendShape<{
+        /**
+         * The text of the item. This must only be set if the item can actually be represented as text (not binary data).
+         */
+        text: z.ZodString;
+    }>, z.ZodTypeAny, "passthrough">, z.objectInputType<z.objectUtil.extendShape<{
+        /**
+         * The URI of this resource.
+         */
+        uri: z.ZodString;
+        /**
+         * The MIME type of this resource, if known.
+         */
+        mimeType: z.ZodOptional<z.ZodString>;
+    }, {
+        /**
+         * The text of the item. This must only be set if the item can actually be represented as text (not binary data).
+         */
+        text: z.ZodString;
+    }>, z.ZodTypeAny, "passthrough">>, z.ZodObject<z.objectUtil.extendShape<{
         /**
          * The URI of this resource.
          */
@@ -10090,15 +14430,35 @@ export declare const ServerResultSchema: z.ZodUnion<[z.ZodObject<{
          * A base64-encoded string representing the binary data of the item.
          */
         blob: z.ZodString;
-    }>, "strip", z.ZodTypeAny, {
-        uri: string;
-        blob: string;
-        mimeType?: string | undefined;
+    }>, "passthrough", z.ZodTypeAny, z.objectOutputType<z.objectUtil.extendShape<{
+        /**
+         * The URI of this resource.
+         */
+        uri: z.ZodString;
+        /**
+         * The MIME type of this resource, if known.
+         */
+        mimeType: z.ZodOptional<z.ZodString>;
     }, {
-        uri: string;
-        blob: string;
-        mimeType?: string | undefined;
-    }>]>, "many">;
+        /**
+         * A base64-encoded string representing the binary data of the item.
+         */
+        blob: z.ZodString;
+    }>, z.ZodTypeAny, "passthrough">, z.objectInputType<z.objectUtil.extendShape<{
+        /**
+         * The URI of this resource.
+         */
+        uri: z.ZodString;
+        /**
+         * The MIME type of this resource, if known.
+         */
+        mimeType: z.ZodOptional<z.ZodString>;
+    }, {
+        /**
+         * A base64-encoded string representing the binary data of the item.
+         */
+        blob: z.ZodString;
+    }>, z.ZodTypeAny, "passthrough">>]>, "many">;
 }>, z.ZodTypeAny, "passthrough">, z.objectInputType<z.objectUtil.extendShape<{
     /**
      * This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses.
@@ -10119,15 +14479,35 @@ export declare const ServerResultSchema: z.ZodUnion<[z.ZodObject<{
          * The text of the item. This must only be set if the item can actually be represented as text (not binary data).
          */
         text: z.ZodString;
-    }>, "strip", z.ZodTypeAny, {
-        text: string;
-        uri: string;
-        mimeType?: string | undefined;
+    }>, "passthrough", z.ZodTypeAny, z.objectOutputType<z.objectUtil.extendShape<{
+        /**
+         * The URI of this resource.
+         */
+        uri: z.ZodString;
+        /**
+         * The MIME type of this resource, if known.
+         */
+        mimeType: z.ZodOptional<z.ZodString>;
     }, {
-        text: string;
-        uri: string;
-        mimeType?: string | undefined;
-    }>, z.ZodObject<z.objectUtil.extendShape<{
+        /**
+         * The text of the item. This must only be set if the item can actually be represented as text (not binary data).
+         */
+        text: z.ZodString;
+    }>, z.ZodTypeAny, "passthrough">, z.objectInputType<z.objectUtil.extendShape<{
+        /**
+         * The URI of this resource.
+         */
+        uri: z.ZodString;
+        /**
+         * The MIME type of this resource, if known.
+         */
+        mimeType: z.ZodOptional<z.ZodString>;
+    }, {
+        /**
+         * The text of the item. This must only be set if the item can actually be represented as text (not binary data).
+         */
+        text: z.ZodString;
+    }>, z.ZodTypeAny, "passthrough">>, z.ZodObject<z.objectUtil.extendShape<{
         /**
          * The URI of this resource.
          */
@@ -10141,15 +14521,35 @@ export declare const ServerResultSchema: z.ZodUnion<[z.ZodObject<{
          * A base64-encoded string representing the binary data of the item.
          */
         blob: z.ZodString;
-    }>, "strip", z.ZodTypeAny, {
-        uri: string;
-        blob: string;
-        mimeType?: string | undefined;
+    }>, "passthrough", z.ZodTypeAny, z.objectOutputType<z.objectUtil.extendShape<{
+        /**
+         * The URI of this resource.
+         */
+        uri: z.ZodString;
+        /**
+         * The MIME type of this resource, if known.
+         */
+        mimeType: z.ZodOptional<z.ZodString>;
     }, {
-        uri: string;
-        blob: string;
-        mimeType?: string | undefined;
-    }>]>, "many">;
+        /**
+         * A base64-encoded string representing the binary data of the item.
+         */
+        blob: z.ZodString;
+    }>, z.ZodTypeAny, "passthrough">, z.objectInputType<z.objectUtil.extendShape<{
+        /**
+         * The URI of this resource.
+         */
+        uri: z.ZodString;
+        /**
+         * The MIME type of this resource, if known.
+         */
+        mimeType: z.ZodOptional<z.ZodString>;
+    }, {
+        /**
+         * A base64-encoded string representing the binary data of the item.
+         */
+        blob: z.ZodString;
+    }>, z.ZodTypeAny, "passthrough">>]>, "many">;
 }>, z.ZodTypeAny, "passthrough">>, z.ZodObject<z.objectUtil.extendShape<{
     /**
      * This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses.
@@ -10198,28 +14598,58 @@ export declare const ServerResultSchema: z.ZodUnion<[z.ZodObject<{
         inputSchema: z.ZodObject<{
             type: z.ZodLiteral<"object">;
             properties: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
-        }, "strip", z.ZodTypeAny, {
-            type: "object";
-            properties?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        }, {
-            type: "object";
-            properties?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        }>;
-    }, "strip", z.ZodTypeAny, {
-        name: string;
-        inputSchema: {
-            type: "object";
-            properties?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        };
-        description?: string | undefined;
-    }, {
-        name: string;
-        inputSchema: {
-            type: "object";
-            properties?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        };
-        description?: string | undefined;
-    }>, "many">;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            type: z.ZodLiteral<"object">;
+            properties: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            type: z.ZodLiteral<"object">;
+            properties: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        /**
+         * The name of the tool.
+         */
+        name: z.ZodString;
+        /**
+         * A human-readable description of the tool.
+         */
+        description: z.ZodOptional<z.ZodString>;
+        /**
+         * A JSON Schema object defining the expected parameters for the tool.
+         */
+        inputSchema: z.ZodObject<{
+            type: z.ZodLiteral<"object">;
+            properties: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            type: z.ZodLiteral<"object">;
+            properties: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            type: z.ZodLiteral<"object">;
+            properties: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        /**
+         * The name of the tool.
+         */
+        name: z.ZodString;
+        /**
+         * A human-readable description of the tool.
+         */
+        description: z.ZodOptional<z.ZodString>;
+        /**
+         * A JSON Schema object defining the expected parameters for the tool.
+         */
+        inputSchema: z.ZodObject<{
+            type: z.ZodLiteral<"object">;
+            properties: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            type: z.ZodLiteral<"object">;
+            properties: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            type: z.ZodLiteral<"object">;
+            properties: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">>;
+    }, z.ZodTypeAny, "passthrough">>, "many">;
 }>, "passthrough", z.ZodTypeAny, z.objectOutputType<z.objectUtil.extendShape<z.objectUtil.extendShape<{
     /**
      * This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses.
@@ -10247,28 +14677,58 @@ export declare const ServerResultSchema: z.ZodUnion<[z.ZodObject<{
         inputSchema: z.ZodObject<{
             type: z.ZodLiteral<"object">;
             properties: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
-        }, "strip", z.ZodTypeAny, {
-            type: "object";
-            properties?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        }, {
-            type: "object";
-            properties?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        }>;
-    }, "strip", z.ZodTypeAny, {
-        name: string;
-        inputSchema: {
-            type: "object";
-            properties?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        };
-        description?: string | undefined;
-    }, {
-        name: string;
-        inputSchema: {
-            type: "object";
-            properties?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        };
-        description?: string | undefined;
-    }>, "many">;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            type: z.ZodLiteral<"object">;
+            properties: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            type: z.ZodLiteral<"object">;
+            properties: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        /**
+         * The name of the tool.
+         */
+        name: z.ZodString;
+        /**
+         * A human-readable description of the tool.
+         */
+        description: z.ZodOptional<z.ZodString>;
+        /**
+         * A JSON Schema object defining the expected parameters for the tool.
+         */
+        inputSchema: z.ZodObject<{
+            type: z.ZodLiteral<"object">;
+            properties: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            type: z.ZodLiteral<"object">;
+            properties: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            type: z.ZodLiteral<"object">;
+            properties: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        /**
+         * The name of the tool.
+         */
+        name: z.ZodString;
+        /**
+         * A human-readable description of the tool.
+         */
+        description: z.ZodOptional<z.ZodString>;
+        /**
+         * A JSON Schema object defining the expected parameters for the tool.
+         */
+        inputSchema: z.ZodObject<{
+            type: z.ZodLiteral<"object">;
+            properties: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            type: z.ZodLiteral<"object">;
+            properties: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            type: z.ZodLiteral<"object">;
+            properties: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">>;
+    }, z.ZodTypeAny, "passthrough">>, "many">;
 }>, z.ZodTypeAny, "passthrough">, z.objectInputType<z.objectUtil.extendShape<z.objectUtil.extendShape<{
     /**
      * This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses.
@@ -10296,28 +14756,58 @@ export declare const ServerResultSchema: z.ZodUnion<[z.ZodObject<{
         inputSchema: z.ZodObject<{
             type: z.ZodLiteral<"object">;
             properties: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
-        }, "strip", z.ZodTypeAny, {
-            type: "object";
-            properties?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        }, {
-            type: "object";
-            properties?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        }>;
-    }, "strip", z.ZodTypeAny, {
-        name: string;
-        inputSchema: {
-            type: "object";
-            properties?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        };
-        description?: string | undefined;
-    }, {
-        name: string;
-        inputSchema: {
-            type: "object";
-            properties?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
-        };
-        description?: string | undefined;
-    }>, "many">;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            type: z.ZodLiteral<"object">;
+            properties: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            type: z.ZodLiteral<"object">;
+            properties: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        /**
+         * The name of the tool.
+         */
+        name: z.ZodString;
+        /**
+         * A human-readable description of the tool.
+         */
+        description: z.ZodOptional<z.ZodString>;
+        /**
+         * A JSON Schema object defining the expected parameters for the tool.
+         */
+        inputSchema: z.ZodObject<{
+            type: z.ZodLiteral<"object">;
+            properties: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            type: z.ZodLiteral<"object">;
+            properties: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            type: z.ZodLiteral<"object">;
+            properties: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        /**
+         * The name of the tool.
+         */
+        name: z.ZodString;
+        /**
+         * A human-readable description of the tool.
+         */
+        description: z.ZodOptional<z.ZodString>;
+        /**
+         * A JSON Schema object defining the expected parameters for the tool.
+         */
+        inputSchema: z.ZodObject<{
+            type: z.ZodLiteral<"object">;
+            properties: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            type: z.ZodLiteral<"object">;
+            properties: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            type: z.ZodLiteral<"object">;
+            properties: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">>;
+    }, z.ZodTypeAny, "passthrough">>, "many">;
 }>, z.ZodTypeAny, "passthrough">>]>;
 export declare class McpError extends Error {
     readonly code: number;
