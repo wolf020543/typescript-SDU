@@ -21,6 +21,7 @@
   ],
   "scripts": {
     "build": "tsc",
+    "prepack": "tsc",
     "lint": "eslint src/",
     "test": "jest",
     "start": "yarn server",
