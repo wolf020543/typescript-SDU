@@ -23,7 +23,7 @@
     "prepack": "tsc",
     "lint": "eslint src/",
     "test": "jest",
-    "start": "yarn server",
+    "start": "npm run server",
     "server": "tsx watch --clear-screen=false src/cli.ts server",
     "client": "tsx src/cli.ts client"
   },

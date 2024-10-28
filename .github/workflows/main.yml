@@ -14,13 +14,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 18
-          cache: yarn
+          cache: npm
 
-      - run: yarn install --immutable
-      - run: yarn build
+      - run: npm ci
+      - run: npm run build
 
-      - name: Verify that `yarn build` did not change outputs
+      - name: Verify that `npm run build` did not change outputs
         run: git diff --exit-code
 
-      - run: yarn test
-      - run: yarn lint
+      - run: npm test
+      - run: npm run lint
