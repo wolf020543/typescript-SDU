@@ -28,7 +28,6 @@ jobs:
 
   package-test:
     runs-on: ubuntu-latest
-    if: github.head_ref == 'refs/heads/justin/publish-packs'
 
     permissions:
       contents: write
