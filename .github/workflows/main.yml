@@ -2,8 +2,13 @@ on:
   push:
     branches:
       - main
-
   pull_request:
+  release:
+    types: [created]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -18,9 +23,29 @@ jobs:
 
       - run: npm ci
       - run: npm run build
-
-      - name: Verify that `npm run build` did not change outputs
-        run: git diff --exit-code
-
       - run: npm test
       - run: npm run lint
+
+  package:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release'
+    needs: build
+
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: npm
+
+      - run: npm ci
+      - run: npm pack
+
+      - name: Upload package to release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload ${{ github.event.release.tag_name }} ./*.tgz
