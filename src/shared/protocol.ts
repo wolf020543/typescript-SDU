@@ -180,8 +180,8 @@ export class Protocol<
             jsonrpc: "2.0",
             id: request.id,
             error: {
-              code: error["code"]
-                ? Math.floor(Number(error["code"]))
+              code: Number.isSafeInteger(error["code"])
+                ? error["code"]
                 : ErrorCode.InternalError,
               message: error.message ?? "Internal error",
             },
