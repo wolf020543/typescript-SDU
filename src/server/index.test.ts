@@ -1,4 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable no-constant-binary-expression */
+/* eslint-disable @typescript-eslint/no-unused-expressions */
 import { Server } from "./index.js";
 import { z } from "zod";
 import { RequestSchema, NotificationSchema, ResultSchema } from "../types.js";
