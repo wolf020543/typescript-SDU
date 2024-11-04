@@ -9,11 +9,12 @@ import WebSocket from "ws";
 import express from "express";
 import { Client } from "./client/index.js";
 import { SSEClientTransport } from "./client/sse.js";
+import { StdioClientTransport } from "./client/stdio.js";
+import { WebSocketClientTransport } from "./client/websocket.js";
 import { Server } from "./server/index.js";
 import { SSEServerTransport } from "./server/sse.js";
-import { WebSocketClientTransport } from "./client/websocket.js";
-import { StdioClientTransport } from "./client/stdio.js";
 import { StdioServerTransport } from "./server/stdio.js";
+import { ListResourcesResultSchema } from "./types.js";
 
 async function runClient(url_or_command: string, args: string[]) {
   const client = new Client({
@@ -45,6 +46,8 @@ async function runClient(url_or_command: string, args: string[]) {
 
   await client.connect(clientTransport);
   console.log("Initialized.");
+
+  await client.request({ method: "resources/list", params: {} }, ListResourcesResultSchema);
 
   await client.close();
   console.log("Closed.");
