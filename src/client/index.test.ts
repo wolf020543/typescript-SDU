@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { Client } from "./index.js";
 import { z } from "zod";
 import { RequestSchema, NotificationSchema, ResultSchema } from "../types.js";
