@@ -1,4 +1,4 @@
-import { Protocol } from "../shared/protocol.js";
+import { ProgressCallback, Protocol } from "../shared/protocol.js";
 import { Transport } from "../shared/transport.js";
 import {
   ClientNotification,
@@ -126,10 +126,14 @@ export class Client<
     return this.request({ method: "ping" }, EmptyResultSchema);
   }
 
-  async complete(params: CompleteRequest["params"]) {
+  async complete(
+    params: CompleteRequest["params"],
+    onprogress?: ProgressCallback,
+  ) {
     return this.request(
       { method: "completion/complete", params },
       CompleteResultSchema,
+      onprogress,
     );
   }
 
@@ -140,31 +144,47 @@ export class Client<
     );
   }
 
-  async getPrompt(params: GetPromptRequest["params"]) {
+  async getPrompt(
+    params: GetPromptRequest["params"],
+    onprogress?: ProgressCallback,
+  ) {
     return this.request(
       { method: "prompts/get", params },
       GetPromptResultSchema,
+      onprogress,
     );
   }
 
-  async listPrompts(params?: ListPromptsRequest["params"]) {
+  async listPrompts(
+    params?: ListPromptsRequest["params"],
+    onprogress?: ProgressCallback,
+  ) {
     return this.request(
       { method: "prompts/list", params },
       ListPromptsResultSchema,
+      onprogress,
     );
   }
 
-  async listResources(params?: ListResourcesRequest["params"]) {
+  async listResources(
+    params?: ListResourcesRequest["params"],
+    onprogress?: ProgressCallback,
+  ) {
     return this.request(
       { method: "resources/list", params },
       ListResourcesResultSchema,
+      onprogress,
     );
   }
 
-  async readResource(params: ReadResourceRequest["params"]) {
+  async readResource(
+    params: ReadResourceRequest["params"],
+    onprogress?: ProgressCallback,
+  ) {
     return this.request(
       { method: "resources/read", params },
       ReadResourceResultSchema,
+      onprogress,
     );
   }
 
@@ -182,14 +202,25 @@ export class Client<
     );
   }
 
-  async callTool(params: CallToolRequest["params"]) {
-    return this.request({ method: "tools/call", params }, CallToolResultSchema);
+  async callTool(
+    params: CallToolRequest["params"],
+    onprogress?: ProgressCallback,
+  ) {
+    return this.request(
+      { method: "tools/call", params },
+      CallToolResultSchema,
+      onprogress,
+    );
   }
 
-  async listTools(params?: ListToolsRequest["params"]) {
+  async listTools(
+    params?: ListToolsRequest["params"],
+    onprogress?: ProgressCallback,
+  ) {
     return this.request(
       { method: "tools/list", params },
       ListToolsResultSchema,
+      onprogress,
     );
   }
 }

@@ -1,4 +1,4 @@
-import { Protocol } from "../shared/protocol.js";
+import { ProgressCallback, Protocol } from "../shared/protocol.js";
 import {
   ClientCapabilities,
   Implementation,
@@ -143,10 +143,14 @@ export class Server<
     return this.request({ method: "ping" }, EmptyResultSchema);
   }
 
-  async createMessage(params: CreateMessageRequest["params"]) {
+  async createMessage(
+    params: CreateMessageRequest["params"],
+    onprogress?: ProgressCallback,
+  ) {
     return this.request(
       { method: "sampling/createMessage", params },
       CreateMessageResultSchema,
+      onprogress,
     );
   }
 
