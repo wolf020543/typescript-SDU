@@ -54,21 +54,23 @@ test("should typecheck", () => {
   });
 
   // Typecheck that only valid weather requests/notifications/results are allowed
-  weatherClient.request(
-    {
-      method: "weather/get",
-      params: {
-        city: "Seattle",
+  false &&
+    weatherClient.request(
+      {
+        method: "weather/get",
+        params: {
+          city: "Seattle",
+        },
       },
-    },
-    WeatherResultSchema,
-  );
+      WeatherResultSchema,
+    );
 
-  weatherClient.notification({
-    method: "weather/alert",
-    params: {
-      severity: "warning",
-      message: "Storm approaching",
-    },
-  });
+  false &&
+    weatherClient.notification({
+      method: "weather/alert",
+      params: {
+        severity: "warning",
+        message: "Storm approaching",
+      },
+    });
 });
