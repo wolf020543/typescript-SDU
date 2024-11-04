@@ -6,67 +6,69 @@ import { RequestSchema, NotificationSchema, ResultSchema } from "../types.js";
 /*
 Test that custom request/notification/result schemas can be used with the Client class.
 */
-const GetWeatherRequestSchema = RequestSchema.extend({
-  method: z.literal("weather/get"),
-  params: z.object({
-    city: z.string(),
-  }),
-});
+test("should typecheck", () => {
+  const GetWeatherRequestSchema = RequestSchema.extend({
+    method: z.literal("weather/get"),
+    params: z.object({
+      city: z.string(),
+    }),
+  });
 
-const GetForecastRequestSchema = RequestSchema.extend({
-  method: z.literal("weather/forecast"),
-  params: z.object({
-    city: z.string(),
-    days: z.number(),
-  }),
-});
+  const GetForecastRequestSchema = RequestSchema.extend({
+    method: z.literal("weather/forecast"),
+    params: z.object({
+      city: z.string(),
+      days: z.number(),
+    }),
+  });
 
-const WeatherForecastNotificationSchema = NotificationSchema.extend({
-  method: z.literal("weather/alert"),
-  params: z.object({
-    severity: z.enum(["warning", "watch"]),
-    message: z.string(),
-  }),
-});
+  const WeatherForecastNotificationSchema = NotificationSchema.extend({
+    method: z.literal("weather/alert"),
+    params: z.object({
+      severity: z.enum(["warning", "watch"]),
+      message: z.string(),
+    }),
+  });
 
-const WeatherRequestSchema = GetWeatherRequestSchema.or(
-  GetForecastRequestSchema,
-);
-const WeatherNotificationSchema = WeatherForecastNotificationSchema;
-const WeatherResultSchema = ResultSchema.extend({
-  temperature: z.number(),
-  conditions: z.string(),
-});
+  const WeatherRequestSchema = GetWeatherRequestSchema.or(
+    GetForecastRequestSchema,
+  );
+  const WeatherNotificationSchema = WeatherForecastNotificationSchema;
+  const WeatherResultSchema = ResultSchema.extend({
+    temperature: z.number(),
+    conditions: z.string(),
+  });
 
-type WeatherRequest = z.infer<typeof WeatherRequestSchema>;
-type WeatherNotification = z.infer<typeof WeatherNotificationSchema>;
-type WeatherResult = z.infer<typeof WeatherResultSchema>;
+  type WeatherRequest = z.infer<typeof WeatherRequestSchema>;
+  type WeatherNotification = z.infer<typeof WeatherNotificationSchema>;
+  type WeatherResult = z.infer<typeof WeatherResultSchema>;
 
-// Create a typed Client for weather data
-const weatherClient = new Client<
-  WeatherRequest,
-  WeatherNotification,
-  WeatherResult
->({
-  name: "WeatherClient",
-  version: "1.0.0",
-});
+  // Create a typed Client for weather data
+  const weatherClient = new Client<
+    WeatherRequest,
+    WeatherNotification,
+    WeatherResult
+  >({
+    name: "WeatherClient",
+    version: "1.0.0",
+  });
 
-// Typecheck that only valid weather requests/notifications/results are allowed
-weatherClient.request(
-  {
-    method: "weather/get",
-    params: {
-      city: "Seattle",
+  // Typecheck that only valid weather requests/notifications/results are allowed
+  weatherClient.request(
+    {
+      method: "weather/get",
+      params: {
+        city: "Seattle",
+      },
     },
-  },
-  WeatherResultSchema,
-);
+    WeatherResultSchema,
+  );
 
-weatherClient.notification({
-  method: "weather/alert",
-  params: {
-    severity: "warning",
-    message: "Storm approaching",
-  },
+  weatherClient.notification({
+    method: "weather/alert",
+    params: {
+      severity: "warning",
+      message: "Storm approaching",
+    },
+  });
 });
