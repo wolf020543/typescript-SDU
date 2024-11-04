@@ -350,7 +350,7 @@ export const PaginatedRequestSchema = RequestSchema.extend({
      * If provided, the server should return results starting after this cursor.
      */
     cursor: z.optional(CursorSchema),
-  }),
+  }).optional(),
 });
 
 export const PaginatedResultSchema = ResultSchema.extend({

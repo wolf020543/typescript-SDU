@@ -47,7 +47,7 @@ async function runClient(url_or_command: string, args: string[]) {
   await client.connect(clientTransport);
   console.log("Initialized.");
 
-  await client.request({ method: "resources/list", params: {} }, ListResourcesResultSchema);
+  await client.request({ method: "resources/list" }, ListResourcesResultSchema);
 
   await client.close();
   console.log("Closed.");
