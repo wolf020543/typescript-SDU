@@ -338,7 +338,7 @@ export const ProgressNotificationSchema = NotificationSchema.extend({
     /**
      * The progress token which was given in the initial request, used to associate this notification with the request that is proceeding.
      */
-    progressToken: z.optional(ProgressTokenSchema),
+    progressToken: ProgressTokenSchema,
   }),
 });
 
