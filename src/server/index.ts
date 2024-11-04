@@ -18,6 +18,11 @@ import {
   ListToolsRequestSchema,
   ListPromptsRequestSchema,
   SetLevelRequestSchema,
+  CreateMessageRequest,
+  CreateMessageResultSchema,
+  EmptyResultSchema,
+  LoggingMessageNotification,
+  ResourceUpdatedNotification,
 } from "../types.js";
 
 /**
@@ -132,5 +137,41 @@ export class Server<
         ? {}
         : undefined,
     };
+  }
+
+  async ping() {
+    return this.request({ method: "ping" }, EmptyResultSchema);
+  }
+
+  async createMessage(params: CreateMessageRequest["params"]) {
+    return this.request(
+      { method: "sampling/createMessage", params },
+      CreateMessageResultSchema,
+    );
+  }
+
+  async sendLoggingMessage(params: LoggingMessageNotification["params"]) {
+    return this.notification({ method: "notifications/message", params });
+  }
+
+  async sendResourceUpdated(params: ResourceUpdatedNotification["params"]) {
+    return this.notification({
+      method: "notifications/resources/updated",
+      params,
+    });
+  }
+
+  async sendResourceListChanged() {
+    return this.notification({
+      method: "notifications/resources/list_changed",
+    });
+  }
+
+  async sendToolListChanged() {
+    return this.notification({ method: "notifications/tools/list_changed" });
+  }
+
+  async sendPromptListChanged() {
+    return this.notification({ method: "notifications/prompts/list_changed" });
   }
 }
