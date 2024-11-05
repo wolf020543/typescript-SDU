@@ -29,23 +29,17 @@ export type StdioServerParameters = {
 export const DEFAULT_INHERITED_ENV_VARS =
   process.platform === "win32"
     ? [
-        "ALLUSERSPROFILE",
         "APPDATA",
         "HOMEDRIVE",
         "HOMEPATH",
         "LOCALAPPDATA",
-        "NUMBER_OF_PROCESSORS",
-        "OS",
         "PATH",
-        "PATHEXT",
         "PROCESSOR_ARCHITECTURE",
         "SYSTEMDRIVE",
         "SYSTEMROOT",
         "TEMP",
-        "TMP",
         "USERNAME",
         "USERPROFILE",
-        "WINDIR",
       ]
     : /* list inspired by the default env inheritance of sudo */
       ["HOME", "LOGNAME", "PATH", "SHELL", "TERM", "USER"];
