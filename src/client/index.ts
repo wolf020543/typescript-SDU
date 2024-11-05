@@ -1,4 +1,4 @@
-import { Protocol } from "../shared/protocol.js";
+import { ProgressCallback, Protocol } from "../shared/protocol.js";
 import { Transport } from "../shared/transport.js";
 import {
   ClientNotification,
@@ -11,6 +11,24 @@ import {
   Request,
   Result,
   ServerCapabilities,
+  CompleteRequest,
+  GetPromptRequest,
+  ListPromptsRequest,
+  ListResourcesRequest,
+  ReadResourceRequest,
+  SubscribeRequest,
+  UnsubscribeRequest,
+  CallToolRequest,
+  ListToolsRequest,
+  CompleteResultSchema,
+  GetPromptResultSchema,
+  ListPromptsResultSchema,
+  ListResourcesResultSchema,
+  ReadResourceResultSchema,
+  CallToolResultSchema,
+  ListToolsResultSchema,
+  EmptyResultSchema,
+  LoggingLevel,
 } from "../types.js";
 
 /**
@@ -102,5 +120,107 @@ export class Client<
    */
   getServerVersion(): Implementation | undefined {
     return this._serverVersion;
+  }
+
+  async ping() {
+    return this.request({ method: "ping" }, EmptyResultSchema);
+  }
+
+  async complete(
+    params: CompleteRequest["params"],
+    onprogress?: ProgressCallback,
+  ) {
+    return this.request(
+      { method: "completion/complete", params },
+      CompleteResultSchema,
+      onprogress,
+    );
+  }
+
+  async setLoggingLevel(level: LoggingLevel) {
+    return this.request(
+      { method: "logging/setLevel", params: { level } },
+      EmptyResultSchema,
+    );
+  }
+
+  async getPrompt(
+    params: GetPromptRequest["params"],
+    onprogress?: ProgressCallback,
+  ) {
+    return this.request(
+      { method: "prompts/get", params },
+      GetPromptResultSchema,
+      onprogress,
+    );
+  }
+
+  async listPrompts(
+    params?: ListPromptsRequest["params"],
+    onprogress?: ProgressCallback,
+  ) {
+    return this.request(
+      { method: "prompts/list", params },
+      ListPromptsResultSchema,
+      onprogress,
+    );
+  }
+
+  async listResources(
+    params?: ListResourcesRequest["params"],
+    onprogress?: ProgressCallback,
+  ) {
+    return this.request(
+      { method: "resources/list", params },
+      ListResourcesResultSchema,
+      onprogress,
+    );
+  }
+
+  async readResource(
+    params: ReadResourceRequest["params"],
+    onprogress?: ProgressCallback,
+  ) {
+    return this.request(
+      { method: "resources/read", params },
+      ReadResourceResultSchema,
+      onprogress,
+    );
+  }
+
+  async subscribeResource(params: SubscribeRequest["params"]) {
+    return this.request(
+      { method: "resources/subscribe", params },
+      EmptyResultSchema,
+    );
+  }
+
+  async unsubscribeResource(params: UnsubscribeRequest["params"]) {
+    return this.request(
+      { method: "resources/unsubscribe", params },
+      EmptyResultSchema,
+    );
+  }
+
+  async callTool(
+    params: CallToolRequest["params"],
+    onprogress?: ProgressCallback,
+  ) {
+    return this.request(
+      { method: "tools/call", params },
+      CallToolResultSchema,
+      onprogress,
+    );
+  }
+
+  async listTools(
+    params?: ListToolsRequest["params"],
+    onprogress?: ProgressCallback,
+  ) {
+    return this.request(
+      { method: "tools/list", params },
+      ListToolsResultSchema,
+      onprogress,
+    );
   }
 }
