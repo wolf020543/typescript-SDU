@@ -1,4 +1,5 @@
 import { ChildProcess, spawn } from "node:child_process";
+import process from "node:process";
 import { ReadBuffer, serializeMessage } from "../shared/stdio.js";
 import { JSONRPCMessage } from "../types.js";
 import { Transport } from "../shared/transport.js";
@@ -17,10 +18,60 @@ export type StdioServerParameters = {
   /**
    * The environment to use when spawning the process.
    *
-   * The environment is NOT inherited from the parent process by default.
+   * If not specified, the result of getDefaultEnvironment() will be used.
    */
-  env?: object;
+  env?: Record<string, string>;
 };
+
+/**
+ * Environment variables to inherit by default, if an environment is not explicitly given.
+ */
+export const DEFAULT_INHERITED_ENV_VARS =
+  process.platform === "win32"
+    ? [
+        "ALLUSERSPROFILE",
+        "APPDATA",
+        "HOMEDRIVE",
+        "HOMEPATH",
+        "LOCALAPPDATA",
+        "NUMBER_OF_PROCESSORS",
+        "OS",
+        "PATH",
+        "PATHEXT",
+        "PROCESSOR_ARCHITECTURE",
+        "SYSTEMDRIVE",
+        "SYSTEMROOT",
+        "TEMP",
+        "TMP",
+        "USERNAME",
+        "USERPROFILE",
+        "WINDIR",
+      ]
+    : /* list inspired by the default env inheritance of sudo */
+      ["HOME", "LOGNAME", "PATH", "SHELL", "TERM", "USER"];
+
+/**
+ * Returns a default environment object including only environment variables deemed safe to inherit.
+ */
+export function getDefaultEnvironment(): Record<string, string> {
+  const env: Record<string, string> = {};
+
+  for (const key of DEFAULT_INHERITED_ENV_VARS) {
+    const value = process.env[key];
+    if (value === undefined) {
+      continue;
+    }
+
+    if (value.startsWith("()")) {
+      // Skip functions, which are a security risk.
+      continue;
+    }
+
+    env[key] = value;
+  }
+
+  return env;
+}
 
 /**
  * Client transport for stdio: this will connect to a server by spawning a process and communicating with it over stdin/stdout.
@@ -56,11 +107,7 @@ export class StdioClientTransport implements Transport {
         this._serverParams.command,
         this._serverParams.args ?? [],
         {
-          // The parent process may have sensitive secrets in its env, so don't inherit it automatically.
-          env:
-            this._serverParams.env === undefined
-              ? {}
-              : { ...this._serverParams.env },
+          env: this._serverParams.env ?? getDefaultEnvironment(),
           stdio: ["pipe", "pipe", "inherit"],
           signal: this._abortController.signal,
         },
