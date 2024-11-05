@@ -6,7 +6,10 @@ import {
   InitializeRequest,
   InitializeRequestSchema,
   InitializeResult,
+  Notification,
   PROTOCOL_VERSION,
+  Request,
+  Result,
   ServerNotification,
   ServerRequest,
   ServerResult,
@@ -21,11 +24,35 @@ import {
  * An MCP server on top of a pluggable transport.
  *
  * This server will automatically respond to the initialization flow as initiated from the client.
+ *
+ * To use with custom types, extend the base Request/Notification/Result types and pass them as type parameters:
+ *
+ * ```typescript
+ * // Custom schemas
+ * const CustomRequestSchema = RequestSchema.extend({...})
+ * const CustomNotificationSchema = NotificationSchema.extend({...})
+ * const CustomResultSchema = ResultSchema.extend({...})
+ *
+ * // Type aliases
+ * type CustomRequest = z.infer<typeof CustomRequestSchema>
+ * type CustomNotification = z.infer<typeof CustomNotificationSchema>
+ * type CustomResult = z.infer<typeof CustomResultSchema>
+ *
+ * // Create typed server
+ * const server = new Server<CustomRequest, CustomNotification, CustomResult>({
+ *   name: "CustomServer",
+ *   version: "1.0.0"
+ * })
+ * ```
  */
-export class Server extends Protocol<
-  ServerRequest,
-  ServerNotification,
-  ServerResult
+export class Server<
+  RequestT extends Request = Request,
+  NotificationT extends Notification = Notification,
+  ResultT extends Result = Result,
+> extends Protocol<
+  ServerRequest | RequestT,
+  ServerNotification | NotificationT,
+  ServerResult | ResultT
 > {
   private _clientCapabilities?: ClientCapabilities;
   private _clientVersion?: Implementation;
