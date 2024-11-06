@@ -1160,6 +1160,14 @@ export type PromptReference = z.infer<typeof PromptReferenceSchema>;
 export type CompleteRequest = z.infer<typeof CompleteRequestSchema>;
 export type CompleteResult = z.infer<typeof CompleteResultSchema>;
 
+/* Roots */
+export type Root = z.infer<typeof RootSchema>;
+export type ListRootsRequest = z.infer<typeof ListRootsRequestSchema>;
+export type ListRootsResult = z.infer<typeof ListRootsResultSchema>;
+export type RootsListChangedNotification = z.infer<
+  typeof RootsListChangedNotificationSchema
+>;
+
 /* Client messages */
 export type ClientRequest = z.infer<typeof ClientRequestSchema>;
 export type ClientNotification = z.infer<typeof ClientNotificationSchema>;
