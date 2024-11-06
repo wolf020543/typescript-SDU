@@ -868,7 +868,7 @@ export const CreateMessageResultSchema = ResultSchema.extend({
   /**
    * The reason why sampling stopped.
    */
-  stopReason: z.optional(z.string()),
+  stopReason: z.optional(z.enum(["endTurn", "stopSequence", "maxTokens"]).or(z.string())),
   role: z.enum(["user", "assistant"]),
   content: z.discriminatedUnion("type", [
     TextContentSchema,
