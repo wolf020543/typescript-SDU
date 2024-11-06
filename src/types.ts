@@ -792,14 +792,24 @@ export const LoggingMessageNotificationSchema = NotificationSchema.extend({
 
 /* Sampling */
 /**
+ * Hints to use for model selection.
+ */
+export const ModelHintSchema = z.object({
+  /**
+   * A hint for a model name.
+   */
+  name: z.string().optional(),
+}).passthrough();
+
+/**
  * The server's preferences for model selection, requested of the client during sampling.
  */
 export const ModelPreferencesSchema = z
   .object({
     /**
-     * Optional string hints to use for model selection.
+     * Optional hints to use for model selection.
      */
-    hints: z.optional(z.array(z.record(z.string()))),
+    hints: z.optional(z.array(ModelHintSchema)),
     /**
      * How much to prioritize cost when selecting a model.
      */
