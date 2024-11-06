@@ -175,12 +175,14 @@ export const ClientCapabilitiesSchema = z
      * Present if the client supports listing roots.
      */
     roots: z.optional(
-      z.object({
-        /**
-         * Whether the client supports notifications for changes to the roots list.
-         */
-        listChanged: z.optional(z.boolean()),
-      }).passthrough(),
+      z
+        .object({
+          /**
+           * Whether the client supports notifications for changes to the roots list.
+           */
+          listChanged: z.optional(z.boolean()),
+        })
+        .passthrough(),
     ),
   })
   .passthrough();
@@ -643,7 +645,11 @@ export const EmbeddedResourceSchema = z
 export const PromptMessageSchema = z
   .object({
     role: z.enum(["user", "assistant"]),
-    content: z.union([TextContentSchema, ImageContentSchema, EmbeddedResourceSchema]),
+    content: z.union([
+      TextContentSchema,
+      ImageContentSchema,
+      EmbeddedResourceSchema,
+    ]),
   })
   .passthrough();
 
@@ -709,7 +715,9 @@ export const ListToolsResultSchema = PaginatedResultSchema.extend({
  * The server's response to a tool call.
  */
 export const CallToolResultSchema = ResultSchema.extend({
-  content: z.array(z.union([TextContentSchema, ImageContentSchema, EmbeddedResourceSchema])),
+  content: z.array(
+    z.union([TextContentSchema, ImageContentSchema, EmbeddedResourceSchema]),
+  ),
   isError: z.boolean(),
 });
 
@@ -743,7 +751,7 @@ export const LoggingLevelSchema = z.enum([
   "error",
   "critical",
   "alert",
-  "emergency"
+  "emergency",
 ]);
 
 /**
@@ -989,6 +997,7 @@ export const ClientRequestSchema = z.union([
   GetPromptRequestSchema,
   ListPromptsRequestSchema,
   ListResourcesRequestSchema,
+  ListResourceTemplatesRequestSchema,
   ReadResourceRequestSchema,
   SubscribeRequestSchema,
   UnsubscribeRequestSchema,
@@ -1032,6 +1041,7 @@ export const ServerResultSchema = z.union([
   GetPromptResultSchema,
   ListPromptsResultSchema,
   ListResourcesResultSchema,
+  ListResourceTemplatesResultSchema,
   ReadResourceResultSchema,
   CallToolResultSchema,
   ListToolsResultSchema,
