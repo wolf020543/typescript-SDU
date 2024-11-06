@@ -1003,7 +1003,6 @@ export const ClientRequestSchema = z.union([
   UnsubscribeRequestSchema,
   CallToolRequestSchema,
   ListToolsRequestSchema,
-  ListRootsRequestSchema,
 ]);
 
 export const ClientNotificationSchema = z.union([
