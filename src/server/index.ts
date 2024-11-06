@@ -23,6 +23,8 @@ import {
   EmptyResultSchema,
   LoggingMessageNotification,
   ResourceUpdatedNotification,
+  ListRootsRequest,
+  ListRootsResultSchema,
 } from "../types.js";
 
 /**
@@ -150,6 +152,17 @@ export class Server<
     return this.request(
       { method: "sampling/createMessage", params },
       CreateMessageResultSchema,
+      onprogress,
+    );
+  }
+
+  async listRoots(
+    params?: ListRootsRequest["params"],
+    onprogress?: ProgressCallback,
+  ) {
+    return this.request(
+      { method: "roots/list", params },
+      ListRootsResultSchema,
       onprogress,
     );
   }
