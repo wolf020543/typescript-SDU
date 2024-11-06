@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const PROTOCOL_VERSION = "2024-10-07";
+export const PROTOCOL_VERSION = "2024-11-05";
 
 /* JSON-RPC types */
 export const JSONRPC_VERSION = "2.0";
@@ -149,46 +149,6 @@ export const EmptyResultSchema = ResultSchema.strict();
 
 /* Initialization */
 /**
- * Text provided to or from an LLM.
- */
-export const TextContentSchema = z
-  .object({
-    type: z.literal("text"),
-    /**
-     * The text content of the message.
-     */
-    text: z.string(),
-  })
-  .passthrough();
-
-/**
- * An image provided to or from an LLM.
- */
-export const ImageContentSchema = z
-  .object({
-    type: z.literal("image"),
-    /**
-     * The base64-encoded image data.
-     */
-    data: z.string().base64(),
-    /**
-     * The MIME type of the image. Different providers may support different image types.
-     */
-    mimeType: z.string(),
-  })
-  .passthrough();
-
-/**
- * Describes a message issued to or received from an LLM API.
- */
-export const SamplingMessageSchema = z
-  .object({
-    role: z.enum(["user", "assistant"]),
-    content: z.union([TextContentSchema, ImageContentSchema]),
-  })
-  .passthrough();
-
-/**
  * Describes the name and version of an MCP implementation.
  */
 export const ImplementationSchema = z
@@ -211,6 +171,17 @@ export const ClientCapabilitiesSchema = z
      * Present if the client supports sampling from an LLM.
      */
     sampling: z.optional(z.object({}).passthrough()),
+    /**
+     * Present if the client supports listing roots.
+     */
+    roots: z.optional(
+      z.object({
+        /**
+         * Whether the client supports notifications for changes to the roots list.
+         */
+        listChanged: z.optional(z.boolean()),
+      }).passthrough(),
+    ),
   })
   .passthrough();
 
@@ -627,6 +598,56 @@ export const GetPromptRequestSchema = RequestSchema.extend({
 });
 
 /**
+ * Text provided to or from an LLM.
+ */
+export const TextContentSchema = z
+  .object({
+    type: z.literal("text"),
+    /**
+     * The text content of the message.
+     */
+    text: z.string(),
+  })
+  .passthrough();
+
+/**
+ * An image provided to or from an LLM.
+ */
+export const ImageContentSchema = z
+  .object({
+    type: z.literal("image"),
+    /**
+     * The base64-encoded image data.
+     */
+    data: z.string().base64(),
+    /**
+     * The MIME type of the image. Different providers may support different image types.
+     */
+    mimeType: z.string(),
+  })
+  .passthrough();
+
+/**
+ * The contents of a resource, embedded into a prompt or tool call result.
+ */
+export const EmbeddedResourceSchema = z
+  .object({
+    type: z.literal("resource"),
+    resource: z.union([TextResourceContentsSchema, BlobResourceContentsSchema]),
+  })
+  .passthrough();
+
+/**
+ * Describes a message returned as part of a prompt.
+ */
+export const PromptMessageSchema = z
+  .object({
+    role: z.enum(["user", "assistant"]),
+    content: z.union([TextContentSchema, ImageContentSchema, EmbeddedResourceSchema]),
+  })
+  .passthrough();
+
+/**
  * The server's response to a prompts/get request from the client.
  */
 export const GetPromptResultSchema = ResultSchema.extend({
@@ -634,7 +655,7 @@ export const GetPromptResultSchema = ResultSchema.extend({
    * An optional description for the prompt.
    */
   description: z.optional(z.string()),
-  messages: z.array(SamplingMessageSchema),
+  messages: z.array(PromptMessageSchema),
 });
 
 /**
@@ -688,7 +709,8 @@ export const ListToolsResultSchema = PaginatedResultSchema.extend({
  * The server's response to a tool call.
  */
 export const CallToolResultSchema = ResultSchema.extend({
-  toolResult: z.unknown(),
+  content: z.array(z.union([TextContentSchema, ImageContentSchema, EmbeddedResourceSchema])),
+  isError: z.boolean(),
 });
 
 /**
@@ -713,7 +735,16 @@ export const ToolListChangedNotificationSchema = NotificationSchema.extend({
 /**
  * The severity of a log message.
  */
-export const LoggingLevelSchema = z.enum(["debug", "info", "warning", "error"]);
+export const LoggingLevelSchema = z.enum([
+  "debug",
+  "info",
+  "notice",
+  "warning",
+  "error",
+  "critical",
+  "alert",
+  "emergency"
+]);
 
 /**
  * A request from the client to the server, to enable or adjust logging.
@@ -753,6 +784,40 @@ export const LoggingMessageNotificationSchema = NotificationSchema.extend({
 
 /* Sampling */
 /**
+ * The server's preferences for model selection, requested of the client during sampling.
+ */
+export const ModelPreferencesSchema = z
+  .object({
+    /**
+     * Optional string hints to use for model selection.
+     */
+    hints: z.optional(z.array(z.record(z.string()))),
+    /**
+     * How much to prioritize cost when selecting a model.
+     */
+    costPriority: z.optional(z.number().min(0).max(1)),
+    /**
+     * How much to prioritize sampling speed (latency) when selecting a model.
+     */
+    speedPriority: z.optional(z.number().min(0).max(1)),
+    /**
+     * How much to prioritize intelligence and capabilities when selecting a model.
+     */
+    intelligencePriority: z.optional(z.number().min(0).max(1)),
+  })
+  .passthrough();
+
+/**
+ * Describes a message issued to or received from an LLM API.
+ */
+export const SamplingMessageSchema = z
+  .object({
+    role: z.enum(["user", "assistant"]),
+    content: z.union([TextContentSchema, ImageContentSchema]),
+  })
+  .passthrough();
+
+/**
  * A request from the server to sample an LLM via the client. The client has full discretion over which model to select. The client should also inform the user before beginning sampling, to allow them to inspect the request (human in the loop) and decide whether to approve it.
  */
 export const CreateMessageRequestSchema = RequestSchema.extend({
@@ -777,6 +842,10 @@ export const CreateMessageRequestSchema = RequestSchema.extend({
      * Optional metadata to pass through to the LLM provider. The format of this metadata is provider-specific.
      */
     metadata: z.optional(z.object({}).passthrough()),
+    /**
+     * The server's preferences for which model to select.
+     */
+    modelPreferences: z.optional(ModelPreferencesSchema),
   }),
 });
 
@@ -791,7 +860,7 @@ export const CreateMessageResultSchema = ResultSchema.extend({
   /**
    * The reason why sampling stopped.
    */
-  stopReason: z.enum(["endTurn", "stopSequence", "maxTokens"]),
+  stopReason: z.optional(z.string()),
   role: z.enum(["user", "assistant"]),
   content: z.discriminatedUnion("type", [
     TextContentSchema,
@@ -873,6 +942,44 @@ export const CompleteResultSchema = ResultSchema.extend({
     .passthrough(),
 });
 
+/* Roots */
+/**
+ * Represents a root directory or file that the server can operate on.
+ */
+export const RootSchema = z
+  .object({
+    /**
+     * The URI identifying the root. This *must* start with file:// for now.
+     */
+    uri: z.string().startsWith("file://"),
+    /**
+     * An optional name for the root.
+     */
+    name: z.optional(z.string()),
+  })
+  .passthrough();
+
+/**
+ * Sent from the server to request a list of root URIs from the client.
+ */
+export const ListRootsRequestSchema = RequestSchema.extend({
+  method: z.literal("roots/list"),
+});
+
+/**
+ * The client's response to a roots/list request from the server.
+ */
+export const ListRootsResultSchema = ResultSchema.extend({
+  roots: z.array(RootSchema),
+});
+
+/**
+ * A notification from the client to the server, informing it that the list of roots has changed.
+ */
+export const RootsListChangedNotificationSchema = NotificationSchema.extend({
+  method: z.literal("notifications/roots/list_changed"),
+});
+
 /* Client messages */
 export const ClientRequestSchema = z.union([
   PingRequestSchema,
@@ -887,21 +994,26 @@ export const ClientRequestSchema = z.union([
   UnsubscribeRequestSchema,
   CallToolRequestSchema,
   ListToolsRequestSchema,
+  ListRootsRequestSchema,
 ]);
 
 export const ClientNotificationSchema = z.union([
   ProgressNotificationSchema,
   InitializedNotificationSchema,
+  RootsListChangedNotificationSchema,
 ]);
+
 export const ClientResultSchema = z.union([
   EmptyResultSchema,
   CreateMessageResultSchema,
+  ListRootsResultSchema,
 ]);
 
 /* Server messages */
 export const ServerRequestSchema = z.union([
   PingRequestSchema,
   CreateMessageRequestSchema,
+  ListRootsRequestSchema,
 ]);
 
 export const ServerNotificationSchema = z.union([
