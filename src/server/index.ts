@@ -1,30 +1,31 @@
 import { ProgressCallback, Protocol } from "../shared/protocol.js";
 import {
   ClientCapabilities,
+  CreateMessageRequest,
+  CreateMessageResultSchema,
+  EmptyResultSchema,
   Implementation,
   InitializedNotificationSchema,
   InitializeRequest,
   InitializeRequestSchema,
   InitializeResult,
+  LATEST_PROTOCOL_VERSION,
+  ListPromptsRequestSchema,
+  ListResourcesRequestSchema,
+  ListRootsRequest,
+  ListRootsResultSchema,
+  ListToolsRequestSchema,
+  LoggingMessageNotification,
   Notification,
-  PROTOCOL_VERSION,
   Request,
+  ResourceUpdatedNotification,
   Result,
+  ServerCapabilities,
   ServerNotification,
   ServerRequest,
   ServerResult,
-  ServerCapabilities,
-  ListResourcesRequestSchema,
-  ListToolsRequestSchema,
-  ListPromptsRequestSchema,
   SetLevelRequestSchema,
-  CreateMessageRequest,
-  CreateMessageResultSchema,
-  EmptyResultSchema,
-  LoggingMessageNotification,
-  ResourceUpdatedNotification,
-  ListRootsRequest,
-  ListRootsResultSchema,
+  SUPPORTED_PROTOCOL_VERSIONS
 } from "../types.js";
 
 /**
@@ -86,17 +87,13 @@ export class Server<
   private async _oninitialize(
     request: InitializeRequest,
   ): Promise<InitializeResult> {
-    if (request.params.protocolVersion !== PROTOCOL_VERSION) {
-      throw new Error(
-        `Client's protocol version is not supported: ${request.params.protocolVersion}`,
-      );
-    }
+    const requestedVersion = request.params.protocolVersion;
 
     this._clientCapabilities = request.params.capabilities;
     this._clientVersion = request.params.clientInfo;
 
     return {
-      protocolVersion: PROTOCOL_VERSION,
+      protocolVersion: SUPPORTED_PROTOCOL_VERSIONS.includes(requestedVersion) ? requestedVersion : LATEST_PROTOCOL_VERSION,
       capabilities: this.getCapabilities(),
       serverInfo: this._serverInfo,
     };

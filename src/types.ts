@@ -1,6 +1,7 @@
 import { z } from "zod";
 
-export const PROTOCOL_VERSION = "2024-11-05";
+export const LATEST_PROTOCOL_VERSION = "2024-11-05";
+export const SUPPORTED_PROTOCOL_VERSIONS = [LATEST_PROTOCOL_VERSION, "2024-10-07"];
 
 /* JSON-RPC types */
 export const JSONRPC_VERSION = "2.0";
