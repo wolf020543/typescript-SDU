@@ -196,7 +196,7 @@ export const InitializeRequestSchema = RequestSchema.extend({
     /**
      * The latest version of the Model Context Protocol that the client supports. The client MAY decide to support older versions as well.
      */
-    protocolVersion: z.string().or(z.number().int()),
+    protocolVersion: z.string(),
     capabilities: ClientCapabilitiesSchema,
     clientInfo: ImplementationSchema,
   }),
@@ -268,7 +268,7 @@ export const InitializeResultSchema = ResultSchema.extend({
   /**
    * The version of the Model Context Protocol that the server wants to use. This may not match the version that the client requested. If the client cannot support this version, it MUST disconnect.
    */
-  protocolVersion: z.string().or(z.number().int()),
+  protocolVersion: z.string(),
   capabilities: ServerCapabilitiesSchema,
   serverInfo: ImplementationSchema,
 });
