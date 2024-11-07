@@ -29,6 +29,8 @@ import {
   ListToolsResultSchema,
   EmptyResultSchema,
   LoggingLevel,
+  ListResourceTemplatesRequest,
+  ListResourceTemplatesResultSchema,
 } from "../types.js";
 
 /**
@@ -177,6 +179,17 @@ export class Client<
     );
   }
 
+  async listResourceTemplates(
+    params?: ListResourceTemplatesRequest["params"],
+    onprogress?: ProgressCallback,
+  ) {
+    return this.request(
+      { method: "resources/templates/list", params },
+      ListResourceTemplatesResultSchema,
+      onprogress,
+    );
+  }
+
   async readResource(
     params: ReadResourceRequest["params"],
     onprogress?: ProgressCallback,
@@ -222,5 +235,9 @@ export class Client<
       ListToolsResultSchema,
       onprogress,
     );
+  }
+
+  async sendRootsListChanged() {
+    return this.notification({ method: "notifications/roots/list_changed" });
   }
 }
