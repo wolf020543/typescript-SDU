@@ -6,6 +6,7 @@ import {
   ClientNotification,
   ClientRequest,
   ClientResult,
+  CompatibilityCallToolResultSchema,
   CompleteRequest,
   CompleteResultSchema,
   EmptyResultSchema,
@@ -218,11 +219,12 @@ export class Client<
 
   async callTool(
     params: CallToolRequest["params"],
+    resultSchema: typeof CallToolResultSchema | typeof CompatibilityCallToolResultSchema = CallToolResultSchema,
     onprogress?: ProgressCallback,
   ) {
     return this.request(
       { method: "tools/call", params },
-      CallToolResultSchema,
+      resultSchema,
       onprogress,
     );
   }
