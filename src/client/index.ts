@@ -1,36 +1,38 @@
 import { ProgressCallback, Protocol } from "../shared/protocol.js";
 import { Transport } from "../shared/transport.js";
 import {
+  CallToolRequest,
+  CallToolResultSchema,
   ClientNotification,
   ClientRequest,
   ClientResult,
+  CompatibilityCallToolResultSchema,
+  CompleteRequest,
+  CompleteResultSchema,
+  EmptyResultSchema,
+  GetPromptRequest,
+  GetPromptResultSchema,
   Implementation,
   InitializeResultSchema,
+  LATEST_PROTOCOL_VERSION,
+  ListPromptsRequest,
+  ListPromptsResultSchema,
+  ListResourcesRequest,
+  ListResourcesResultSchema,
+  ListResourceTemplatesRequest,
+  ListResourceTemplatesResultSchema,
+  ListToolsRequest,
+  ListToolsResultSchema,
+  LoggingLevel,
   Notification,
-  PROTOCOL_VERSION,
+  ReadResourceRequest,
+  ReadResourceResultSchema,
   Request,
   Result,
   ServerCapabilities,
-  CompleteRequest,
-  GetPromptRequest,
-  ListPromptsRequest,
-  ListResourcesRequest,
-  ReadResourceRequest,
   SubscribeRequest,
-  UnsubscribeRequest,
-  CallToolRequest,
-  ListToolsRequest,
-  CompleteResultSchema,
-  GetPromptResultSchema,
-  ListPromptsResultSchema,
-  ListResourcesResultSchema,
-  ReadResourceResultSchema,
-  CallToolResultSchema,
-  ListToolsResultSchema,
-  EmptyResultSchema,
-  LoggingLevel,
-  ListResourceTemplatesRequest,
-  ListResourceTemplatesResultSchema,
+  SUPPORTED_PROTOCOL_VERSIONS,
+  UnsubscribeRequest
 } from "../types.js";
 
 /**
@@ -84,7 +86,7 @@ export class Client<
       {
         method: "initialize",
         params: {
-          protocolVersion: PROTOCOL_VERSION,
+          protocolVersion: LATEST_PROTOCOL_VERSION,
           capabilities: {},
           clientInfo: this._clientInfo,
         },
@@ -96,7 +98,7 @@ export class Client<
       throw new Error(`Server sent invalid initialize result: ${result}`);
     }
 
-    if (result.protocolVersion !== PROTOCOL_VERSION) {
+    if (!SUPPORTED_PROTOCOL_VERSIONS.includes(result.protocolVersion)) {
       throw new Error(
         `Server's protocol version is not supported: ${result.protocolVersion}`,
       );
@@ -217,11 +219,12 @@ export class Client<
 
   async callTool(
     params: CallToolRequest["params"],
+    resultSchema: typeof CallToolResultSchema | typeof CompatibilityCallToolResultSchema = CallToolResultSchema,
     onprogress?: ProgressCallback,
   ) {
     return this.request(
       { method: "tools/call", params },
-      CallToolResultSchema,
+      resultSchema,
       onprogress,
     );
   }

@@ -1,6 +1,7 @@
 import { z } from "zod";
 
-export const PROTOCOL_VERSION = "2024-11-05";
+export const LATEST_PROTOCOL_VERSION = "2024-11-05";
+export const SUPPORTED_PROTOCOL_VERSIONS = [LATEST_PROTOCOL_VERSION, "2024-10-07"];
 
 /* JSON-RPC types */
 export const JSONRPC_VERSION = "2.0";
@@ -196,7 +197,7 @@ export const InitializeRequestSchema = RequestSchema.extend({
     /**
      * The latest version of the Model Context Protocol that the client supports. The client MAY decide to support older versions as well.
      */
-    protocolVersion: z.string().or(z.number().int()),
+    protocolVersion: z.string(),
     capabilities: ClientCapabilitiesSchema,
     clientInfo: ImplementationSchema,
   }),
@@ -268,7 +269,7 @@ export const InitializeResultSchema = ResultSchema.extend({
   /**
    * The version of the Model Context Protocol that the server wants to use. This may not match the version that the client requested. If the client cannot support this version, it MUST disconnect.
    */
-  protocolVersion: z.string().or(z.number().int()),
+  protocolVersion: z.string(),
   capabilities: ServerCapabilitiesSchema,
   serverInfo: ImplementationSchema,
 });
@@ -722,6 +723,13 @@ export const CallToolResultSchema = ResultSchema.extend({
 });
 
 /**
+ * CallToolResultSchema extended with backwards compatibility to protocol version 2024-10-07.
+ */
+export const CompatibilityCallToolResultSchema = CallToolResultSchema.or(ResultSchema.extend({
+  toolResult: z.unknown(),
+}));
+
+/**
  * Used by the client to invoke a tool provided by the server.
  */
 export const CallToolRequestSchema = RequestSchema.extend({
@@ -1053,6 +1061,7 @@ export const ServerResultSchema = z.union([
   ListResourceTemplatesResultSchema,
   ReadResourceResultSchema,
   CallToolResultSchema,
+  CompatibilityCallToolResultSchema,
   ListToolsResultSchema,
 ]);
 
@@ -1147,6 +1156,7 @@ export type Tool = z.infer<typeof ToolSchema>;
 export type ListToolsRequest = z.infer<typeof ListToolsRequestSchema>;
 export type ListToolsResult = z.infer<typeof ListToolsResultSchema>;
 export type CallToolResult = z.infer<typeof CallToolResultSchema>;
+export type CompatibilityCallToolResult = z.infer<typeof CompatibilityCallToolResultSchema>;
 export type CallToolRequest = z.infer<typeof CallToolRequestSchema>;
 export type ToolListChangedNotification = z.infer<
   typeof ToolListChangedNotificationSchema

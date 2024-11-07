@@ -1,4 +1,4 @@
-import { AnyZodObject, ZodLiteral, ZodObject, z } from "zod";
+import { ZodLiteral, ZodObject, ZodType, z } from "zod";
 import {
   ErrorCode,
   JSONRPCError,
@@ -250,7 +250,7 @@ export class Protocol<
    *
    * Do not use this method to emit notifications! Use notification() instead.
    */
-  request<T extends AnyZodObject>(
+  request<T extends ZodType<object>>(
     request: SendRequestT,
     resultSchema: T,
     onprogress?: ProgressCallback,
