@@ -1,6 +1,6 @@
 {
   "name": "@modelcontextprotocol/sdk",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "Model Context Protocol implementation for TypeScript",
   "type": "module",
   "main": "./dist/index.js",
