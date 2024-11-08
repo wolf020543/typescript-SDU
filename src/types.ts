@@ -1061,7 +1061,6 @@ export const ServerResultSchema = z.union([
   ListResourceTemplatesResultSchema,
   ReadResourceResultSchema,
   CallToolResultSchema,
-  CompatibilityCallToolResultSchema,
   ListToolsResultSchema,
 ]);
 
