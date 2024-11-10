@@ -1091,9 +1091,6 @@ export type JSONRPCMessage = z.infer<typeof JSONRPCMessageSchema>;
 export type EmptyResult = z.infer<typeof EmptyResultSchema>;
 
 /* Initialization */
-export type TextContent = z.infer<typeof TextContentSchema>;
-export type ImageContent = z.infer<typeof ImageContentSchema>;
-export type SamplingMessage = z.infer<typeof SamplingMessageSchema>;
 export type Implementation = z.infer<typeof ImplementationSchema>;
 export type ClientCapabilities = z.infer<typeof ClientCapabilitiesSchema>;
 export type InitializeRequest = z.infer<typeof InitializeRequestSchema>;
@@ -1145,6 +1142,10 @@ export type Prompt = z.infer<typeof PromptSchema>;
 export type ListPromptsRequest = z.infer<typeof ListPromptsRequestSchema>;
 export type ListPromptsResult = z.infer<typeof ListPromptsResultSchema>;
 export type GetPromptRequest = z.infer<typeof GetPromptRequestSchema>;
+export type TextContent = z.infer<typeof TextContentSchema>;
+export type ImageContent = z.infer<typeof ImageContentSchema>;
+export type EmbeddedResource = z.infer<typeof EmbeddedResourceSchema>;
+export type PromptMessage = z.infer<typeof PromptMessageSchema>;
 export type GetPromptResult = z.infer<typeof GetPromptResultSchema>;
 export type PromptListChangedNotification = z.infer<
   typeof PromptListChangedNotificationSchema
@@ -1169,6 +1170,7 @@ export type LoggingMessageNotification = z.infer<
 >;
 
 /* Sampling */
+export type SamplingMessage = z.infer<typeof SamplingMessageSchema>;
 export type CreateMessageRequest = z.infer<typeof CreateMessageRequestSchema>;
 export type CreateMessageResult = z.infer<typeof CreateMessageResultSchema>;
 
