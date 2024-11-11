@@ -3,11 +3,130 @@
 /* eslint-disable @typescript-eslint/no-unused-expressions */
 import { Client } from "./index.js";
 import { z } from "zod";
-import { RequestSchema, NotificationSchema, ResultSchema } from "../types.js";
+import {
+  RequestSchema,
+  NotificationSchema,
+  ResultSchema,
+  LATEST_PROTOCOL_VERSION,
+  SUPPORTED_PROTOCOL_VERSIONS,
+} from "../types.js";
+import { Transport } from "../shared/transport.js";
+
+test("should initialize with matching protocol version", async () => {
+  const clientTransport: Transport = {
+    start: jest.fn().mockResolvedValue(undefined),
+    close: jest.fn().mockResolvedValue(undefined),
+    send: jest.fn().mockImplementation((message) => {
+      if (message.method === "initialize") {
+        clientTransport.onmessage?.({
+          jsonrpc: "2.0",
+          id: message.id,
+          result: {
+            protocolVersion: LATEST_PROTOCOL_VERSION,
+            capabilities: {},
+            serverInfo: {
+              name: "test",
+              version: "1.0",
+            },
+          },
+        });
+      }
+      return Promise.resolve();
+    }),
+  };
+
+  const client = new Client({
+    name: "test client",
+    version: "1.0",
+  });
+
+  await client.connect(clientTransport);
+
+  // Should have sent initialize with latest version
+  expect(clientTransport.send).toHaveBeenCalledWith(
+    expect.objectContaining({
+      method: "initialize",
+      params: expect.objectContaining({
+        protocolVersion: LATEST_PROTOCOL_VERSION,
+      }),
+    }),
+  );
+});
+
+test("should initialize with supported older protocol version", async () => {
+  const OLD_VERSION = SUPPORTED_PROTOCOL_VERSIONS[1];
+  const clientTransport: Transport = {
+    start: jest.fn().mockResolvedValue(undefined),
+    close: jest.fn().mockResolvedValue(undefined),
+    send: jest.fn().mockImplementation((message) => {
+      if (message.method === "initialize") {
+        clientTransport.onmessage?.({
+          jsonrpc: "2.0",
+          id: message.id,
+          result: {
+            protocolVersion: OLD_VERSION,
+            capabilities: {},
+            serverInfo: {
+              name: "test",
+              version: "1.0",
+            },
+          },
+        });
+      }
+      return Promise.resolve();
+    }),
+  };
+
+  const client = new Client({
+    name: "test client",
+    version: "1.0",
+  });
+
+  await client.connect(clientTransport);
+
+  // Connection should succeed with the older version
+  expect(client.getServerVersion()).toEqual({
+    name: "test",
+    version: "1.0",
+  });
+});
+
+test("should reject unsupported protocol version", async () => {
+  const clientTransport: Transport = {
+    start: jest.fn().mockResolvedValue(undefined),
+    close: jest.fn().mockResolvedValue(undefined),
+    send: jest.fn().mockImplementation((message) => {
+      if (message.method === "initialize") {
+        clientTransport.onmessage?.({
+          jsonrpc: "2.0",
+          id: message.id,
+          result: {
+            protocolVersion: "invalid-version",
+            capabilities: {},
+            serverInfo: {
+              name: "test",
+              version: "1.0",
+            },
+          },
+        });
+      }
+      return Promise.resolve();
+    }),
+  };
+
+  const client = new Client({
+    name: "test client",
+    version: "1.0",
+  });
+
+  await expect(client.connect(clientTransport)).rejects.toThrow(
+    "Server's protocol version is not supported: invalid-version",
+  );
+});
 
 /*
-Test that custom request/notification/result schemas can be used with the Client class.
-*/
+  Test that custom request/notification/result schemas can be used with the Client class.
+  */
 test("should typecheck", () => {
   const GetWeatherRequestSchema = RequestSchema.extend({
     method: z.literal("weather/get"),

@@ -3,11 +3,171 @@
 /* eslint-disable @typescript-eslint/no-unused-expressions */
 import { Server } from "./index.js";
 import { z } from "zod";
-import { RequestSchema, NotificationSchema, ResultSchema } from "../types.js";
+import {
+  RequestSchema,
+  NotificationSchema,
+  ResultSchema,
+  LATEST_PROTOCOL_VERSION,
+  SUPPORTED_PROTOCOL_VERSIONS,
+  InitializeRequestSchema,
+  InitializeResultSchema,
+} from "../types.js";
+import { Transport } from "../shared/transport.js";
+
+test("should accept latest protocol version", async () => {
+  let sendPromiseResolve: (value: unknown) => void;
+  const sendPromise = new Promise((resolve) => {
+    sendPromiseResolve = resolve;
+  });
+
+  const serverTransport: Transport = {
+    start: jest.fn().mockResolvedValue(undefined),
+    close: jest.fn().mockResolvedValue(undefined),
+    send: jest.fn().mockImplementation((message) => {
+      if (message.id === 1 && message.result) {
+        expect(message.result).toEqual({
+          protocolVersion: LATEST_PROTOCOL_VERSION,
+          capabilities: expect.any(Object),
+          serverInfo: {
+            name: "test server",
+            version: "1.0",
+          },
+        });
+        sendPromiseResolve(undefined);
+      }
+      return Promise.resolve();
+    }),
+  };
+
+  const server = new Server({
+    name: "test server",
+    version: "1.0",
+  });
+
+  await server.connect(serverTransport);
+
+  // Simulate initialize request with latest version
+  serverTransport.onmessage?.({
+    jsonrpc: "2.0",
+    id: 1,
+    method: "initialize",
+    params: {
+      protocolVersion: LATEST_PROTOCOL_VERSION,
+      capabilities: {},
+      clientInfo: {
+        name: "test client",
+        version: "1.0",
+      },
+    },
+  });
+
+  await expect(sendPromise).resolves.toBeUndefined();
+});
+
+test("should accept supported older protocol version", async () => {
+  const OLD_VERSION = SUPPORTED_PROTOCOL_VERSIONS[1];
+  let sendPromiseResolve: (value: unknown) => void;
+  const sendPromise = new Promise((resolve) => {
+    sendPromiseResolve = resolve;
+  });
+
+  const serverTransport: Transport = {
+    start: jest.fn().mockResolvedValue(undefined),
+    close: jest.fn().mockResolvedValue(undefined),
+    send: jest.fn().mockImplementation((message) => {
+      if (message.id === 1 && message.result) {
+        expect(message.result).toEqual({
+          protocolVersion: OLD_VERSION,
+          capabilities: expect.any(Object),
+          serverInfo: {
+            name: "test server",
+            version: "1.0",
+          },
+        });
+        sendPromiseResolve(undefined);
+      }
+      return Promise.resolve();
+    }),
+  };
+
+  const server = new Server({
+    name: "test server",
+    version: "1.0",
+  });
+
+  await server.connect(serverTransport);
+
+  // Simulate initialize request with older version
+  serverTransport.onmessage?.({
+    jsonrpc: "2.0",
+    id: 1,
+    method: "initialize",
+    params: {
+      protocolVersion: OLD_VERSION,
+      capabilities: {},
+      clientInfo: {
+        name: "test client",
+        version: "1.0",
+      },
+    },
+  });
+
+  await expect(sendPromise).resolves.toBeUndefined();
+});
+
+test("should handle unsupported protocol version", async () => {
+  let sendPromiseResolve: (value: unknown) => void;
+  const sendPromise = new Promise((resolve) => {
+    sendPromiseResolve = resolve;
+  });
+
+  const serverTransport: Transport = {
+    start: jest.fn().mockResolvedValue(undefined),
+    close: jest.fn().mockResolvedValue(undefined),
+    send: jest.fn().mockImplementation((message) => {
+      if (message.id === 1 && message.result) {
+        expect(message.result).toEqual({
+          protocolVersion: LATEST_PROTOCOL_VERSION,
+          capabilities: expect.any(Object),
+          serverInfo: {
+            name: "test server",
+            version: "1.0",
+          },
+        });
+        sendPromiseResolve(undefined);
+      }
+      return Promise.resolve();
+    }),
+  };
+
+  const server = new Server({
+    name: "test server",
+    version: "1.0",
+  });
+
+  await server.connect(serverTransport);
+
+  // Simulate initialize request with unsupported version
+  serverTransport.onmessage?.({
+    jsonrpc: "2.0",
+    id: 1,
+    method: "initialize",
+    params: {
+      protocolVersion: "invalid-version",
+      capabilities: {},
+      clientInfo: {
+        name: "test client",
+        version: "1.0",
+      },
+    },
+  });
+
+  await expect(sendPromise).resolves.toBeUndefined();
+});
 
 /*
-Test that custom request/notification/result schemas can be used with the Server class.
-*/
+  Test that custom request/notification/result schemas can be used with the Server class.
+  */
 test("should typecheck", () => {
   const GetWeatherRequestSchema = RequestSchema.extend({
     method: z.literal("weather/get"),
