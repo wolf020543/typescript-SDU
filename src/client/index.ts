@@ -32,7 +32,7 @@ import {
   ServerCapabilities,
   SubscribeRequest,
   SUPPORTED_PROTOCOL_VERSIONS,
-  UnsubscribeRequest
+  UnsubscribeRequest,
 } from "../types.js";
 
 /**
@@ -82,34 +82,40 @@ export class Client<
   override async connect(transport: Transport): Promise<void> {
     await super.connect(transport);
 
-    const result = await this.request(
-      {
-        method: "initialize",
-        params: {
-          protocolVersion: LATEST_PROTOCOL_VERSION,
-          capabilities: {},
-          clientInfo: this._clientInfo,
+    try {
+      const result = await this.request(
+        {
+          method: "initialize",
+          params: {
+            protocolVersion: LATEST_PROTOCOL_VERSION,
+            capabilities: {},
+            clientInfo: this._clientInfo,
+          },
         },
-      },
-      InitializeResultSchema,
-    );
-
-    if (result === undefined) {
-      throw new Error(`Server sent invalid initialize result: ${result}`);
-    }
-
-    if (!SUPPORTED_PROTOCOL_VERSIONS.includes(result.protocolVersion)) {
-      throw new Error(
-        `Server's protocol version is not supported: ${result.protocolVersion}`,
+        InitializeResultSchema,
       );
+
+      if (result === undefined) {
+        throw new Error(`Server sent invalid initialize result: ${result}`);
+      }
+
+      if (!SUPPORTED_PROTOCOL_VERSIONS.includes(result.protocolVersion)) {
+        throw new Error(
+          `Server's protocol version is not supported: ${result.protocolVersion}`,
+        );
+      }
+
+      this._serverCapabilities = result.capabilities;
+      this._serverVersion = result.serverInfo;
+
+      await this.notification({
+        method: "notifications/initialized",
+      });
+    } catch (error) {
+      // Disconnect if initialization fails.
+      void this.close();
+      throw error;
     }
-
-    this._serverCapabilities = result.capabilities;
-    this._serverVersion = result.serverInfo;
-
-    await this.notification({
-      method: "notifications/initialized",
-    });
   }
 
   /**
@@ -219,7 +225,9 @@ export class Client<
 
   async callTool(
     params: CallToolRequest["params"],
-    resultSchema: typeof CallToolResultSchema | typeof CompatibilityCallToolResultSchema = CallToolResultSchema,
+    resultSchema:
+      | typeof CallToolResultSchema
+      | typeof CompatibilityCallToolResultSchema = CallToolResultSchema,
     onprogress?: ProgressCallback,
   ) {
     return this.request(

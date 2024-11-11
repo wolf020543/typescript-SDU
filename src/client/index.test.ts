@@ -122,6 +122,8 @@ test("should reject unsupported protocol version", async () => {
   await expect(client.connect(clientTransport)).rejects.toThrow(
     "Server's protocol version is not supported: invalid-version",
   );
+
+  expect(clientTransport.close).toHaveBeenCalled();
 });
 
 /*
