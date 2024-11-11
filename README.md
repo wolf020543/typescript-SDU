@@ -8,7 +8,7 @@ The Model Context Protocol allows applications to provide context for LLMs in a 
 
 - Build MCP clients that can connect to any MCP server
 - Create MCP servers that expose resources, prompts and tools
-- Use standard transports like stdio, SSE, and WebSocket
+- Use standard transports like stdio and SSE
 - Handle all MCP protocol messages and lifecycle events
 
 ## Installation
