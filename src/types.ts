@@ -719,7 +719,7 @@ export const CallToolResultSchema = ResultSchema.extend({
   content: z.array(
     z.union([TextContentSchema, ImageContentSchema, EmbeddedResourceSchema]),
   ),
-  isError: z.boolean().default(false),
+  isError: z.boolean().default(false).optional(),
 });
 
 /**
