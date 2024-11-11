@@ -10,11 +10,8 @@ import {
   InitializeRequestSchema,
   InitializeResult,
   LATEST_PROTOCOL_VERSION,
-  ListPromptsRequestSchema,
-  ListResourcesRequestSchema,
   ListRootsRequest,
   ListRootsResultSchema,
-  ListToolsRequestSchema,
   LoggingMessageNotification,
   Notification,
   Request,
@@ -24,7 +21,6 @@ import {
   ServerNotification,
   ServerRequest,
   ServerResult,
-  SetLevelRequestSchema,
   SUPPORTED_PROTOCOL_VERSIONS,
 } from "../types.js";
 
