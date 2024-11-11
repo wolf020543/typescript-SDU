@@ -4,7 +4,7 @@ on:
       - main
   pull_request:
   release:
-    types: [created]
+    types: [published]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -26,13 +26,14 @@ jobs:
       - run: npm test
       - run: npm run lint
 
-  package:
+  publish:
     runs-on: ubuntu-latest
     if: github.event_name == 'release'
     needs: build
 
     permissions:
-      contents: write
+      contents: read
+      id-token: write
 
     steps:
       - uses: actions/checkout@v4
@@ -40,12 +41,9 @@ jobs:
         with:
           node-version: 18
           cache: npm
+          registry-url: 'https://registry.npmjs.org'
 
       - run: npm ci
-      - run: npm pack
-
-      - name: Upload package to release
+      - run: npm publish --provenance --access public
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release upload ${{ github.event.release.tag_name }} ./*.tgz
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
