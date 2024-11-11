@@ -68,10 +68,13 @@ async function runServer(port: number | null) {
       console.log("Got new SSE connection");
 
       const transport = new SSEServerTransport("/message", res);
-      const server = new Server({
-        name: "mcp-typescript test server",
-        version: "0.1.0",
-      });
+      const server = new Server(
+        {
+          name: "mcp-typescript test server",
+          version: "0.1.0",
+        },
+        {},
+      );
 
       servers.push(server);
 
