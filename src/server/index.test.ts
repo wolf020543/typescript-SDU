@@ -9,10 +9,10 @@ import {
   ResultSchema,
   LATEST_PROTOCOL_VERSION,
   SUPPORTED_PROTOCOL_VERSIONS,
-  InitializeRequestSchema,
-  InitializeResultSchema,
 } from "../types.js";
 import { Transport } from "../shared/transport.js";
+import { InMemoryTransport } from "../inMemory.js";
+import { Client } from "../client/index.js";
 
 test("should accept latest protocol version", async () => {
   let sendPromiseResolve: (value: unknown) => void;
@@ -163,6 +163,33 @@ test("should handle unsupported protocol version", async () => {
   });
 
   await expect(sendPromise).resolves.toBeUndefined();
+});
+
+test("should respect client capabilities", async () => {
+  const server = new Server({
+    name: "test server",
+    version: "1.0",
+  });
+
+  const client = new Client({
+    name: "test client",
+    version: "1.0",
+  });
+
+  const [clientTransport, serverTransport] =
+    InMemoryTransport.createLinkedPair();
+
+  await Promise.all([
+    client.connect(clientTransport),
+    server.connect(serverTransport),
+  ]);
+
+  expect(server.getClientCapabilities()).toEqual({});
+
+  // This should throw because roots are not supported by the client
+  await expect(server.listRoots()).rejects.toThrow(
+    "Client does not support roots",
+  );
 });
 
 /*

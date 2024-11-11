@@ -25,7 +25,7 @@ import {
   ServerRequest,
   ServerResult,
   SetLevelRequestSchema,
-  SUPPORTED_PROTOCOL_VERSIONS
+  SUPPORTED_PROTOCOL_VERSIONS,
 } from "../types.js";
 
 /**
@@ -93,7 +93,9 @@ export class Server<
     this._clientVersion = request.params.clientInfo;
 
     return {
-      protocolVersion: SUPPORTED_PROTOCOL_VERSIONS.includes(requestedVersion) ? requestedVersion : LATEST_PROTOCOL_VERSION,
+      protocolVersion: SUPPORTED_PROTOCOL_VERSIONS.includes(requestedVersion)
+        ? requestedVersion
+        : LATEST_PROTOCOL_VERSION,
       capabilities: this.getCapabilities(),
       serverInfo: this._serverInfo,
     };
@@ -138,6 +140,17 @@ export class Server<
     };
   }
 
+  private assertCapability(
+    capability: keyof ClientCapabilities,
+    method: string,
+  ) {
+    if (!this._clientCapabilities?.[capability]) {
+      throw new Error(
+        `Client does not support ${capability} (required for ${method})`,
+      );
+    }
+  }
+
   async ping() {
     return this.request({ method: "ping" }, EmptyResultSchema);
   }
@@ -146,6 +159,7 @@ export class Server<
     params: CreateMessageRequest["params"],
     onprogress?: ProgressCallback,
   ) {
+    this.assertCapability("sampling", "sampling/createMessage");
     return this.request(
       { method: "sampling/createMessage", params },
       CreateMessageResultSchema,
@@ -157,6 +171,7 @@ export class Server<
     params?: ListRootsRequest["params"],
     onprogress?: ProgressCallback,
   ) {
+    this.assertCapability("roots", "roots/list");
     return this.request(
       { method: "roots/list", params },
       ListRootsResultSchema,

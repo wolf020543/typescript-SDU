@@ -132,6 +132,17 @@ export class Client<
     return this._serverVersion;
   }
 
+  private assertCapability(
+    capability: keyof ServerCapabilities,
+    method: string,
+  ) {
+    if (!this._serverCapabilities?.[capability]) {
+      throw new Error(
+        `Server does not support ${capability} (required for ${method})`,
+      );
+    }
+  }
+
   async ping() {
     return this.request({ method: "ping" }, EmptyResultSchema);
   }
@@ -140,6 +151,7 @@ export class Client<
     params: CompleteRequest["params"],
     onprogress?: ProgressCallback,
   ) {
+    this.assertCapability("prompts", "completion/complete");
     return this.request(
       { method: "completion/complete", params },
       CompleteResultSchema,
@@ -148,6 +160,7 @@ export class Client<
   }
 
   async setLoggingLevel(level: LoggingLevel) {
+    this.assertCapability("logging", "logging/setLevel");
     return this.request(
       { method: "logging/setLevel", params: { level } },
       EmptyResultSchema,
@@ -158,6 +171,7 @@ export class Client<
     params: GetPromptRequest["params"],
     onprogress?: ProgressCallback,
   ) {
+    this.assertCapability("prompts", "prompts/get");
     return this.request(
       { method: "prompts/get", params },
       GetPromptResultSchema,
@@ -169,6 +183,7 @@ export class Client<
     params?: ListPromptsRequest["params"],
     onprogress?: ProgressCallback,
   ) {
+    this.assertCapability("prompts", "prompts/list");
     return this.request(
       { method: "prompts/list", params },
       ListPromptsResultSchema,
@@ -180,6 +195,7 @@ export class Client<
     params?: ListResourcesRequest["params"],
     onprogress?: ProgressCallback,
   ) {
+    this.assertCapability("resources", "resources/list");
     return this.request(
       { method: "resources/list", params },
       ListResourcesResultSchema,
@@ -191,6 +207,7 @@ export class Client<
     params?: ListResourceTemplatesRequest["params"],
     onprogress?: ProgressCallback,
   ) {
+    this.assertCapability("resources", "resources/templates/list");
     return this.request(
       { method: "resources/templates/list", params },
       ListResourceTemplatesResultSchema,
@@ -202,6 +219,7 @@ export class Client<
     params: ReadResourceRequest["params"],
     onprogress?: ProgressCallback,
   ) {
+    this.assertCapability("resources", "resources/read");
     return this.request(
       { method: "resources/read", params },
       ReadResourceResultSchema,
@@ -210,6 +228,7 @@ export class Client<
   }
 
   async subscribeResource(params: SubscribeRequest["params"]) {
+    this.assertCapability("resources", "resources/subscribe");
     return this.request(
       { method: "resources/subscribe", params },
       EmptyResultSchema,
@@ -217,6 +236,7 @@ export class Client<
   }
 
   async unsubscribeResource(params: UnsubscribeRequest["params"]) {
+    this.assertCapability("resources", "resources/unsubscribe");
     return this.request(
       { method: "resources/unsubscribe", params },
       EmptyResultSchema,
@@ -230,6 +250,7 @@ export class Client<
       | typeof CompatibilityCallToolResultSchema = CallToolResultSchema,
     onprogress?: ProgressCallback,
   ) {
+    this.assertCapability("tools", "tools/call");
     return this.request(
       { method: "tools/call", params },
       resultSchema,
@@ -241,6 +262,7 @@ export class Client<
     params?: ListToolsRequest["params"],
     onprogress?: ProgressCallback,
   ) {
+    this.assertCapability("tools", "tools/list");
     return this.request(
       { method: "tools/list", params },
       ListToolsResultSchema,

@@ -9,8 +9,13 @@ import {
   ResultSchema,
   LATEST_PROTOCOL_VERSION,
   SUPPORTED_PROTOCOL_VERSIONS,
+  InitializeRequestSchema,
+  ListResourcesRequestSchema,
+  ListToolsRequestSchema,
 } from "../types.js";
 import { Transport } from "../shared/transport.js";
+import { Server } from "../server/index.js";
+import { InMemoryTransport } from "../inMemory.js";
 
 test("should initialize with matching protocol version", async () => {
   const clientTransport: Transport = {
@@ -124,6 +129,61 @@ test("should reject unsupported protocol version", async () => {
   );
 
   expect(clientTransport.close).toHaveBeenCalled();
+});
+
+test("should respect server capabilities", async () => {
+  const server = new Server({
+    name: "test server",
+    version: "1.0",
+  });
+
+  server.setRequestHandler(InitializeRequestSchema, (request) => ({
+    protocolVersion: LATEST_PROTOCOL_VERSION,
+    capabilities: {
+      resources: {},
+      tools: {},
+    },
+    serverInfo: {
+      name: "test",
+      version: "1.0",
+    },
+  }));
+
+  server.setRequestHandler(ListResourcesRequestSchema, () => ({
+    resources: [],
+  }));
+
+  server.setRequestHandler(ListToolsRequestSchema, () => ({
+    tools: [],
+  }));
+
+  const [clientTransport, serverTransport] =
+    InMemoryTransport.createLinkedPair();
+
+  const client = new Client({
+    name: "test client",
+    version: "1.0",
+  });
+
+  await Promise.all([
+    client.connect(clientTransport),
+    server.connect(serverTransport),
+  ]);
+
+  // Server supports resources and tools, but not prompts
+  expect(client.getServerCapabilities()).toEqual({
+    resources: {},
+    tools: {},
+  });
+
+  // These should work
+  await expect(client.listResources()).resolves.not.toThrow();
+  await expect(client.listTools()).resolves.not.toThrow();
+
+  // This should throw because prompts are not supported
+  await expect(client.listPrompts()).rejects.toThrow(
+    "Server does not support prompts",
+  );
 });
 
 /*
