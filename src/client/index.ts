@@ -3,6 +3,7 @@ import { Transport } from "../shared/transport.js";
 import {
   CallToolRequest,
   CallToolResultSchema,
+  ClientCapabilities,
   ClientNotification,
   ClientRequest,
   ClientResult,
@@ -75,7 +76,10 @@ export class Client<
   /**
    * Initializes this client with the given name and version information.
    */
-  constructor(private _clientInfo: Implementation) {
+  constructor(
+    private _clientInfo: Implementation,
+    private _capabilities: ClientCapabilities,
+  ) {
     super();
   }
 
@@ -88,7 +92,7 @@ export class Client<
           method: "initialize",
           params: {
             protocolVersion: LATEST_PROTOCOL_VERSION,
-            capabilities: {},
+            capabilities: this._capabilities,
             clientInfo: this._clientInfo,
           },
         },

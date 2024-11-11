@@ -73,7 +73,10 @@ export class Server<
   /**
    * Initializes this server with the given name and version information.
    */
-  constructor(private _serverInfo: Implementation) {
+  constructor(
+    private _serverInfo: Implementation,
+    private _capabilities: ServerCapabilities,
+  ) {
     super();
 
     this.setRequestHandler(InitializeRequestSchema, (request) =>
@@ -116,28 +119,7 @@ export class Server<
   }
 
   private getCapabilities(): ServerCapabilities {
-    return {
-      prompts: this._requestHandlers.has(
-        ListPromptsRequestSchema.shape.method.value as string,
-      )
-        ? {}
-        : undefined,
-      resources: this._requestHandlers.has(
-        ListResourcesRequestSchema.shape.method.value as string,
-      )
-        ? {}
-        : undefined,
-      tools: this._requestHandlers.has(
-        ListToolsRequestSchema.shape.method.value as string,
-      )
-        ? {}
-        : undefined,
-      logging: this._requestHandlers.has(
-        SetLevelRequestSchema.shape.method.value as string,
-      )
-        ? {}
-        : undefined,
-    };
+    return this._capabilities;
   }
 
   private assertCapability(

@@ -9,6 +9,7 @@ import {
   ResultSchema,
   LATEST_PROTOCOL_VERSION,
   SUPPORTED_PROTOCOL_VERSIONS,
+  CreateMessageRequestSchema,
 } from "../types.js";
 import { Transport } from "../shared/transport.js";
 import { InMemoryTransport } from "../inMemory.js";
@@ -39,10 +40,18 @@ test("should accept latest protocol version", async () => {
     }),
   };
 
-  const server = new Server({
-    name: "test server",
-    version: "1.0",
-  });
+  const server = new Server(
+    {
+      name: "test server",
+      version: "1.0",
+    },
+    {
+      prompts: {},
+      resources: {},
+      tools: {},
+      logging: {},
+    },
+  );
 
   await server.connect(serverTransport);
 
@@ -90,10 +99,18 @@ test("should accept supported older protocol version", async () => {
     }),
   };
 
-  const server = new Server({
-    name: "test server",
-    version: "1.0",
-  });
+  const server = new Server(
+    {
+      name: "test server",
+      version: "1.0",
+    },
+    {
+      prompts: {},
+      resources: {},
+      tools: {},
+      logging: {},
+    },
+  );
 
   await server.connect(serverTransport);
 
@@ -140,10 +157,18 @@ test("should handle unsupported protocol version", async () => {
     }),
   };
 
-  const server = new Server({
-    name: "test server",
-    version: "1.0",
-  });
+  const server = new Server(
+    {
+      name: "test server",
+      version: "1.0",
+    },
+    {
+      prompts: {},
+      resources: {},
+      tools: {},
+      logging: {},
+    },
+  );
 
   await server.connect(serverTransport);
 
@@ -166,14 +191,39 @@ test("should handle unsupported protocol version", async () => {
 });
 
 test("should respect client capabilities", async () => {
-  const server = new Server({
-    name: "test server",
-    version: "1.0",
-  });
+  const server = new Server(
+    {
+      name: "test server",
+      version: "1.0",
+    },
+    {
+      prompts: {},
+      resources: {},
+      tools: {},
+      logging: {},
+    },
+  );
+  const client = new Client(
+    {
+      name: "test client",
+      version: "1.0",
+    },
+    {
+      sampling: {},
+    },
+  );
 
-  const client = new Client({
-    name: "test client",
-    version: "1.0",
+  // Implement request handler for sampling/createMessage
+  client.setRequestHandler(CreateMessageRequestSchema, async (request) => {
+    // Mock implementation of createMessage
+    return {
+      model: "test-model",
+      role: "assistant",
+      content: {
+        type: "text",
+        text: "This is a test response",
+      },
+    };
   });
 
   const [clientTransport, serverTransport] =
@@ -184,9 +234,17 @@ test("should respect client capabilities", async () => {
     server.connect(serverTransport),
   ]);
 
-  expect(server.getClientCapabilities()).toEqual({});
+  expect(server.getClientCapabilities()).toEqual({ sampling: {} });
 
-  // This should throw because roots are not supported by the client
+  // This should work because sampling is supported by the client
+  await expect(
+    server.createMessage({
+      messages: [],
+      maxTokens: 10,
+    }),
+  ).resolves.not.toThrow();
+
+  // This should still throw because roots are not supported by the client
   await expect(server.listRoots()).rejects.toThrow(
     "Client does not support roots",
   );
@@ -237,10 +295,18 @@ test("should typecheck", () => {
     WeatherRequest,
     WeatherNotification,
     WeatherResult
-  >({
-    name: "WeatherServer",
-    version: "1.0.0",
-  });
+  >(
+    {
+      name: "WeatherServer",
+      version: "1.0.0",
+    },
+    {
+      prompts: {},
+      resources: {},
+      tools: {},
+      logging: {},
+    },
+  );
 
   // Typecheck that only valid weather requests/notifications/results are allowed
   weatherServer.setRequestHandler(GetWeatherRequestSchema, (request) => {

@@ -40,10 +40,15 @@ test("should initialize with matching protocol version", async () => {
     }),
   };
 
-  const client = new Client({
-    name: "test client",
-    version: "1.0",
-  });
+  const client = new Client(
+    {
+      name: "test client",
+      version: "1.0",
+    },
+    {
+      sampling: {},
+    },
+  );
 
   await client.connect(clientTransport);
 
@@ -82,10 +87,15 @@ test("should initialize with supported older protocol version", async () => {
     }),
   };
 
-  const client = new Client({
-    name: "test client",
-    version: "1.0",
-  });
+  const client = new Client(
+    {
+      name: "test client",
+      version: "1.0",
+    },
+    {
+      sampling: {},
+    },
+  );
 
   await client.connect(clientTransport);
 
@@ -119,10 +129,15 @@ test("should reject unsupported protocol version", async () => {
     }),
   };
 
-  const client = new Client({
-    name: "test client",
-    version: "1.0",
-  });
+  const client = new Client(
+    {
+      name: "test client",
+      version: "1.0",
+    },
+    {
+      sampling: {},
+    },
+  );
 
   await expect(client.connect(clientTransport)).rejects.toThrow(
     "Server's protocol version is not supported: invalid-version",
@@ -132,12 +147,18 @@ test("should reject unsupported protocol version", async () => {
 });
 
 test("should respect server capabilities", async () => {
-  const server = new Server({
-    name: "test server",
-    version: "1.0",
-  });
+  const server = new Server(
+    {
+      name: "test server",
+      version: "1.0",
+    },
+    {
+      resources: {},
+      tools: {},
+    },
+  );
 
-  server.setRequestHandler(InitializeRequestSchema, (request) => ({
+  server.setRequestHandler(InitializeRequestSchema, (_request) => ({
     protocolVersion: LATEST_PROTOCOL_VERSION,
     capabilities: {
       resources: {},
@@ -160,10 +181,15 @@ test("should respect server capabilities", async () => {
   const [clientTransport, serverTransport] =
     InMemoryTransport.createLinkedPair();
 
-  const client = new Client({
-    name: "test client",
-    version: "1.0",
-  });
+  const client = new Client(
+    {
+      name: "test client",
+      version: "1.0",
+    },
+    {
+      sampling: {},
+    },
+  );
 
   await Promise.all([
     client.connect(clientTransport),
@@ -231,10 +257,15 @@ test("should typecheck", () => {
     WeatherRequest,
     WeatherNotification,
     WeatherResult
-  >({
-    name: "WeatherClient",
-    version: "1.0.0",
-  });
+  >(
+    {
+      name: "WeatherClient",
+      version: "1.0.0",
+    },
+    {
+      sampling: {},
+    },
+  );
 
   // Typecheck that only valid weather requests/notifications/results are allowed
   false &&
