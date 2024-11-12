@@ -23,7 +23,9 @@ async function runClient(url_or_command: string, args: string[]) {
       version: "0.1.0",
     },
     {
-      sampling: {},
+      capabilities: {
+        sampling: {},
+      },
     },
   );
 
@@ -73,7 +75,9 @@ async function runServer(port: number | null) {
           name: "mcp-typescript test server",
           version: "0.1.0",
         },
-        {},
+        {
+          capabilities: {},
+        },
       );
 
       servers.push(server);
@@ -111,10 +115,12 @@ async function runServer(port: number | null) {
         version: "0.1.0",
       },
       {
-        prompts: {},
-        resources: {},
-        tools: {},
-        logging: {},
+        capabilities: {
+          prompts: {},
+          resources: {},
+          tools: {},
+          logging: {},
+        },
       },
     );
 

@@ -1,4 +1,8 @@
-import { ProgressCallback, Protocol } from "../shared/protocol.js";
+import {
+  ProgressCallback,
+  Protocol,
+  ProtocolOptions,
+} from "../shared/protocol.js";
 import {
   ClientCapabilities,
   CreateMessageRequest,
@@ -23,6 +27,13 @@ import {
   ServerResult,
   SUPPORTED_PROTOCOL_VERSIONS,
 } from "../types.js";
+
+export type ServerOptions = ProtocolOptions & {
+  /**
+   * Capabilities to advertise as being supported by this server.
+   */
+  capabilities: ClientCapabilities;
+};
 
 /**
  * An MCP server on top of a pluggable transport.
@@ -60,6 +71,7 @@ export class Server<
 > {
   private _clientCapabilities?: ClientCapabilities;
   private _clientVersion?: Implementation;
+  private _capabilities: ServerCapabilities;
 
   /**
    * Callback for when initialization has fully completed (i.e., the client has sent an `initialized` notification).
@@ -71,9 +83,10 @@ export class Server<
    */
   constructor(
     private _serverInfo: Implementation,
-    private _capabilities: ServerCapabilities,
+    options: ServerOptions,
   ) {
-    super();
+    super(options);
+    this._capabilities = options.capabilities;
 
     this.setRequestHandler(InitializeRequestSchema, (request) =>
       this._oninitialize(request),
@@ -81,6 +94,30 @@ export class Server<
     this.setNotificationHandler(InitializedNotificationSchema, () =>
       this.oninitialized?.(),
     );
+  }
+
+  protected assertCapabilityForMethod(method: RequestT["method"]): void {
+    switch (method as ServerRequest["method"]) {
+      case "sampling/createMessage":
+        if (!this._clientCapabilities?.sampling) {
+          throw new Error(
+            `Client does not support sampling (required for ${method})`,
+          );
+        }
+        break;
+
+      case "roots/list":
+        if (!this._clientCapabilities?.roots) {
+          throw new Error(
+            `Client does not support listing roots (required for ${method})`,
+          );
+        }
+        break;
+
+      case "ping":
+        // No specific capability required for ping
+        break;
+    }
   }
 
   private async _oninitialize(
@@ -137,7 +174,6 @@ export class Server<
     params: CreateMessageRequest["params"],
     onprogress?: ProgressCallback,
   ) {
-    this.assertCapability("sampling", "sampling/createMessage");
     return this.request(
       { method: "sampling/createMessage", params },
       CreateMessageResultSchema,
@@ -149,7 +185,6 @@ export class Server<
     params?: ListRootsRequest["params"],
     onprogress?: ProgressCallback,
   ) {
-    this.assertCapability("roots", "roots/list");
     return this.request(
       { method: "roots/list", params },
       ListRootsResultSchema,

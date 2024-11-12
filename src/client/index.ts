@@ -1,4 +1,8 @@
-import { ProgressCallback, Protocol } from "../shared/protocol.js";
+import {
+  ProgressCallback,
+  Protocol,
+  ProtocolOptions,
+} from "../shared/protocol.js";
 import { Transport } from "../shared/transport.js";
 import {
   CallToolRequest,
@@ -36,6 +40,13 @@ import {
   UnsubscribeRequest,
 } from "../types.js";
 
+export type ClientOptions = ProtocolOptions & {
+  /**
+   * Capabilities to advertise as being supported by this client.
+   */
+  capabilities: ClientCapabilities;
+};
+
 /**
  * An MCP client on top of a pluggable transport.
  *
@@ -72,15 +83,28 @@ export class Client<
 > {
   private _serverCapabilities?: ServerCapabilities;
   private _serverVersion?: Implementation;
+  private _capabilities: ClientCapabilities;
 
   /**
    * Initializes this client with the given name and version information.
    */
   constructor(
     private _clientInfo: Implementation,
-    private _capabilities: ClientCapabilities,
+    options: ClientOptions,
   ) {
-    super();
+    super(options);
+    this._capabilities = options.capabilities;
+  }
+
+  protected assertCapability(
+    capability: keyof ServerCapabilities,
+    method: string,
+  ): void {
+    if (!this._serverCapabilities?.[capability]) {
+      throw new Error(
+        `Server does not support ${capability} (required for ${method})`,
+      );
+    }
   }
 
   override async connect(transport: Transport): Promise<void> {
@@ -136,14 +160,69 @@ export class Client<
     return this._serverVersion;
   }
 
-  private assertCapability(
-    capability: keyof ServerCapabilities,
-    method: string,
-  ) {
-    if (!this._serverCapabilities?.[capability]) {
-      throw new Error(
-        `Server does not support ${capability} (required for ${method})`,
-      );
+  protected assertCapabilityForMethod(method: RequestT["method"]): void {
+    switch (method as ClientRequest["method"]) {
+      case "logging/setLevel":
+        if (!this._serverCapabilities?.logging) {
+          throw new Error(
+            "Server does not support logging (required for logging/setLevel)",
+          );
+        }
+        break;
+
+      case "prompts/get":
+      case "prompts/list":
+        if (!this._serverCapabilities?.prompts) {
+          throw new Error(
+            `Server does not support prompts (required for ${method})`,
+          );
+        }
+        break;
+
+      case "resources/list":
+      case "resources/templates/list":
+      case "resources/read":
+      case "resources/subscribe":
+      case "resources/unsubscribe":
+        if (!this._serverCapabilities?.resources) {
+          throw new Error(
+            `Server does not support resources (required for ${method})`,
+          );
+        }
+
+        if (
+          method === "resources/subscribe" &&
+          !this._serverCapabilities.resources.subscribe
+        ) {
+          throw new Error("Server does not support resource subscriptions");
+        }
+
+        break;
+
+      case "tools/call":
+      case "tools/list":
+        if (!this._serverCapabilities?.tools) {
+          throw new Error(
+            `Server does not support tools (required for ${method})`,
+          );
+        }
+        break;
+
+      case "completion/complete":
+        if (!this._serverCapabilities?.prompts) {
+          throw new Error(
+            "Server does not support prompts (required for completion/complete)",
+          );
+        }
+        break;
+
+      case "initialize":
+        // No specific capability required for initialize
+        break;
+
+      case "ping":
+        // No specific capability required for ping
+        break;
     }
   }
 
@@ -155,7 +234,6 @@ export class Client<
     params: CompleteRequest["params"],
     onprogress?: ProgressCallback,
   ) {
-    this.assertCapability("prompts", "completion/complete");
     return this.request(
       { method: "completion/complete", params },
       CompleteResultSchema,
@@ -164,7 +242,6 @@ export class Client<
   }
 
   async setLoggingLevel(level: LoggingLevel) {
-    this.assertCapability("logging", "logging/setLevel");
     return this.request(
       { method: "logging/setLevel", params: { level } },
       EmptyResultSchema,
@@ -175,7 +252,6 @@ export class Client<
     params: GetPromptRequest["params"],
     onprogress?: ProgressCallback,
   ) {
-    this.assertCapability("prompts", "prompts/get");
     return this.request(
       { method: "prompts/get", params },
       GetPromptResultSchema,
@@ -187,7 +263,6 @@ export class Client<
     params?: ListPromptsRequest["params"],
     onprogress?: ProgressCallback,
   ) {
-    this.assertCapability("prompts", "prompts/list");
     return this.request(
       { method: "prompts/list", params },
       ListPromptsResultSchema,
@@ -199,7 +274,6 @@ export class Client<
     params?: ListResourcesRequest["params"],
     onprogress?: ProgressCallback,
   ) {
-    this.assertCapability("resources", "resources/list");
     return this.request(
       { method: "resources/list", params },
       ListResourcesResultSchema,
@@ -211,7 +285,6 @@ export class Client<
     params?: ListResourceTemplatesRequest["params"],
     onprogress?: ProgressCallback,
   ) {
-    this.assertCapability("resources", "resources/templates/list");
     return this.request(
       { method: "resources/templates/list", params },
       ListResourceTemplatesResultSchema,
@@ -223,7 +296,6 @@ export class Client<
     params: ReadResourceRequest["params"],
     onprogress?: ProgressCallback,
   ) {
-    this.assertCapability("resources", "resources/read");
     return this.request(
       { method: "resources/read", params },
       ReadResourceResultSchema,
@@ -232,7 +304,6 @@ export class Client<
   }
 
   async subscribeResource(params: SubscribeRequest["params"]) {
-    this.assertCapability("resources", "resources/subscribe");
     return this.request(
       { method: "resources/subscribe", params },
       EmptyResultSchema,
@@ -240,7 +311,6 @@ export class Client<
   }
 
   async unsubscribeResource(params: UnsubscribeRequest["params"]) {
-    this.assertCapability("resources", "resources/unsubscribe");
     return this.request(
       { method: "resources/unsubscribe", params },
       EmptyResultSchema,
@@ -254,7 +324,6 @@ export class Client<
       | typeof CompatibilityCallToolResultSchema = CallToolResultSchema,
     onprogress?: ProgressCallback,
   ) {
-    this.assertCapability("tools", "tools/call");
     return this.request(
       { method: "tools/call", params },
       resultSchema,
@@ -266,7 +335,6 @@ export class Client<
     params?: ListToolsRequest["params"],
     onprogress?: ProgressCallback,
   ) {
-    this.assertCapability("tools", "tools/list");
     return this.request(
       { method: "tools/list", params },
       ListToolsResultSchema,

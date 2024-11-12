@@ -1,7 +1,10 @@
 import { z } from "zod";
 
 export const LATEST_PROTOCOL_VERSION = "2024-11-05";
-export const SUPPORTED_PROTOCOL_VERSIONS = [LATEST_PROTOCOL_VERSION, "2024-10-07"];
+export const SUPPORTED_PROTOCOL_VERSIONS = [
+  LATEST_PROTOCOL_VERSION,
+  "2024-10-07",
+];
 
 /* JSON-RPC types */
 export const JSONRPC_VERSION = "2.0";
@@ -179,7 +182,7 @@ export const ClientCapabilitiesSchema = z
       z
         .object({
           /**
-           * Whether the client supports notifications for changes to the roots list.
+           * Whether the client supports issuing notifications for changes to the roots list.
            */
           listChanged: z.optional(z.boolean()),
         })
@@ -223,7 +226,7 @@ export const ServerCapabilitiesSchema = z
       z
         .object({
           /**
-           * Whether this server supports notifications for changes to the prompt list.
+           * Whether this server supports issuing notifications for changes to the prompt list.
            */
           listChanged: z.optional(z.boolean()),
         })
@@ -236,11 +239,12 @@ export const ServerCapabilitiesSchema = z
       z
         .object({
           /**
-           * Whether this server supports subscribing to resource updates.
+           * Whether this server supports clients subscribing to resource updates.
            */
           subscribe: z.optional(z.boolean()),
+
           /**
-           * Whether this server supports notifications for changes to the resource list.
+           * Whether this server supports issuing notifications for changes to the resource list.
            */
           listChanged: z.optional(z.boolean()),
         })
@@ -253,7 +257,7 @@ export const ServerCapabilitiesSchema = z
       z
         .object({
           /**
-           * Whether this server supports notifications for changes to the tool list.
+           * Whether this server supports issuing notifications for changes to the tool list.
            */
           listChanged: z.optional(z.boolean()),
         })
@@ -725,9 +729,11 @@ export const CallToolResultSchema = ResultSchema.extend({
 /**
  * CallToolResultSchema extended with backwards compatibility to protocol version 2024-10-07.
  */
-export const CompatibilityCallToolResultSchema = CallToolResultSchema.or(ResultSchema.extend({
-  toolResult: z.unknown(),
-}));
+export const CompatibilityCallToolResultSchema = CallToolResultSchema.or(
+  ResultSchema.extend({
+    toolResult: z.unknown(),
+  }),
+);
 
 /**
  * Used by the client to invoke a tool provided by the server.
@@ -802,12 +808,14 @@ export const LoggingMessageNotificationSchema = NotificationSchema.extend({
 /**
  * Hints to use for model selection.
  */
-export const ModelHintSchema = z.object({
-  /**
-   * A hint for a model name.
-   */
-  name: z.string().optional(),
-}).passthrough();
+export const ModelHintSchema = z
+  .object({
+    /**
+     * A hint for a model name.
+     */
+    name: z.string().optional(),
+  })
+  .passthrough();
 
 /**
  * The server's preferences for model selection, requested of the client during sampling.
@@ -886,7 +894,9 @@ export const CreateMessageResultSchema = ResultSchema.extend({
   /**
    * The reason why sampling stopped.
    */
-  stopReason: z.optional(z.enum(["endTurn", "stopSequence", "maxTokens"]).or(z.string())),
+  stopReason: z.optional(
+    z.enum(["endTurn", "stopSequence", "maxTokens"]).or(z.string()),
+  ),
   role: z.enum(["user", "assistant"]),
   content: z.discriminatedUnion("type", [
     TextContentSchema,
@@ -1156,7 +1166,9 @@ export type Tool = z.infer<typeof ToolSchema>;
 export type ListToolsRequest = z.infer<typeof ListToolsRequestSchema>;
 export type ListToolsResult = z.infer<typeof ListToolsResultSchema>;
 export type CallToolResult = z.infer<typeof CallToolResultSchema>;
-export type CompatibilityCallToolResult = z.infer<typeof CompatibilityCallToolResultSchema>;
+export type CompatibilityCallToolResult = z.infer<
+  typeof CompatibilityCallToolResultSchema
+>;
 export type CallToolRequest = z.infer<typeof CallToolRequestSchema>;
 export type ToolListChangedNotification = z.infer<
   typeof ToolListChangedNotificationSchema

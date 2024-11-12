@@ -46,10 +46,12 @@ test("should accept latest protocol version", async () => {
       version: "1.0",
     },
     {
-      prompts: {},
-      resources: {},
-      tools: {},
-      logging: {},
+      capabilities: {
+        prompts: {},
+        resources: {},
+        tools: {},
+        logging: {},
+      },
     },
   );
 
@@ -105,10 +107,12 @@ test("should accept supported older protocol version", async () => {
       version: "1.0",
     },
     {
-      prompts: {},
-      resources: {},
-      tools: {},
-      logging: {},
+      capabilities: {
+        prompts: {},
+        resources: {},
+        tools: {},
+        logging: {},
+      },
     },
   );
 
@@ -163,10 +167,12 @@ test("should handle unsupported protocol version", async () => {
       version: "1.0",
     },
     {
-      prompts: {},
-      resources: {},
-      tools: {},
-      logging: {},
+      capabilities: {
+        prompts: {},
+        resources: {},
+        tools: {},
+        logging: {},
+      },
     },
   );
 
@@ -197,19 +203,25 @@ test("should respect client capabilities", async () => {
       version: "1.0",
     },
     {
-      prompts: {},
-      resources: {},
-      tools: {},
-      logging: {},
+      capabilities: {
+        prompts: {},
+        resources: {},
+        tools: {},
+        logging: {},
+      },
+      enforceStrictCapabilities: true,
     },
   );
+
   const client = new Client(
     {
       name: "test client",
       version: "1.0",
     },
     {
-      sampling: {},
+      capabilities: {
+        sampling: {},
+      },
     },
   );
 
@@ -245,9 +257,7 @@ test("should respect client capabilities", async () => {
   ).resolves.not.toThrow();
 
   // This should still throw because roots are not supported by the client
-  await expect(server.listRoots()).rejects.toThrow(
-    "Client does not support roots",
-  );
+  await expect(server.listRoots()).rejects.toThrow(/^Client does not support/);
 });
 
 /*
@@ -301,10 +311,12 @@ test("should typecheck", () => {
       version: "1.0.0",
     },
     {
-      prompts: {},
-      resources: {},
-      tools: {},
-      logging: {},
+      capabilities: {
+        prompts: {},
+        resources: {},
+        tools: {},
+        logging: {},
+      },
     },
   );
 

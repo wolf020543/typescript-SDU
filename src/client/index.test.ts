@@ -46,7 +46,9 @@ test("should initialize with matching protocol version", async () => {
       version: "1.0",
     },
     {
-      sampling: {},
+      capabilities: {
+        sampling: {},
+      },
     },
   );
 
@@ -93,7 +95,9 @@ test("should initialize with supported older protocol version", async () => {
       version: "1.0",
     },
     {
-      sampling: {},
+      capabilities: {
+        sampling: {},
+      },
     },
   );
 
@@ -135,7 +139,9 @@ test("should reject unsupported protocol version", async () => {
       version: "1.0",
     },
     {
-      sampling: {},
+      capabilities: {
+        sampling: {},
+      },
     },
   );
 
@@ -153,8 +159,10 @@ test("should respect server capabilities", async () => {
       version: "1.0",
     },
     {
-      resources: {},
-      tools: {},
+      capabilities: {
+        resources: {},
+        tools: {},
+      },
     },
   );
 
@@ -187,7 +195,10 @@ test("should respect server capabilities", async () => {
       version: "1.0",
     },
     {
-      sampling: {},
+      capabilities: {
+        sampling: {},
+      },
+      enforceStrictCapabilities: true,
     },
   );
 
@@ -263,7 +274,9 @@ test("should typecheck", () => {
       version: "1.0.0",
     },
     {
-      sampling: {},
+      capabilities: {
+        sampling: {},
+      },
     },
   );
 

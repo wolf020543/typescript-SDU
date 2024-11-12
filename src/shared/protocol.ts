@@ -22,10 +22,22 @@ import { Transport } from "./transport.js";
 export type ProgressCallback = (progress: Progress) => void;
 
 /**
+ * Additional initialization options.
+ */
+export type ProtocolOptions = {
+  /**
+   * Whether to restrict emitted requests to only those that the remote side has indicated that they can handle, through their advertised capabilities.
+   *
+   * Currently this defaults to false, for backwards compatibility with SDK versions that did not advertise capabilities correctly. In future, this will default to true.
+   */
+  enforceStrictCapabilities?: boolean;
+};
+
+/**
  * Implements MCP protocol framing on top of a pluggable transport, including
  * features like request/response linking, notifications, and progress.
  */
-export class Protocol<
+export abstract class Protocol<
   SendRequestT extends Request,
   SendNotificationT extends Notification,
   SendResultT extends Result,
@@ -70,7 +82,7 @@ export class Protocol<
    */
   fallbackNotificationHandler?: (notification: Notification) => Promise<void>;
 
-  constructor() {
+  constructor(private _options?: ProtocolOptions) {
     this.setNotificationHandler(ProgressNotificationSchema, (notification) => {
       this._onprogress(notification as unknown as ProgressNotification);
     });
@@ -246,6 +258,15 @@ export class Protocol<
   }
 
   /**
+   * A method to check if a capability is supported by the remote side, for the given method to be called.
+   *
+   * This should be implemented by subclasses.
+   */
+  protected abstract assertCapabilityForMethod(
+    method: SendRequestT["method"],
+  ): void;
+
+  /**
    * Sends a request and wait for a response, with optional progress notifications in the meantime (if supported by the server).
    *
    * Do not use this method to emit notifications! Use notification() instead.
@@ -259,6 +280,10 @@ export class Protocol<
       if (!this._transport) {
         reject(new Error("Not connected"));
         return;
+      }
+
+      if (this._options?.enforceStrictCapabilities === true) {
+        this.assertCapabilityForMethod(request.method);
       }
 
       const messageId = this._requestMessageId++;
