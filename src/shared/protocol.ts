@@ -28,6 +28,8 @@ export type ProtocolOptions = {
   /**
    * Whether to restrict emitted requests to only those that the remote side has indicated that they can handle, through their advertised capabilities.
    *
+   * Note that this DOES NOT affect checking of _local_ side capabilities, as it is considered a logic error to mis-specify those.
+   *
    * Currently this defaults to false, for backwards compatibility with SDK versions that did not advertise capabilities correctly. In future, this will default to true.
    */
   enforceStrictCapabilities?: boolean;
@@ -267,6 +269,15 @@ export abstract class Protocol<
   ): void;
 
   /**
+   * A method to check if a notification is supported by the local side, for the given method to be sent.
+   *
+   * This should be implemented by subclasses.
+   */
+  protected abstract assertNotificationCapability(
+    method: SendNotificationT["method"],
+  ): void;
+
+  /**
    * Sends a request and wait for a response, with optional progress notifications in the meantime (if supported by the server).
    *
    * Do not use this method to emit notifications! Use notification() instead.
@@ -325,6 +336,8 @@ export abstract class Protocol<
     if (!this._transport) {
       throw new Error("Not connected");
     }
+
+    this.assertNotificationCapability(notification.method);
 
     const jsonrpcNotification: JSONRPCNotification = {
       ...notification,

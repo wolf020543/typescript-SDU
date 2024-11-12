@@ -223,6 +223,108 @@ test("should respect server capabilities", async () => {
   );
 });
 
+test("should respect client notification capabilities", async () => {
+  const server = new Server(
+    {
+      name: "test server",
+      version: "1.0",
+    },
+    {
+      capabilities: {},
+    },
+  );
+
+  const client = new Client(
+    {
+      name: "test client",
+      version: "1.0",
+    },
+    {
+      capabilities: {
+        roots: {
+          listChanged: true,
+        },
+      },
+    },
+  );
+
+  const [clientTransport, serverTransport] =
+    InMemoryTransport.createLinkedPair();
+
+  await Promise.all([
+    client.connect(clientTransport),
+    server.connect(serverTransport),
+  ]);
+
+  // This should work because the client has the roots.listChanged capability
+  await expect(client.sendRootsListChanged()).resolves.not.toThrow();
+
+  // Create a new client without the roots.listChanged capability
+  const clientWithoutCapability = new Client(
+    {
+      name: "test client without capability",
+      version: "1.0",
+    },
+    {
+      capabilities: {},
+      enforceStrictCapabilities: true,
+    },
+  );
+
+  await clientWithoutCapability.connect(clientTransport);
+
+  // This should throw because the client doesn't have the roots.listChanged capability
+  await expect(clientWithoutCapability.sendRootsListChanged()).rejects.toThrow(
+    /^Client does not support/,
+  );
+});
+
+test("should respect server notification capabilities", async () => {
+  const server = new Server(
+    {
+      name: "test server",
+      version: "1.0",
+    },
+    {
+      capabilities: {
+        logging: {},
+        resources: {
+          listChanged: true,
+        },
+      },
+    },
+  );
+
+  const client = new Client(
+    {
+      name: "test client",
+      version: "1.0",
+    },
+    {
+      capabilities: {},
+    },
+  );
+
+  const [clientTransport, serverTransport] =
+    InMemoryTransport.createLinkedPair();
+
+  await Promise.all([
+    client.connect(clientTransport),
+    server.connect(serverTransport),
+  ]);
+
+  // These should work because the server has the corresponding capabilities
+  await expect(
+    server.sendLoggingMessage({ level: "info", data: "Test" }),
+  ).resolves.not.toThrow();
+  await expect(server.sendResourceListChanged()).resolves.not.toThrow();
+
+  // This should throw because the server doesn't have the tools capability
+  await expect(server.sendToolListChanged()).rejects.toThrow(
+    "Server does not support notifying of tool list changes",
+  );
+});
+
 /*
   Test that custom request/notification/result schemas can be used with the Client class.
   */

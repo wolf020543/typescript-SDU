@@ -260,6 +260,39 @@ test("should respect client capabilities", async () => {
   await expect(server.listRoots()).rejects.toThrow(/^Client does not support/);
 });
 
+test("should respect server notification capabilities", async () => {
+  const server = new Server(
+    {
+      name: "test server",
+      version: "1.0",
+    },
+    {
+      capabilities: {
+        logging: {},
+      },
+      enforceStrictCapabilities: true,
+    },
+  );
+
+  const [clientTransport, serverTransport] =
+    InMemoryTransport.createLinkedPair();
+
+  await server.connect(serverTransport);
+
+  // This should work because logging is supported by the server
+  await expect(
+    server.sendLoggingMessage({
+      level: "info",
+      data: "Test log message",
+    }),
+  ).resolves.not.toThrow();
+
+  // This should throw because resource notificaitons are not supported by the server
+  await expect(
+    server.sendResourceUpdated({ uri: "test://resource" }),
+  ).rejects.toThrow(/^Server does not support/);
+});
+
 /*
   Test that custom request/notification/result schemas can be used with the Server class.
   */

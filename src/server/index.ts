@@ -32,7 +32,7 @@ export type ServerOptions = ProtocolOptions & {
   /**
    * Capabilities to advertise as being supported by this server.
    */
-  capabilities: ClientCapabilities;
+  capabilities: ServerCapabilities;
 };
 
 /**
@@ -120,6 +120,49 @@ export class Server<
     }
   }
 
+  protected assertNotificationCapability(
+    method: (ServerNotification | NotificationT)["method"],
+  ): void {
+    switch (method as ServerNotification["method"]) {
+      case "notifications/message":
+        if (!this._capabilities.logging) {
+          throw new Error(
+            `Server does not support logging (required for ${method})`,
+          );
+        }
+        break;
+
+      case "notifications/resources/updated":
+      case "notifications/resources/list_changed":
+        if (!this._capabilities.resources) {
+          throw new Error(
+            `Server does not support notifying about resources (required for ${method})`,
+          );
+        }
+        break;
+
+      case "notifications/tools/list_changed":
+        if (!this._capabilities.tools) {
+          throw new Error(
+            `Server does not support notifying of tool list changes (required for ${method})`,
+          );
+        }
+        break;
+
+      case "notifications/prompts/list_changed":
+        if (!this._capabilities.prompts) {
+          throw new Error(
+            `Server does not support notifying of prompt list changes (required for ${method})`,
+          );
+        }
+        break;
+
+      case "notifications/progress":
+        // Progress notifications are always allowed
+        break;
+    }
+  }
+
   private async _oninitialize(
     request: InitializeRequest,
   ): Promise<InitializeResult> {
@@ -153,17 +196,6 @@ export class Server<
 
   private getCapabilities(): ServerCapabilities {
     return this._capabilities;
-  }
-
-  private assertCapability(
-    capability: keyof ClientCapabilities,
-    method: string,
-  ) {
-    if (!this._clientCapabilities?.[capability]) {
-      throw new Error(
-        `Client does not support ${capability} (required for ${method})`,
-      );
-    }
   }
 
   async ping() {

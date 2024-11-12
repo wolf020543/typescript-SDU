@@ -226,6 +226,28 @@ export class Client<
     }
   }
 
+  protected assertNotificationCapability(
+    method: NotificationT["method"],
+  ): void {
+    switch (method as ClientNotification["method"]) {
+      case "notifications/roots/list_changed":
+        if (!this._capabilities.roots?.listChanged) {
+          throw new Error(
+            "Client does not support roots list changed notifications",
+          );
+        }
+        break;
+
+      case "notifications/initialized":
+        // No specific capability required for initialized
+        break;
+
+      case "notifications/progress":
+        // Progress notifications are always allowed
+        break;
+    }
+  }
+
   async ping() {
     return this.request({ method: "ping" }, EmptyResultSchema);
   }
