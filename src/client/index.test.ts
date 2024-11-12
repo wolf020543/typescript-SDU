@@ -12,6 +12,8 @@ import {
   InitializeRequestSchema,
   ListResourcesRequestSchema,
   ListToolsRequestSchema,
+  CreateMessageRequestSchema,
+  ListRootsRequestSchema,
 } from "../types.js";
 import { Transport } from "../shared/transport.js";
 import { Server } from "../server/index.js";
@@ -323,6 +325,37 @@ test("should respect server notification capabilities", async () => {
   await expect(server.sendToolListChanged()).rejects.toThrow(
     "Server does not support notifying of tool list changes",
   );
+});
+
+test("should only allow setRequestHandler for declared capabilities", () => {
+  const client = new Client(
+    {
+      name: "test client",
+      version: "1.0",
+    },
+    {
+      capabilities: {
+        sampling: {},
+      },
+    },
+  );
+
+  // This should work because sampling is a declared capability
+  expect(() => {
+    client.setRequestHandler(CreateMessageRequestSchema, () => ({
+      model: "test-model",
+      role: "assistant",
+      content: {
+        type: "text",
+        text: "Test response",
+      },
+    }));
+  }).not.toThrow();
+
+  // This should throw because roots listing is not a declared capability
+  expect(() => {
+    client.setRequestHandler(ListRootsRequestSchema, () => ({}));
+  }).toThrow("Client does not support roots capability");
 });
 
 /*

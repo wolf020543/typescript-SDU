@@ -248,6 +248,26 @@ export class Client<
     }
   }
 
+  protected assertRequestHandlerCapability(method: string): void {
+    switch (method) {
+      case "sampling/createMessage":
+        if (!this._capabilities.sampling) {
+          throw new Error("Client does not support sampling capability");
+        }
+        break;
+
+      case "roots/list":
+        if (!this._capabilities.roots) {
+          throw new Error("Client does not support roots capability");
+        }
+        break;
+
+      case "ping":
+        // No specific capability required for ping
+        break;
+    }
+  }
+
   async ping() {
     return this.request({ method: "ping" }, EmptyResultSchema);
   }

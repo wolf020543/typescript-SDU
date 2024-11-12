@@ -163,6 +163,59 @@ export class Server<
     }
   }
 
+  protected assertRequestHandlerCapability(method: string): void {
+    switch (method) {
+      case "sampling/createMessage":
+        if (!this._capabilities.sampling) {
+          throw new Error(
+            `Server does not support sampling (required for ${method})`,
+          );
+        }
+        break;
+
+      case "logging/setLevel":
+        if (!this._capabilities.logging) {
+          throw new Error(
+            `Server does not support logging (required for ${method})`,
+          );
+        }
+        break;
+
+      case "prompts/get":
+      case "prompts/list":
+        if (!this._capabilities.prompts) {
+          throw new Error(
+            `Server does not support prompts (required for ${method})`,
+          );
+        }
+        break;
+
+      case "resources/list":
+      case "resources/templates/list":
+      case "resources/read":
+        if (!this._capabilities.resources) {
+          throw new Error(
+            `Server does not support resources (required for ${method})`,
+          );
+        }
+        break;
+
+      case "tools/call":
+      case "tools/list":
+        if (!this._capabilities.tools) {
+          throw new Error(
+            `Server does not support tools (required for ${method})`,
+          );
+        }
+        break;
+
+      case "ping":
+      case "initialize":
+        // No specific capability required for these methods
+        break;
+    }
+  }
+
   private async _oninitialize(
     request: InitializeRequest,
   ): Promise<InitializeResult> {

@@ -278,6 +278,13 @@ export abstract class Protocol<
   ): void;
 
   /**
+   * A method to check if a request handler is supported by the local side, for the given method to be handled.
+   *
+   * This should be implemented by subclasses.
+   */
+  protected abstract assertRequestHandlerCapability(method: string): void;
+
+  /**
    * Sends a request and wait for a response, with optional progress notifications in the meantime (if supported by the server).
    *
    * Do not use this method to emit notifications! Use notification() instead.
@@ -360,7 +367,9 @@ export abstract class Protocol<
     requestSchema: T,
     handler: (request: z.infer<T>) => SendResultT | Promise<SendResultT>,
   ): void {
-    this._requestHandlers.set(requestSchema.shape.method.value, (request) =>
+    const method = requestSchema.shape.method.value;
+    this.assertRequestHandlerCapability(method);
+    this._requestHandlers.set(method, (request) =>
       Promise.resolve(handler(requestSchema.parse(request))),
     );
   }

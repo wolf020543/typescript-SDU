@@ -10,6 +10,10 @@ import {
   LATEST_PROTOCOL_VERSION,
   SUPPORTED_PROTOCOL_VERSIONS,
   CreateMessageRequestSchema,
+  ListPromptsRequestSchema,
+  ListResourcesRequestSchema,
+  ListToolsRequestSchema,
+  SetLevelRequestSchema,
 } from "../types.js";
 import { Transport } from "../shared/transport.js";
 import { InMemoryTransport } from "../inMemory.js";
@@ -291,6 +295,41 @@ test("should respect server notification capabilities", async () => {
   await expect(
     server.sendResourceUpdated({ uri: "test://resource" }),
   ).rejects.toThrow(/^Server does not support/);
+});
+
+test("should only allow setRequestHandler for declared capabilities", () => {
+  const server = new Server(
+    {
+      name: "test server",
+      version: "1.0",
+    },
+    {
+      capabilities: {
+        prompts: {},
+        resources: {},
+      },
+    },
+  );
+
+  // These should work because the capabilities are declared
+  expect(() => {
+    server.setRequestHandler(ListPromptsRequestSchema, () => ({ prompts: [] }));
+  }).not.toThrow();
+
+  expect(() => {
+    server.setRequestHandler(ListResourcesRequestSchema, () => ({
+      resources: [],
+    }));
+  }).not.toThrow();
+
+  // These should throw because the capabilities are not declared
+  expect(() => {
+    server.setRequestHandler(ListToolsRequestSchema, () => ({ tools: [] }));
+  }).toThrow(/^Server does not support tools/);
+
+  expect(() => {
+    server.setRequestHandler(SetLevelRequestSchema, () => ({}));
+  }).toThrow(/^Server does not support logging/);
 });
 
 /*
