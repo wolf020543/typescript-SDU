@@ -165,7 +165,7 @@ export class Client<
       case "logging/setLevel":
         if (!this._serverCapabilities?.logging) {
           throw new Error(
-            "Server does not support logging (required for logging/setLevel)",
+            `Server does not support logging (required for ${method})`,
           );
         }
         break;
@@ -194,7 +194,9 @@ export class Client<
           method === "resources/subscribe" &&
           !this._serverCapabilities.resources.subscribe
         ) {
-          throw new Error("Server does not support resource subscriptions");
+          throw new Error(
+            `Server does not support resource subscriptions (required for ${method})`,
+          );
         }
 
         break;
@@ -211,7 +213,7 @@ export class Client<
       case "completion/complete":
         if (!this._serverCapabilities?.prompts) {
           throw new Error(
-            "Server does not support prompts (required for completion/complete)",
+            `Server does not support prompts (required for ${method})`,
           );
         }
         break;
@@ -233,7 +235,7 @@ export class Client<
       case "notifications/roots/list_changed":
         if (!this._capabilities.roots?.listChanged) {
           throw new Error(
-            "Client does not support roots list changed notifications",
+            `Client does not support roots list changed notifications (required for ${method})`,
           );
         }
         break;
@@ -252,13 +254,17 @@ export class Client<
     switch (method) {
       case "sampling/createMessage":
         if (!this._capabilities.sampling) {
-          throw new Error("Client does not support sampling capability");
+          throw new Error(
+            `Client does not support sampling capability (required for ${method})`,
+          );
         }
         break;
 
       case "roots/list":
         if (!this._capabilities.roots) {
-          throw new Error("Client does not support roots capability");
+          throw new Error(
+            `Client does not support roots capability (required for ${method})`,
+          );
         }
         break;
 
