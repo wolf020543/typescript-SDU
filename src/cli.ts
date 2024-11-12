@@ -17,10 +17,17 @@ import { StdioServerTransport } from "./server/stdio.js";
 import { ListResourcesResultSchema } from "./types.js";
 
 async function runClient(url_or_command: string, args: string[]) {
-  const client = new Client({
-    name: "mcp-typescript test client",
-    version: "0.1.0",
-  });
+  const client = new Client(
+    {
+      name: "mcp-typescript test client",
+      version: "0.1.0",
+    },
+    {
+      capabilities: {
+        sampling: {},
+      },
+    },
+  );
 
   let clientTransport;
 
@@ -63,10 +70,15 @@ async function runServer(port: number | null) {
       console.log("Got new SSE connection");
 
       const transport = new SSEServerTransport("/message", res);
-      const server = new Server({
-        name: "mcp-typescript test server",
-        version: "0.1.0",
-      });
+      const server = new Server(
+        {
+          name: "mcp-typescript test server",
+          version: "0.1.0",
+        },
+        {
+          capabilities: {},
+        },
+      );
 
       servers.push(server);
 
@@ -97,10 +109,20 @@ async function runServer(port: number | null) {
       console.log(`Server running on http://localhost:${port}/sse`);
     });
   } else {
-    const server = new Server({
-      name: "mcp-typescript test server",
-      version: "0.1.0",
-    });
+    const server = new Server(
+      {
+        name: "mcp-typescript test server",
+        version: "0.1.0",
+      },
+      {
+        capabilities: {
+          prompts: {},
+          resources: {},
+          tools: {},
+          logging: {},
+        },
+      },
+    );
 
     const transport = new StdioServerTransport();
     await server.connect(transport);
