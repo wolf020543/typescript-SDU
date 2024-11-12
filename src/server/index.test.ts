@@ -9,10 +9,15 @@ import {
   ResultSchema,
   LATEST_PROTOCOL_VERSION,
   SUPPORTED_PROTOCOL_VERSIONS,
-  InitializeRequestSchema,
-  InitializeResultSchema,
+  CreateMessageRequestSchema,
+  ListPromptsRequestSchema,
+  ListResourcesRequestSchema,
+  ListToolsRequestSchema,
+  SetLevelRequestSchema,
 } from "../types.js";
 import { Transport } from "../shared/transport.js";
+import { InMemoryTransport } from "../inMemory.js";
+import { Client } from "../client/index.js";
 
 test("should accept latest protocol version", async () => {
   let sendPromiseResolve: (value: unknown) => void;
@@ -39,10 +44,20 @@ test("should accept latest protocol version", async () => {
     }),
   };
 
-  const server = new Server({
-    name: "test server",
-    version: "1.0",
-  });
+  const server = new Server(
+    {
+      name: "test server",
+      version: "1.0",
+    },
+    {
+      capabilities: {
+        prompts: {},
+        resources: {},
+        tools: {},
+        logging: {},
+      },
+    },
+  );
 
   await server.connect(serverTransport);
 
@@ -90,10 +105,20 @@ test("should accept supported older protocol version", async () => {
     }),
   };
 
-  const server = new Server({
-    name: "test server",
-    version: "1.0",
-  });
+  const server = new Server(
+    {
+      name: "test server",
+      version: "1.0",
+    },
+    {
+      capabilities: {
+        prompts: {},
+        resources: {},
+        tools: {},
+        logging: {},
+      },
+    },
+  );
 
   await server.connect(serverTransport);
 
@@ -140,10 +165,20 @@ test("should handle unsupported protocol version", async () => {
     }),
   };
 
-  const server = new Server({
-    name: "test server",
-    version: "1.0",
-  });
+  const server = new Server(
+    {
+      name: "test server",
+      version: "1.0",
+    },
+    {
+      capabilities: {
+        prompts: {},
+        resources: {},
+        tools: {},
+        logging: {},
+      },
+    },
+  );
 
   await server.connect(serverTransport);
 
@@ -163,6 +198,138 @@ test("should handle unsupported protocol version", async () => {
   });
 
   await expect(sendPromise).resolves.toBeUndefined();
+});
+
+test("should respect client capabilities", async () => {
+  const server = new Server(
+    {
+      name: "test server",
+      version: "1.0",
+    },
+    {
+      capabilities: {
+        prompts: {},
+        resources: {},
+        tools: {},
+        logging: {},
+      },
+      enforceStrictCapabilities: true,
+    },
+  );
+
+  const client = new Client(
+    {
+      name: "test client",
+      version: "1.0",
+    },
+    {
+      capabilities: {
+        sampling: {},
+      },
+    },
+  );
+
+  // Implement request handler for sampling/createMessage
+  client.setRequestHandler(CreateMessageRequestSchema, async (request) => {
+    // Mock implementation of createMessage
+    return {
+      model: "test-model",
+      role: "assistant",
+      content: {
+        type: "text",
+        text: "This is a test response",
+      },
+    };
+  });
+
+  const [clientTransport, serverTransport] =
+    InMemoryTransport.createLinkedPair();
+
+  await Promise.all([
+    client.connect(clientTransport),
+    server.connect(serverTransport),
+  ]);
+
+  expect(server.getClientCapabilities()).toEqual({ sampling: {} });
+
+  // This should work because sampling is supported by the client
+  await expect(
+    server.createMessage({
+      messages: [],
+      maxTokens: 10,
+    }),
+  ).resolves.not.toThrow();
+
+  // This should still throw because roots are not supported by the client
+  await expect(server.listRoots()).rejects.toThrow(/^Client does not support/);
+});
+
+test("should respect server notification capabilities", async () => {
+  const server = new Server(
+    {
+      name: "test server",
+      version: "1.0",
+    },
+    {
+      capabilities: {
+        logging: {},
+      },
+      enforceStrictCapabilities: true,
+    },
+  );
+
+  const [clientTransport, serverTransport] =
+    InMemoryTransport.createLinkedPair();
+
+  await server.connect(serverTransport);
+
+  // This should work because logging is supported by the server
+  await expect(
+    server.sendLoggingMessage({
+      level: "info",
+      data: "Test log message",
+    }),
+  ).resolves.not.toThrow();
+
+  // This should throw because resource notificaitons are not supported by the server
+  await expect(
+    server.sendResourceUpdated({ uri: "test://resource" }),
+  ).rejects.toThrow(/^Server does not support/);
+});
+
+test("should only allow setRequestHandler for declared capabilities", () => {
+  const server = new Server(
+    {
+      name: "test server",
+      version: "1.0",
+    },
+    {
+      capabilities: {
+        prompts: {},
+        resources: {},
+      },
+    },
+  );
+
+  // These should work because the capabilities are declared
+  expect(() => {
+    server.setRequestHandler(ListPromptsRequestSchema, () => ({ prompts: [] }));
+  }).not.toThrow();
+
+  expect(() => {
+    server.setRequestHandler(ListResourcesRequestSchema, () => ({
+      resources: [],
+    }));
+  }).not.toThrow();
+
+  // These should throw because the capabilities are not declared
+  expect(() => {
+    server.setRequestHandler(ListToolsRequestSchema, () => ({ tools: [] }));
+  }).toThrow(/^Server does not support tools/);
+
+  expect(() => {
+    server.setRequestHandler(SetLevelRequestSchema, () => ({}));
+  }).toThrow(/^Server does not support logging/);
 });
 
 /*
@@ -210,10 +377,20 @@ test("should typecheck", () => {
     WeatherRequest,
     WeatherNotification,
     WeatherResult
-  >({
-    name: "WeatherServer",
-    version: "1.0.0",
-  });
+  >(
+    {
+      name: "WeatherServer",
+      version: "1.0.0",
+    },
+    {
+      capabilities: {
+        prompts: {},
+        resources: {},
+        tools: {},
+        logging: {},
+      },
+    },
+  );
 
   // Typecheck that only valid weather requests/notifications/results are allowed
   weatherServer.setRequestHandler(GetWeatherRequestSchema, (request) => {

@@ -1,4 +1,8 @@
-import { ProgressCallback, Protocol } from "../shared/protocol.js";
+import {
+  ProgressCallback,
+  Protocol,
+  ProtocolOptions,
+} from "../shared/protocol.js";
 import {
   ClientCapabilities,
   CreateMessageRequest,
@@ -10,11 +14,8 @@ import {
   InitializeRequestSchema,
   InitializeResult,
   LATEST_PROTOCOL_VERSION,
-  ListPromptsRequestSchema,
-  ListResourcesRequestSchema,
   ListRootsRequest,
   ListRootsResultSchema,
-  ListToolsRequestSchema,
   LoggingMessageNotification,
   Notification,
   Request,
@@ -24,9 +25,15 @@ import {
   ServerNotification,
   ServerRequest,
   ServerResult,
-  SetLevelRequestSchema,
-  SUPPORTED_PROTOCOL_VERSIONS
+  SUPPORTED_PROTOCOL_VERSIONS,
 } from "../types.js";
+
+export type ServerOptions = ProtocolOptions & {
+  /**
+   * Capabilities to advertise as being supported by this server.
+   */
+  capabilities: ServerCapabilities;
+};
 
 /**
  * An MCP server on top of a pluggable transport.
@@ -64,6 +71,7 @@ export class Server<
 > {
   private _clientCapabilities?: ClientCapabilities;
   private _clientVersion?: Implementation;
+  private _capabilities: ServerCapabilities;
 
   /**
    * Callback for when initialization has fully completed (i.e., the client has sent an `initialized` notification).
@@ -73,8 +81,12 @@ export class Server<
   /**
    * Initializes this server with the given name and version information.
    */
-  constructor(private _serverInfo: Implementation) {
-    super();
+  constructor(
+    private _serverInfo: Implementation,
+    options: ServerOptions,
+  ) {
+    super(options);
+    this._capabilities = options.capabilities;
 
     this.setRequestHandler(InitializeRequestSchema, (request) =>
       this._oninitialize(request),
@@ -82,6 +94,126 @@ export class Server<
     this.setNotificationHandler(InitializedNotificationSchema, () =>
       this.oninitialized?.(),
     );
+  }
+
+  protected assertCapabilityForMethod(method: RequestT["method"]): void {
+    switch (method as ServerRequest["method"]) {
+      case "sampling/createMessage":
+        if (!this._clientCapabilities?.sampling) {
+          throw new Error(
+            `Client does not support sampling (required for ${method})`,
+          );
+        }
+        break;
+
+      case "roots/list":
+        if (!this._clientCapabilities?.roots) {
+          throw new Error(
+            `Client does not support listing roots (required for ${method})`,
+          );
+        }
+        break;
+
+      case "ping":
+        // No specific capability required for ping
+        break;
+    }
+  }
+
+  protected assertNotificationCapability(
+    method: (ServerNotification | NotificationT)["method"],
+  ): void {
+    switch (method as ServerNotification["method"]) {
+      case "notifications/message":
+        if (!this._capabilities.logging) {
+          throw new Error(
+            `Server does not support logging (required for ${method})`,
+          );
+        }
+        break;
+
+      case "notifications/resources/updated":
+      case "notifications/resources/list_changed":
+        if (!this._capabilities.resources) {
+          throw new Error(
+            `Server does not support notifying about resources (required for ${method})`,
+          );
+        }
+        break;
+
+      case "notifications/tools/list_changed":
+        if (!this._capabilities.tools) {
+          throw new Error(
+            `Server does not support notifying of tool list changes (required for ${method})`,
+          );
+        }
+        break;
+
+      case "notifications/prompts/list_changed":
+        if (!this._capabilities.prompts) {
+          throw new Error(
+            `Server does not support notifying of prompt list changes (required for ${method})`,
+          );
+        }
+        break;
+
+      case "notifications/progress":
+        // Progress notifications are always allowed
+        break;
+    }
+  }
+
+  protected assertRequestHandlerCapability(method: string): void {
+    switch (method) {
+      case "sampling/createMessage":
+        if (!this._capabilities.sampling) {
+          throw new Error(
+            `Server does not support sampling (required for ${method})`,
+          );
+        }
+        break;
+
+      case "logging/setLevel":
+        if (!this._capabilities.logging) {
+          throw new Error(
+            `Server does not support logging (required for ${method})`,
+          );
+        }
+        break;
+
+      case "prompts/get":
+      case "prompts/list":
+        if (!this._capabilities.prompts) {
+          throw new Error(
+            `Server does not support prompts (required for ${method})`,
+          );
+        }
+        break;
+
+      case "resources/list":
+      case "resources/templates/list":
+      case "resources/read":
+        if (!this._capabilities.resources) {
+          throw new Error(
+            `Server does not support resources (required for ${method})`,
+          );
+        }
+        break;
+
+      case "tools/call":
+      case "tools/list":
+        if (!this._capabilities.tools) {
+          throw new Error(
+            `Server does not support tools (required for ${method})`,
+          );
+        }
+        break;
+
+      case "ping":
+      case "initialize":
+        // No specific capability required for these methods
+        break;
+    }
   }
 
   private async _oninitialize(
@@ -93,7 +225,9 @@ export class Server<
     this._clientVersion = request.params.clientInfo;
 
     return {
-      protocolVersion: SUPPORTED_PROTOCOL_VERSIONS.includes(requestedVersion) ? requestedVersion : LATEST_PROTOCOL_VERSION,
+      protocolVersion: SUPPORTED_PROTOCOL_VERSIONS.includes(requestedVersion)
+        ? requestedVersion
+        : LATEST_PROTOCOL_VERSION,
       capabilities: this.getCapabilities(),
       serverInfo: this._serverInfo,
     };
@@ -114,28 +248,7 @@ export class Server<
   }
 
   private getCapabilities(): ServerCapabilities {
-    return {
-      prompts: this._requestHandlers.has(
-        ListPromptsRequestSchema.shape.method.value as string,
-      )
-        ? {}
-        : undefined,
-      resources: this._requestHandlers.has(
-        ListResourcesRequestSchema.shape.method.value as string,
-      )
-        ? {}
-        : undefined,
-      tools: this._requestHandlers.has(
-        ListToolsRequestSchema.shape.method.value as string,
-      )
-        ? {}
-        : undefined,
-      logging: this._requestHandlers.has(
-        SetLevelRequestSchema.shape.method.value as string,
-      )
-        ? {}
-        : undefined,
-    };
+    return this._capabilities;
   }
 
   async ping() {

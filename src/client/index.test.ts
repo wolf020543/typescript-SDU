@@ -9,8 +9,15 @@ import {
   ResultSchema,
   LATEST_PROTOCOL_VERSION,
   SUPPORTED_PROTOCOL_VERSIONS,
+  InitializeRequestSchema,
+  ListResourcesRequestSchema,
+  ListToolsRequestSchema,
+  CreateMessageRequestSchema,
+  ListRootsRequestSchema,
 } from "../types.js";
 import { Transport } from "../shared/transport.js";
+import { Server } from "../server/index.js";
+import { InMemoryTransport } from "../inMemory.js";
 
 test("should initialize with matching protocol version", async () => {
   const clientTransport: Transport = {
@@ -35,10 +42,17 @@ test("should initialize with matching protocol version", async () => {
     }),
   };
 
-  const client = new Client({
-    name: "test client",
-    version: "1.0",
-  });
+  const client = new Client(
+    {
+      name: "test client",
+      version: "1.0",
+    },
+    {
+      capabilities: {
+        sampling: {},
+      },
+    },
+  );
 
   await client.connect(clientTransport);
 
@@ -77,10 +91,17 @@ test("should initialize with supported older protocol version", async () => {
     }),
   };
 
-  const client = new Client({
-    name: "test client",
-    version: "1.0",
-  });
+  const client = new Client(
+    {
+      name: "test client",
+      version: "1.0",
+    },
+    {
+      capabilities: {
+        sampling: {},
+      },
+    },
+  );
 
   await client.connect(clientTransport);
 
@@ -114,16 +135,227 @@ test("should reject unsupported protocol version", async () => {
     }),
   };
 
-  const client = new Client({
-    name: "test client",
-    version: "1.0",
-  });
+  const client = new Client(
+    {
+      name: "test client",
+      version: "1.0",
+    },
+    {
+      capabilities: {
+        sampling: {},
+      },
+    },
+  );
 
   await expect(client.connect(clientTransport)).rejects.toThrow(
     "Server's protocol version is not supported: invalid-version",
   );
 
   expect(clientTransport.close).toHaveBeenCalled();
+});
+
+test("should respect server capabilities", async () => {
+  const server = new Server(
+    {
+      name: "test server",
+      version: "1.0",
+    },
+    {
+      capabilities: {
+        resources: {},
+        tools: {},
+      },
+    },
+  );
+
+  server.setRequestHandler(InitializeRequestSchema, (_request) => ({
+    protocolVersion: LATEST_PROTOCOL_VERSION,
+    capabilities: {
+      resources: {},
+      tools: {},
+    },
+    serverInfo: {
+      name: "test",
+      version: "1.0",
+    },
+  }));
+
+  server.setRequestHandler(ListResourcesRequestSchema, () => ({
+    resources: [],
+  }));
+
+  server.setRequestHandler(ListToolsRequestSchema, () => ({
+    tools: [],
+  }));
+
+  const [clientTransport, serverTransport] =
+    InMemoryTransport.createLinkedPair();
+
+  const client = new Client(
+    {
+      name: "test client",
+      version: "1.0",
+    },
+    {
+      capabilities: {
+        sampling: {},
+      },
+      enforceStrictCapabilities: true,
+    },
+  );
+
+  await Promise.all([
+    client.connect(clientTransport),
+    server.connect(serverTransport),
+  ]);
+
+  // Server supports resources and tools, but not prompts
+  expect(client.getServerCapabilities()).toEqual({
+    resources: {},
+    tools: {},
+  });
+
+  // These should work
+  await expect(client.listResources()).resolves.not.toThrow();
+  await expect(client.listTools()).resolves.not.toThrow();
+
+  // This should throw because prompts are not supported
+  await expect(client.listPrompts()).rejects.toThrow(
+    "Server does not support prompts",
+  );
+});
+
+test("should respect client notification capabilities", async () => {
+  const server = new Server(
+    {
+      name: "test server",
+      version: "1.0",
+    },
+    {
+      capabilities: {},
+    },
+  );
+
+  const client = new Client(
+    {
+      name: "test client",
+      version: "1.0",
+    },
+    {
+      capabilities: {
+        roots: {
+          listChanged: true,
+        },
+      },
+    },
+  );
+
+  const [clientTransport, serverTransport] =
+    InMemoryTransport.createLinkedPair();
+
+  await Promise.all([
+    client.connect(clientTransport),
+    server.connect(serverTransport),
+  ]);
+
+  // This should work because the client has the roots.listChanged capability
+  await expect(client.sendRootsListChanged()).resolves.not.toThrow();
+
+  // Create a new client without the roots.listChanged capability
+  const clientWithoutCapability = new Client(
+    {
+      name: "test client without capability",
+      version: "1.0",
+    },
+    {
+      capabilities: {},
+      enforceStrictCapabilities: true,
+    },
+  );
+
+  await clientWithoutCapability.connect(clientTransport);
+
+  // This should throw because the client doesn't have the roots.listChanged capability
+  await expect(clientWithoutCapability.sendRootsListChanged()).rejects.toThrow(
+    /^Client does not support/,
+  );
+});
+
+test("should respect server notification capabilities", async () => {
+  const server = new Server(
+    {
+      name: "test server",
+      version: "1.0",
+    },
+    {
+      capabilities: {
+        logging: {},
+        resources: {
+          listChanged: true,
+        },
+      },
+    },
+  );
+
+  const client = new Client(
+    {
+      name: "test client",
+      version: "1.0",
+    },
+    {
+      capabilities: {},
+    },
+  );
+
+  const [clientTransport, serverTransport] =
+    InMemoryTransport.createLinkedPair();
+
+  await Promise.all([
+    client.connect(clientTransport),
+    server.connect(serverTransport),
+  ]);
+
+  // These should work because the server has the corresponding capabilities
+  await expect(
+    server.sendLoggingMessage({ level: "info", data: "Test" }),
+  ).resolves.not.toThrow();
+  await expect(server.sendResourceListChanged()).resolves.not.toThrow();
+
+  // This should throw because the server doesn't have the tools capability
+  await expect(server.sendToolListChanged()).rejects.toThrow(
+    "Server does not support notifying of tool list changes",
+  );
+});
+
+test("should only allow setRequestHandler for declared capabilities", () => {
+  const client = new Client(
+    {
+      name: "test client",
+      version: "1.0",
+    },
+    {
+      capabilities: {
+        sampling: {},
+      },
+    },
+  );
+
+  // This should work because sampling is a declared capability
+  expect(() => {
+    client.setRequestHandler(CreateMessageRequestSchema, () => ({
+      model: "test-model",
+      role: "assistant",
+      content: {
+        type: "text",
+        text: "Test response",
+      },
+    }));
+  }).not.toThrow();
+
+  // This should throw because roots listing is not a declared capability
+  expect(() => {
+    client.setRequestHandler(ListRootsRequestSchema, () => ({}));
+  }).toThrow("Client does not support roots capability");
 });
 
 /*
@@ -171,10 +403,17 @@ test("should typecheck", () => {
     WeatherRequest,
     WeatherNotification,
     WeatherResult
-  >({
-    name: "WeatherClient",
-    version: "1.0.0",
-  });
+  >(
+    {
+      name: "WeatherClient",
+      version: "1.0.0",
+    },
+    {
+      capabilities: {
+        sampling: {},
+      },
+    },
+  );
 
   // Typecheck that only valid weather requests/notifications/results are allowed
   false &&
