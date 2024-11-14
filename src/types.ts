@@ -162,7 +162,7 @@ export const EmptyResultSchema = ResultSchema.strict();
  * A client MUST NOT attempt to cancel its `initialize` request.
  */
 export const CancelledNotificationSchema = NotificationSchema.extend({
-  method: z.literal("cancelled"),
+  method: z.literal("notifications/cancelled"),
   params: BaseNotificationParamsSchema.extend({
     /**
      * The ID of the request to cancel.
