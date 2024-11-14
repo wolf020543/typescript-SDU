@@ -151,6 +151,33 @@ export const JSONRPCMessageSchema = z.union([
  */
 export const EmptyResultSchema = ResultSchema.strict();
 
+/* Cancellation */
+/**
+ * This notification can be sent by either side to indicate that it is cancelling a previously-issued request.
+ *
+ * The request SHOULD still be in-flight, but due to communication latency, it is always possible that this notification MAY arrive after the request has already finished.
+ *
+ * This notification indicates that the result will be unused, so any associated processing SHOULD cease.
+ *
+ * A client MUST NOT attempt to cancel its `initialize` request.
+ */
+export const CancelledNotificationSchema = NotificationSchema.extend({
+  method: z.literal("cancelled"),
+  params: BaseNotificationParamsSchema.extend({
+    /**
+     * The ID of the request to cancel.
+     *
+     * This MUST correspond to the ID of a request previously issued in the same direction.
+     */
+    requestId: RequestIdSchema,
+
+    /**
+     * An optional string describing the reason for the cancellation. This MAY be logged or presented to the user.
+     */
+    reason: z.string().optional(),
+  }),
+});
+
 /* Initialization */
 /**
  * Describes the name and version of an MCP implementation.
@@ -1030,6 +1057,7 @@ export const ClientRequestSchema = z.union([
 ]);
 
 export const ClientNotificationSchema = z.union([
+  CancelledNotificationSchema,
   ProgressNotificationSchema,
   InitializedNotificationSchema,
   RootsListChangedNotificationSchema,
@@ -1049,6 +1077,7 @@ export const ServerRequestSchema = z.union([
 ]);
 
 export const ServerNotificationSchema = z.union([
+  CancelledNotificationSchema,
   ProgressNotificationSchema,
   LoggingMessageNotificationSchema,
   ResourceUpdatedNotificationSchema,
@@ -1095,6 +1124,9 @@ export type JSONRPCMessage = z.infer<typeof JSONRPCMessageSchema>;
 
 /* Empty result */
 export type EmptyResult = z.infer<typeof EmptyResultSchema>;
+
+/* Cancellation */
+export type CancelledNotification = z.infer<typeof CancelledNotificationSchema>;
 
 /* Initialization */
 export type Implementation = z.infer<typeof ImplementationSchema>;
