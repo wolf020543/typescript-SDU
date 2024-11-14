@@ -436,3 +436,58 @@ test("should typecheck", () => {
       },
     });
 });
+
+test("should handle client cancelling a request", async () => {
+  const server = new Server(
+    {
+      name: "test server",
+      version: "1.0",
+    },
+    {
+      capabilities: {
+        resources: {},
+      },
+    },
+  );
+
+  // Set up server to delay responding to listResources
+  server.setRequestHandler(
+    ListResourcesRequestSchema,
+    async (request, extra) => {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      return {
+        resources: [],
+      };
+    },
+  );
+
+  const [clientTransport, serverTransport] =
+    InMemoryTransport.createLinkedPair();
+
+  const client = new Client(
+    {
+      name: "test client",
+      version: "1.0",
+    },
+    {
+      capabilities: {},
+    },
+  );
+
+  await Promise.all([
+    client.connect(clientTransport),
+    server.connect(serverTransport),
+  ]);
+
+  // Set up abort controller
+  const controller = new AbortController();
+
+  // Issue request but cancel it immediately
+  const listResourcesPromise = client.listResources(undefined, {
+    signal: controller.signal,
+  });
+  controller.abort("Cancelled by test");
+
+  // Request should be rejected
+  await expect(listResourcesPromise).rejects.toBe("Cancelled by test");
+});

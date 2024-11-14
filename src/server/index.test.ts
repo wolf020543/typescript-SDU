@@ -407,3 +407,71 @@ test("should typecheck", () => {
     },
   );
 });
+
+test("should handle server cancelling a request", async () => {
+  const server = new Server(
+    {
+      name: "test server",
+      version: "1.0",
+    },
+    {
+      capabilities: {
+        sampling: {},
+      },
+    },
+  );
+
+  const client = new Client(
+    {
+      name: "test client",
+      version: "1.0",
+    },
+    {
+      capabilities: {
+        sampling: {},
+      },
+    },
+  );
+
+  // Set up client to delay responding to createMessage
+  client.setRequestHandler(
+    CreateMessageRequestSchema,
+    async (_request, extra) => {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      return {
+        model: "test",
+        role: "assistant",
+        content: {
+          type: "text",
+          text: "Test response",
+        },
+      };
+    },
+  );
+
+  const [clientTransport, serverTransport] =
+    InMemoryTransport.createLinkedPair();
+
+  await Promise.all([
+    client.connect(clientTransport),
+    server.connect(serverTransport),
+  ]);
+
+  // Set up abort controller
+  const controller = new AbortController();
+
+  // Issue request but cancel it immediately
+  const createMessagePromise = server.createMessage(
+    {
+      messages: [],
+      maxTokens: 10,
+    },
+    {
+      signal: controller.signal,
+    },
+  );
+  controller.abort("Cancelled by test");
+
+  // Request should be rejected
+  await expect(createMessagePromise).rejects.toBe("Cancelled by test");
+});
