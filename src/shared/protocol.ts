@@ -48,6 +48,8 @@ export type RequestOptions = {
 
   /**
    * Can be used to cancel an in-flight request. This will cause an AbortError to be raised from request().
+   *
+   * Use abortAfterTimeout() to easily implement timeouts using this signal.
    */
   signal?: AbortSignal;
 };
