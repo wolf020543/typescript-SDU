@@ -244,6 +244,10 @@ export class Client<
         // No specific capability required for initialized
         break;
 
+      case "notifications/cancelled":
+        // Cancellation notifications are always allowed
+        break;
+
       case "notifications/progress":
         // Progress notifications are always allowed
         break;
