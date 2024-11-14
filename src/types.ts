@@ -39,18 +39,18 @@ export const RequestSchema = z.object({
   params: z.optional(BaseRequestParamsSchema),
 });
 
+const BaseNotificationParamsSchema = z
+  .object({
+    /**
+     * This parameter name is reserved by MCP to allow clients and servers to attach additional metadata to their notifications.
+     */
+    _meta: z.optional(z.object({}).passthrough()),
+  })
+  .passthrough();
+
 export const NotificationSchema = z.object({
   method: z.string(),
-  params: z.optional(
-    z
-      .object({
-        /**
-         * This parameter name is reserved by MCP to allow clients and servers to attach additional metadata to their notifications.
-         */
-        _meta: z.optional(z.object({}).passthrough()),
-      })
-      .passthrough(),
-  ),
+  params: z.optional(BaseNotificationParamsSchema),
 });
 
 export const ResultSchema = z
@@ -312,7 +312,7 @@ export const ProgressSchema = z
  */
 export const ProgressNotificationSchema = NotificationSchema.extend({
   method: z.literal("notifications/progress"),
-  params: ProgressSchema.extend({
+  params: BaseNotificationParamsSchema.merge(ProgressSchema).extend({
     /**
      * The progress token which was given in the initial request, used to associate this notification with the request that is proceeding.
      */
@@ -522,14 +522,12 @@ export const UnsubscribeRequestSchema = RequestSchema.extend({
  */
 export const ResourceUpdatedNotificationSchema = NotificationSchema.extend({
   method: z.literal("notifications/resources/updated"),
-  params: z
-    .object({
-      /**
-       * The URI of the resource that has been updated. This might be a sub-resource of the one that the client actually subscribed to.
-       */
-      uri: z.string(),
-    })
-    .passthrough(),
+  params: BaseNotificationParamsSchema.extend({
+    /**
+     * The URI of the resource that has been updated. This might be a sub-resource of the one that the client actually subscribed to.
+     */
+    uri: z.string(),
+  }),
 });
 
 /* Prompts */
@@ -786,22 +784,20 @@ export const SetLevelRequestSchema = RequestSchema.extend({
  */
 export const LoggingMessageNotificationSchema = NotificationSchema.extend({
   method: z.literal("notifications/message"),
-  params: z
-    .object({
-      /**
-       * The severity of this log message.
-       */
-      level: LoggingLevelSchema,
-      /**
-       * An optional name of the logger issuing this message.
-       */
-      logger: z.optional(z.string()),
-      /**
-       * The data to be logged, such as a string message or an object. Any JSON serializable type is allowed here.
-       */
-      data: z.unknown(),
-    })
-    .passthrough(),
+  params: BaseNotificationParamsSchema.extend({
+    /**
+     * The severity of this log message.
+     */
+    level: LoggingLevelSchema,
+    /**
+     * An optional name of the logger issuing this message.
+     */
+    logger: z.optional(z.string()),
+    /**
+     * The data to be logged, such as a string message or an object. Any JSON serializable type is allowed here.
+     */
+    data: z.unknown(),
+  }),
 });
 
 /* Sampling */
