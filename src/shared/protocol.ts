@@ -1,5 +1,6 @@
 import { ZodLiteral, ZodObject, ZodType, z } from "zod";
 import {
+  CancelledNotificationSchema,
   ErrorCode,
   JSONRPCError,
   JSONRPCNotification,
@@ -12,6 +13,7 @@ import {
   ProgressNotification,
   ProgressNotificationSchema,
   Request,
+  RequestId,
   Result,
 } from "../types.js";
 import { Transport } from "./transport.js";
@@ -51,6 +53,16 @@ export type RequestOptions = {
 };
 
 /**
+ * Extra data given to request handlers.
+ */
+export type RequestHandlerExtra = {
+  /**
+   * An abort signal used to communicate if the request was cancelled from the sender's side.
+   */
+  signal: AbortSignal;
+};
+
+/**
  * Implements MCP protocol framing on top of a pluggable transport, including
  * features like request/response linking, notifications, and progress.
  */
@@ -61,10 +73,15 @@ export abstract class Protocol<
 > {
   private _transport?: Transport;
   private _requestMessageId = 0;
-  protected _requestHandlers: Map<
+  private _requestHandlers: Map<
     string,
-    (request: JSONRPCRequest) => Promise<SendResultT>
+    (
+      request: JSONRPCRequest,
+      extra: RequestHandlerExtra,
+    ) => Promise<SendResultT>
   > = new Map();
+  private _requestHandlerAbortControllers: Map<RequestId, AbortController> =
+    new Map();
   private _notificationHandlers: Map<
     string,
     (notification: JSONRPCNotification) => Promise<void>
@@ -100,6 +117,13 @@ export abstract class Protocol<
   fallbackNotificationHandler?: (notification: Notification) => Promise<void>;
 
   constructor(private _options?: ProtocolOptions) {
+    this.setNotificationHandler(CancelledNotificationSchema, (notification) => {
+      const controller = this._requestHandlerAbortControllers.get(
+        notification.params.requestId,
+      );
+      controller?.abort(notification.params.reason);
+    });
+
     this.setNotificationHandler(ProgressNotificationSchema, (notification) => {
       this._onprogress(notification as unknown as ProgressNotification);
     });
@@ -195,16 +219,27 @@ export abstract class Protocol<
       return;
     }
 
-    handler(request)
+    const abortController = new AbortController();
+    this._requestHandlerAbortControllers.set(request.id, abortController);
+
+    handler(request, { signal: abortController.signal })
       .then(
         (result) => {
-          this._transport?.send({
+          if (abortController.signal.aborted) {
+            return;
+          }
+
+          return this._transport?.send({
             result,
             jsonrpc: "2.0",
             id: request.id,
           });
         },
         (error) => {
+          if (abortController.signal.aborted) {
+            return;
+          }
+
           return this._transport?.send({
             jsonrpc: "2.0",
             id: request.id,
@@ -219,7 +254,10 @@ export abstract class Protocol<
       )
       .catch((error) =>
         this._onerror(new Error(`Failed to send response: ${error}`)),
-      );
+      )
+      .finally(() => {
+        this._requestHandlerAbortControllers.delete(request.id);
+      });
   }
 
   private _onprogress(notification: ProgressNotification): void {
@@ -403,12 +441,15 @@ export abstract class Protocol<
     }>,
   >(
     requestSchema: T,
-    handler: (request: z.infer<T>) => SendResultT | Promise<SendResultT>,
+    handler: (
+      request: z.infer<T>,
+      extra: RequestHandlerExtra,
+    ) => SendResultT | Promise<SendResultT>,
   ): void {
     const method = requestSchema.shape.method.value;
     this.assertRequestHandlerCapability(method);
-    this._requestHandlers.set(method, (request) =>
-      Promise.resolve(handler(requestSchema.parse(request))),
+    this._requestHandlers.set(method, (request, extra) =>
+      Promise.resolve(handler(requestSchema.parse(request), extra)),
     );
   }
 
