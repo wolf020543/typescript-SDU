@@ -190,11 +190,14 @@ export abstract class Protocol<
       return;
     }
 
-    handler(notification).catch((error) =>
-      this._onerror(
-        new Error(`Uncaught error in notification handler: ${error}`),
-      ),
-    );
+    // Starting with Promise.resolve() puts any synchronous errors into the monad as well.
+    Promise.resolve()
+      .then(() => handler(notification))
+      .catch((error) =>
+        this._onerror(
+          new Error(`Uncaught error in notification handler: ${error}`),
+        ),
+      );
   }
 
   private _onrequest(request: JSONRPCRequest): void {
@@ -222,7 +225,9 @@ export abstract class Protocol<
     const abortController = new AbortController();
     this._requestHandlerAbortControllers.set(request.id, abortController);
 
-    handler(request, { signal: abortController.signal })
+    // Starting with Promise.resolve() puts any synchronous errors into the monad as well.
+    Promise.resolve()
+      .then(() => handler(request, { signal: abortController.signal }))
       .then(
         (result) => {
           if (abortController.signal.aborted) {
