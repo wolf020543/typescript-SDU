@@ -1,7 +1,7 @@
 import {
-  ProgressCallback,
   Protocol,
   ProtocolOptions,
+  RequestOptions,
 } from "../shared/protocol.js";
 import { Transport } from "../shared/transport.js";
 import {
@@ -244,6 +244,10 @@ export class Client<
         // No specific capability required for initialized
         break;
 
+      case "notifications/cancelled":
+        // Cancellation notifications are always allowed
+        break;
+
       case "notifications/progress":
         // Progress notifications are always allowed
         break;
@@ -278,14 +282,11 @@ export class Client<
     return this.request({ method: "ping" }, EmptyResultSchema);
   }
 
-  async complete(
-    params: CompleteRequest["params"],
-    onprogress?: ProgressCallback,
-  ) {
+  async complete(params: CompleteRequest["params"], options?: RequestOptions) {
     return this.request(
       { method: "completion/complete", params },
       CompleteResultSchema,
-      onprogress,
+      options,
     );
   }
 
@@ -298,56 +299,56 @@ export class Client<
 
   async getPrompt(
     params: GetPromptRequest["params"],
-    onprogress?: ProgressCallback,
+    options?: RequestOptions,
   ) {
     return this.request(
       { method: "prompts/get", params },
       GetPromptResultSchema,
-      onprogress,
+      options,
     );
   }
 
   async listPrompts(
     params?: ListPromptsRequest["params"],
-    onprogress?: ProgressCallback,
+    options?: RequestOptions,
   ) {
     return this.request(
       { method: "prompts/list", params },
       ListPromptsResultSchema,
-      onprogress,
+      options,
     );
   }
 
   async listResources(
     params?: ListResourcesRequest["params"],
-    onprogress?: ProgressCallback,
+    options?: RequestOptions,
   ) {
     return this.request(
       { method: "resources/list", params },
       ListResourcesResultSchema,
-      onprogress,
+      options,
     );
   }
 
   async listResourceTemplates(
     params?: ListResourceTemplatesRequest["params"],
-    onprogress?: ProgressCallback,
+    options?: RequestOptions,
   ) {
     return this.request(
       { method: "resources/templates/list", params },
       ListResourceTemplatesResultSchema,
-      onprogress,
+      options,
     );
   }
 
   async readResource(
     params: ReadResourceRequest["params"],
-    onprogress?: ProgressCallback,
+    options?: RequestOptions,
   ) {
     return this.request(
       { method: "resources/read", params },
       ReadResourceResultSchema,
-      onprogress,
+      options,
     );
   }
 
@@ -370,23 +371,23 @@ export class Client<
     resultSchema:
       | typeof CallToolResultSchema
       | typeof CompatibilityCallToolResultSchema = CallToolResultSchema,
-    onprogress?: ProgressCallback,
+    options?: RequestOptions,
   ) {
     return this.request(
       { method: "tools/call", params },
       resultSchema,
-      onprogress,
+      options,
     );
   }
 
   async listTools(
     params?: ListToolsRequest["params"],
-    onprogress?: ProgressCallback,
+    options?: RequestOptions,
   ) {
     return this.request(
       { method: "tools/list", params },
       ListToolsResultSchema,
-      onprogress,
+      options,
     );
   }
 

@@ -1,7 +1,7 @@
 import {
-  ProgressCallback,
   Protocol,
   ProtocolOptions,
+  RequestOptions,
 } from "../shared/protocol.js";
 import {
   ClientCapabilities,
@@ -157,6 +157,10 @@ export class Server<
         }
         break;
 
+      case "notifications/cancelled":
+        // Cancellation notifications are always allowed
+        break;
+
       case "notifications/progress":
         // Progress notifications are always allowed
         break;
@@ -257,23 +261,23 @@ export class Server<
 
   async createMessage(
     params: CreateMessageRequest["params"],
-    onprogress?: ProgressCallback,
+    options?: RequestOptions,
   ) {
     return this.request(
       { method: "sampling/createMessage", params },
       CreateMessageResultSchema,
-      onprogress,
+      options,
     );
   }
 
   async listRoots(
     params?: ListRootsRequest["params"],
-    onprogress?: ProgressCallback,
+    options?: RequestOptions,
   ) {
     return this.request(
       { method: "roots/list", params },
       ListRootsResultSchema,
-      onprogress,
+      options,
     );
   }
 

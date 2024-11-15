@@ -39,18 +39,18 @@ export const RequestSchema = z.object({
   params: z.optional(BaseRequestParamsSchema),
 });
 
+const BaseNotificationParamsSchema = z
+  .object({
+    /**
+     * This parameter name is reserved by MCP to allow clients and servers to attach additional metadata to their notifications.
+     */
+    _meta: z.optional(z.object({}).passthrough()),
+  })
+  .passthrough();
+
 export const NotificationSchema = z.object({
   method: z.string(),
-  params: z.optional(
-    z
-      .object({
-        /**
-         * This parameter name is reserved by MCP to allow clients and servers to attach additional metadata to their notifications.
-         */
-        _meta: z.optional(z.object({}).passthrough()),
-      })
-      .passthrough(),
-  ),
+  params: z.optional(BaseNotificationParamsSchema),
 });
 
 export const ResultSchema = z
@@ -150,6 +150,33 @@ export const JSONRPCMessageSchema = z.union([
  * A response that indicates success but carries no data.
  */
 export const EmptyResultSchema = ResultSchema.strict();
+
+/* Cancellation */
+/**
+ * This notification can be sent by either side to indicate that it is cancelling a previously-issued request.
+ *
+ * The request SHOULD still be in-flight, but due to communication latency, it is always possible that this notification MAY arrive after the request has already finished.
+ *
+ * This notification indicates that the result will be unused, so any associated processing SHOULD cease.
+ *
+ * A client MUST NOT attempt to cancel its `initialize` request.
+ */
+export const CancelledNotificationSchema = NotificationSchema.extend({
+  method: z.literal("notifications/cancelled"),
+  params: BaseNotificationParamsSchema.extend({
+    /**
+     * The ID of the request to cancel.
+     *
+     * This MUST correspond to the ID of a request previously issued in the same direction.
+     */
+    requestId: RequestIdSchema,
+
+    /**
+     * An optional string describing the reason for the cancellation. This MAY be logged or presented to the user.
+     */
+    reason: z.string().optional(),
+  }),
+});
 
 /* Initialization */
 /**
@@ -312,7 +339,7 @@ export const ProgressSchema = z
  */
 export const ProgressNotificationSchema = NotificationSchema.extend({
   method: z.literal("notifications/progress"),
-  params: ProgressSchema.extend({
+  params: BaseNotificationParamsSchema.merge(ProgressSchema).extend({
     /**
      * The progress token which was given in the initial request, used to associate this notification with the request that is proceeding.
      */
@@ -522,14 +549,12 @@ export const UnsubscribeRequestSchema = RequestSchema.extend({
  */
 export const ResourceUpdatedNotificationSchema = NotificationSchema.extend({
   method: z.literal("notifications/resources/updated"),
-  params: z
-    .object({
-      /**
-       * The URI of the resource that has been updated. This might be a sub-resource of the one that the client actually subscribed to.
-       */
-      uri: z.string(),
-    })
-    .passthrough(),
+  params: BaseNotificationParamsSchema.extend({
+    /**
+     * The URI of the resource that has been updated. This might be a sub-resource of the one that the client actually subscribed to.
+     */
+    uri: z.string(),
+  }),
 });
 
 /* Prompts */
@@ -786,22 +811,20 @@ export const SetLevelRequestSchema = RequestSchema.extend({
  */
 export const LoggingMessageNotificationSchema = NotificationSchema.extend({
   method: z.literal("notifications/message"),
-  params: z
-    .object({
-      /**
-       * The severity of this log message.
-       */
-      level: LoggingLevelSchema,
-      /**
-       * An optional name of the logger issuing this message.
-       */
-      logger: z.optional(z.string()),
-      /**
-       * The data to be logged, such as a string message or an object. Any JSON serializable type is allowed here.
-       */
-      data: z.unknown(),
-    })
-    .passthrough(),
+  params: BaseNotificationParamsSchema.extend({
+    /**
+     * The severity of this log message.
+     */
+    level: LoggingLevelSchema,
+    /**
+     * An optional name of the logger issuing this message.
+     */
+    logger: z.optional(z.string()),
+    /**
+     * The data to be logged, such as a string message or an object. Any JSON serializable type is allowed here.
+     */
+    data: z.unknown(),
+  }),
 });
 
 /* Sampling */
@@ -1034,6 +1057,7 @@ export const ClientRequestSchema = z.union([
 ]);
 
 export const ClientNotificationSchema = z.union([
+  CancelledNotificationSchema,
   ProgressNotificationSchema,
   InitializedNotificationSchema,
   RootsListChangedNotificationSchema,
@@ -1053,6 +1077,7 @@ export const ServerRequestSchema = z.union([
 ]);
 
 export const ServerNotificationSchema = z.union([
+  CancelledNotificationSchema,
   ProgressNotificationSchema,
   LoggingMessageNotificationSchema,
   ResourceUpdatedNotificationSchema,
@@ -1099,6 +1124,9 @@ export type JSONRPCMessage = z.infer<typeof JSONRPCMessageSchema>;
 
 /* Empty result */
 export type EmptyResult = z.infer<typeof EmptyResultSchema>;
+
+/* Cancellation */
+export type CancelledNotification = z.infer<typeof CancelledNotificationSchema>;
 
 /* Initialization */
 export type Implementation = z.infer<typeof ImplementationSchema>;

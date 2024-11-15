@@ -1,5 +1,6 @@
 import { ZodLiteral, ZodObject, ZodType, z } from "zod";
 import {
+  CancelledNotificationSchema,
   ErrorCode,
   JSONRPCError,
   JSONRPCNotification,
@@ -12,6 +13,7 @@ import {
   ProgressNotification,
   ProgressNotificationSchema,
   Request,
+  RequestId,
   Result,
 } from "../types.js";
 import { Transport } from "./transport.js";
@@ -36,6 +38,33 @@ export type ProtocolOptions = {
 };
 
 /**
+ * Options that can be given per request.
+ */
+export type RequestOptions = {
+  /**
+   * If set, requests progress notifications from the remote end (if supported). When progress notifications are received, this callback will be invoked.
+   */
+  onprogress?: ProgressCallback;
+
+  /**
+   * Can be used to cancel an in-flight request. This will cause an AbortError to be raised from request().
+   *
+   * Use abortAfterTimeout() to easily implement timeouts using this signal.
+   */
+  signal?: AbortSignal;
+};
+
+/**
+ * Extra data given to request handlers.
+ */
+export type RequestHandlerExtra = {
+  /**
+   * An abort signal used to communicate if the request was cancelled from the sender's side.
+   */
+  signal: AbortSignal;
+};
+
+/**
  * Implements MCP protocol framing on top of a pluggable transport, including
  * features like request/response linking, notifications, and progress.
  */
@@ -46,10 +75,15 @@ export abstract class Protocol<
 > {
   private _transport?: Transport;
   private _requestMessageId = 0;
-  protected _requestHandlers: Map<
+  private _requestHandlers: Map<
     string,
-    (request: JSONRPCRequest) => Promise<SendResultT>
+    (
+      request: JSONRPCRequest,
+      extra: RequestHandlerExtra,
+    ) => Promise<SendResultT>
   > = new Map();
+  private _requestHandlerAbortControllers: Map<RequestId, AbortController> =
+    new Map();
   private _notificationHandlers: Map<
     string,
     (notification: JSONRPCNotification) => Promise<void>
@@ -85,6 +119,13 @@ export abstract class Protocol<
   fallbackNotificationHandler?: (notification: Notification) => Promise<void>;
 
   constructor(private _options?: ProtocolOptions) {
+    this.setNotificationHandler(CancelledNotificationSchema, (notification) => {
+      const controller = this._requestHandlerAbortControllers.get(
+        notification.params.requestId,
+      );
+      controller?.abort(notification.params.reason);
+    });
+
     this.setNotificationHandler(ProgressNotificationSchema, (notification) => {
       this._onprogress(notification as unknown as ProgressNotification);
     });
@@ -151,11 +192,14 @@ export abstract class Protocol<
       return;
     }
 
-    handler(notification).catch((error) =>
-      this._onerror(
-        new Error(`Uncaught error in notification handler: ${error}`),
-      ),
-    );
+    // Starting with Promise.resolve() puts any synchronous errors into the monad as well.
+    Promise.resolve()
+      .then(() => handler(notification))
+      .catch((error) =>
+        this._onerror(
+          new Error(`Uncaught error in notification handler: ${error}`),
+        ),
+      );
   }
 
   private _onrequest(request: JSONRPCRequest): void {
@@ -180,16 +224,29 @@ export abstract class Protocol<
       return;
     }
 
-    handler(request)
+    const abortController = new AbortController();
+    this._requestHandlerAbortControllers.set(request.id, abortController);
+
+    // Starting with Promise.resolve() puts any synchronous errors into the monad as well.
+    Promise.resolve()
+      .then(() => handler(request, { signal: abortController.signal }))
       .then(
         (result) => {
-          this._transport?.send({
+          if (abortController.signal.aborted) {
+            return;
+          }
+
+          return this._transport?.send({
             result,
             jsonrpc: "2.0",
             id: request.id,
           });
         },
         (error) => {
+          if (abortController.signal.aborted) {
+            return;
+          }
+
           return this._transport?.send({
             jsonrpc: "2.0",
             id: request.id,
@@ -204,7 +261,10 @@ export abstract class Protocol<
       )
       .catch((error) =>
         this._onerror(new Error(`Failed to send response: ${error}`)),
-      );
+      )
+      .finally(() => {
+        this._requestHandlerAbortControllers.delete(request.id);
+      });
   }
 
   private _onprogress(notification: ProgressNotification): void {
@@ -285,14 +345,14 @@ export abstract class Protocol<
   protected abstract assertRequestHandlerCapability(method: string): void;
 
   /**
-   * Sends a request and wait for a response, with optional progress notifications in the meantime (if supported by the server).
+   * Sends a request and wait for a response.
    *
    * Do not use this method to emit notifications! Use notification() instead.
    */
   request<T extends ZodType<object>>(
     request: SendRequestT,
     resultSchema: T,
-    onprogress?: ProgressCallback,
+    options?: RequestOptions,
   ): Promise<z.infer<T>> {
     return new Promise((resolve, reject) => {
       if (!this._transport) {
@@ -304,6 +364,8 @@ export abstract class Protocol<
         this.assertCapabilityForMethod(request.method);
       }
 
+      options?.signal?.throwIfAborted();
+
       const messageId = this._requestMessageId++;
       const jsonrpcRequest: JSONRPCRequest = {
         ...request,
@@ -311,8 +373,8 @@ export abstract class Protocol<
         id: messageId,
       };
 
-      if (onprogress) {
-        this._progressHandlers.set(messageId, onprogress);
+      if (options?.onprogress) {
+        this._progressHandlers.set(messageId, options.onprogress);
         jsonrpcRequest.params = {
           ...request.params,
           _meta: { progressToken: messageId },
@@ -320,6 +382,10 @@ export abstract class Protocol<
       }
 
       this._responseHandlers.set(messageId, (response) => {
+        if (options?.signal?.aborted) {
+          return;
+        }
+
         if (response instanceof Error) {
           return reject(response);
         }
@@ -330,6 +396,23 @@ export abstract class Protocol<
         } catch (error) {
           reject(error);
         }
+      });
+
+      options?.signal?.addEventListener("abort", () => {
+        const reason = options?.signal?.reason;
+        this._responseHandlers.delete(messageId);
+        this._progressHandlers.delete(messageId);
+
+        this._transport?.send({
+          jsonrpc: "2.0",
+          method: "cancelled",
+          params: {
+            requestId: messageId,
+            reason: String(reason),
+          },
+        });
+
+        reject(reason);
       });
 
       this._transport.send(jsonrpcRequest).catch(reject);
@@ -365,12 +448,15 @@ export abstract class Protocol<
     }>,
   >(
     requestSchema: T,
-    handler: (request: z.infer<T>) => SendResultT | Promise<SendResultT>,
+    handler: (
+      request: z.infer<T>,
+      extra: RequestHandlerExtra,
+    ) => SendResultT | Promise<SendResultT>,
   ): void {
     const method = requestSchema.shape.method.value;
     this.assertRequestHandlerCapability(method);
-    this._requestHandlers.set(method, (request) =>
-      Promise.resolve(handler(requestSchema.parse(request))),
+    this._requestHandlers.set(method, (request, extra) =>
+      Promise.resolve(handler(requestSchema.parse(request), extra)),
     );
   }
 
