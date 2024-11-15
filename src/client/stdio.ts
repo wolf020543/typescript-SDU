@@ -3,6 +3,7 @@ import process from "node:process";
 import { ReadBuffer, serializeMessage } from "../shared/stdio.js";
 import { JSONRPCMessage } from "../types.js";
 import { Transport } from "../shared/transport.js";
+import { Stream } from "node:stream";
 
 export type StdioServerParameters = {
   /**
@@ -21,6 +22,13 @@ export type StdioServerParameters = {
    * If not specified, the result of getDefaultEnvironment() will be used.
    */
   env?: Record<string, string>;
+
+  /**
+   * How to handle stderr of the child process. This matches the semantics of Node's `child_process.spawn`.
+   *
+   * The default is "inherit", meaning messages to stderr will be printed to the parent process's stderr.
+   */
+  stderr?: "inherit" | "ignore" | Stream;
 };
 
 /**
@@ -102,7 +110,7 @@ export class StdioClientTransport implements Transport {
         this._serverParams.args ?? [],
         {
           env: this._serverParams.env ?? getDefaultEnvironment(),
-          stdio: ["pipe", "pipe", "inherit"],
+          stdio: ["pipe", "pipe", this._serverParams.stderr ?? "inherit"],
           shell: false,
           signal: this._abortController.signal,
         },
