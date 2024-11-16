@@ -14,6 +14,7 @@ import {
   ListToolsRequestSchema,
   CreateMessageRequestSchema,
   ListRootsRequestSchema,
+  ErrorCode,
 } from "../types.js";
 import { Transport } from "../shared/transport.js";
 import { Server } from "../server/index.js";
@@ -490,4 +491,59 @@ test("should handle client cancelling a request", async () => {
 
   // Request should be rejected
   await expect(listResourcesPromise).rejects.toBe("Cancelled by test");
+});
+
+test("should handle request timeout", async () => {
+  const server = new Server(
+    {
+      name: "test server",
+      version: "1.0",
+    },
+    {
+      capabilities: {
+        resources: {},
+      },
+    },
+  );
+
+  // Set up server with a delayed response
+  server.setRequestHandler(
+    ListResourcesRequestSchema,
+    async (_request, extra) => {
+      const timer = new Promise((resolve) => {
+        const timeout = setTimeout(resolve, 100);
+        extra.signal.addEventListener("abort", () => clearTimeout(timeout));
+      });
+
+      await timer;
+      return {
+        resources: [],
+      };
+    },
+  );
+
+  const [clientTransport, serverTransport] =
+    InMemoryTransport.createLinkedPair();
+
+  const client = new Client(
+    {
+      name: "test client",
+      version: "1.0",
+    },
+    {
+      capabilities: {},
+    },
+  );
+
+  await Promise.all([
+    client.connect(clientTransport),
+    server.connect(serverTransport),
+  ]);
+
+  // Request with 0 msec timeout should fail immediately
+  await expect(
+    client.listResources(undefined, { timeout: 0 }),
+  ).rejects.toMatchObject({
+    code: ErrorCode.RequestTimeout,
+  });
 });
