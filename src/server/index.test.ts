@@ -14,6 +14,7 @@ import {
   ListResourcesRequestSchema,
   ListToolsRequestSchema,
   SetLevelRequestSchema,
+  ErrorCode,
 } from "../types.js";
 import { Transport } from "../shared/transport.js";
 import { InMemoryTransport } from "../inMemory.js";
@@ -474,4 +475,73 @@ test("should handle server cancelling a request", async () => {
 
   // Request should be rejected
   await expect(createMessagePromise).rejects.toBe("Cancelled by test");
+});
+test("should handle request timeout", async () => {
+  const server = new Server(
+    {
+      name: "test server",
+      version: "1.0",
+    },
+    {
+      capabilities: {
+        sampling: {},
+      },
+    },
+  );
+
+  // Set up client that delays responses
+  const client = new Client(
+    {
+      name: "test client",
+      version: "1.0",
+    },
+    {
+      capabilities: {
+        sampling: {},
+      },
+    },
+  );
+
+  client.setRequestHandler(
+    CreateMessageRequestSchema,
+    async (_request, extra) => {
+      await new Promise((resolve, reject) => {
+        const timeout = setTimeout(resolve, 100);
+        extra.signal.addEventListener("abort", () => {
+          clearTimeout(timeout);
+          reject(extra.signal.reason);
+        });
+      });
+
+      return {
+        model: "test",
+        role: "assistant",
+        content: {
+          type: "text",
+          text: "Test response",
+        },
+      };
+    },
+  );
+
+  const [clientTransport, serverTransport] =
+    InMemoryTransport.createLinkedPair();
+
+  await Promise.all([
+    client.connect(clientTransport),
+    server.connect(serverTransport),
+  ]);
+
+  // Request with 0 msec timeout should fail immediately
+  await expect(
+    server.createMessage(
+      {
+        messages: [],
+        maxTokens: 10,
+      },
+      { timeout: 0 },
+    ),
+  ).rejects.toMatchObject({
+    code: ErrorCode.RequestTimeout,
+  });
 });

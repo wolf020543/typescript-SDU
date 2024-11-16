@@ -38,6 +38,11 @@ export type ProtocolOptions = {
 };
 
 /**
+ * The default request timeout, in miliseconds.
+ */
+export const DEFAULT_REQUEST_TIMEOUT_MSEC = 60000;
+
+/**
  * Options that can be given per request.
  */
 export type RequestOptions = {
@@ -48,10 +53,15 @@ export type RequestOptions = {
 
   /**
    * Can be used to cancel an in-flight request. This will cause an AbortError to be raised from request().
-   *
-   * Use abortAfterTimeout() to easily implement timeouts using this signal.
    */
   signal?: AbortSignal;
+
+  /**
+   * A timeout (in milliseconds) for this request. If exceeded, an McpError with code `RequestTimeout` will be raised from request().
+   *
+   * If not specified, `DEFAULT_REQUEST_TIMEOUT_MSEC` will be used as the timeout.
+   */
+  timeout?: number;
 };
 
 /**
@@ -381,7 +391,13 @@ export abstract class Protocol<
         };
       }
 
+      let timeoutId: ReturnType<typeof setTimeout> | undefined = undefined;
+
       this._responseHandlers.set(messageId, (response) => {
+        if (timeoutId !== undefined) {
+          clearTimeout(timeoutId);
+        }
+
         if (options?.signal?.aborted) {
           return;
         }
@@ -398,24 +414,52 @@ export abstract class Protocol<
         }
       });
 
-      options?.signal?.addEventListener("abort", () => {
-        const reason = options?.signal?.reason;
+      const cancel = (reason: unknown) => {
         this._responseHandlers.delete(messageId);
         this._progressHandlers.delete(messageId);
 
-        this._transport?.send({
-          jsonrpc: "2.0",
-          method: "cancelled",
-          params: {
-            requestId: messageId,
-            reason: String(reason),
-          },
-        });
+        this._transport
+          ?.send({
+            jsonrpc: "2.0",
+            method: "cancelled",
+            params: {
+              requestId: messageId,
+              reason: String(reason),
+            },
+          })
+          .catch((error) =>
+            this._onerror(new Error(`Failed to send cancellation: ${error}`)),
+          );
 
         reject(reason);
+      };
+
+      options?.signal?.addEventListener("abort", () => {
+        if (timeoutId !== undefined) {
+          clearTimeout(timeoutId);
+        }
+
+        cancel(options?.signal?.reason);
       });
 
-      this._transport.send(jsonrpcRequest).catch(reject);
+      const timeout = options?.timeout ?? DEFAULT_REQUEST_TIMEOUT_MSEC;
+      timeoutId = setTimeout(
+        () =>
+          cancel(
+            new McpError(ErrorCode.RequestTimeout, "Request timed out", {
+              timeout,
+            }),
+          ),
+        timeout,
+      );
+
+      this._transport.send(jsonrpcRequest).catch((error) => {
+        if (timeoutId !== undefined) {
+          clearTimeout(timeoutId);
+        }
+
+        reject(error);
+      });
     });
   }
 
