@@ -418,14 +418,18 @@ export abstract class Protocol<
         this._responseHandlers.delete(messageId);
         this._progressHandlers.delete(messageId);
 
-        this._transport?.send({
-          jsonrpc: "2.0",
-          method: "cancelled",
-          params: {
-            requestId: messageId,
-            reason: String(reason),
-          },
-        });
+        this._transport
+          ?.send({
+            jsonrpc: "2.0",
+            method: "cancelled",
+            params: {
+              requestId: messageId,
+              reason: String(reason),
+            },
+          })
+          .catch((error) =>
+            this._onerror(new Error(`Failed to send cancellation: ${error}`)),
+          );
 
         reject(reason);
       };
