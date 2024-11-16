@@ -1,4 +1,4 @@
-# MCP TypeScript SDK
+# MCP TypeScript SDK ![NPM Version](https://img.shields.io/npm/v/%40modelcontextprotocol%2Fsdk)
 
 TypeScript implementation of the Model Context Protocol (MCP), providing both client and server capabilities for integrating with LLM surfaces.
 
