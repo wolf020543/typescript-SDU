@@ -105,6 +105,7 @@ export const JSONRPCResponseSchema = z
 export enum ErrorCode {
   // SDK error codes
   ConnectionClosed = -1,
+  RequestTimeout = -2,
 
   // Standard JSON-RPC error codes
   ParseError = -32700,
