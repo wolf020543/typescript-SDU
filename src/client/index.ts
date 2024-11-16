@@ -278,8 +278,8 @@ export class Client<
     }
   }
 
-  async ping() {
-    return this.request({ method: "ping" }, EmptyResultSchema);
+  async ping(options?: RequestOptions) {
+    return this.request({ method: "ping" }, EmptyResultSchema, options);
   }
 
   async complete(params: CompleteRequest["params"], options?: RequestOptions) {
@@ -290,10 +290,11 @@ export class Client<
     );
   }
 
-  async setLoggingLevel(level: LoggingLevel) {
+  async setLoggingLevel(level: LoggingLevel, options?: RequestOptions) {
     return this.request(
       { method: "logging/setLevel", params: { level } },
       EmptyResultSchema,
+      options,
     );
   }
 
@@ -352,17 +353,25 @@ export class Client<
     );
   }
 
-  async subscribeResource(params: SubscribeRequest["params"]) {
+  async subscribeResource(
+    params: SubscribeRequest["params"],
+    options?: RequestOptions,
+  ) {
     return this.request(
       { method: "resources/subscribe", params },
       EmptyResultSchema,
+      options,
     );
   }
 
-  async unsubscribeResource(params: UnsubscribeRequest["params"]) {
+  async unsubscribeResource(
+    params: UnsubscribeRequest["params"],
+    options?: RequestOptions,
+  ) {
     return this.request(
       { method: "resources/unsubscribe", params },
       EmptyResultSchema,
+      options,
     );
   }
 
