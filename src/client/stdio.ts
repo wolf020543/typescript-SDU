@@ -112,6 +112,7 @@ export class StdioClientTransport implements Transport {
           env: this._serverParams.env ?? getDefaultEnvironment(),
           stdio: ["pipe", "pipe", this._serverParams.stderr ?? "inherit"],
           shell: false,
+          detached: process.platform === "win32",
           signal: this._abortController.signal,
         },
       );
