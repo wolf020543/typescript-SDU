@@ -1,4 +1,4 @@
-import { ChildProcess, spawn } from "node:child_process";
+import { ChildProcess, IOType, spawn } from "node:child_process";
 import process from "node:process";
 import { ReadBuffer, serializeMessage } from "../shared/stdio.js";
 import { JSONRPCMessage } from "../types.js";
@@ -28,7 +28,7 @@ export type StdioServerParameters = {
    *
    * The default is "inherit", meaning messages to stderr will be printed to the parent process's stderr.
    */
-  stderr?: "inherit" | "ignore" | Stream;
+  stderr?: IOType | Stream | number;
 };
 
 /**
@@ -123,7 +123,7 @@ export class StdioClientTransport implements Transport {
           // (i.e. via `electron-forge start`) vs a production environment
           // (i.e. YourApp.exe).
           detached: process.platform === "win32" && isElectron(),
-        }
+        },
       );
 
       this._process.on("error", (error) => {
@@ -159,6 +159,15 @@ export class StdioClientTransport implements Transport {
         this.onerror?.(error);
       });
     });
+  }
+
+  /**
+   * The stderr stream of the child process, if `StdioServerParameters.stderr` was set to "pipe" or "overlapped".
+   *
+   * This is only available after the process has been started.
+   */
+  get stderr(): Stream | null {
+    return this._process?.stderr ?? null;
   }
 
   private processReadBuffer() {
