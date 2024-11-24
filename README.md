@@ -96,6 +96,12 @@ const transport = new StdioServerTransport();
 await server.connect(transport);
 ```
 
+## Documentation
+
+- [Model Context Protocol documentation](https://modelcontextprotocol.io)
+- [MCP Specification](https://spec.modelcontextprotocol.io)
+- [Example Servers](https://github.com/modelcontextprotocol/servers)
+
 ## Contributing
 
 Issues and pull requests are welcome on GitHub at https://github.com/modelcontextprotocol/typescript-sdk.
