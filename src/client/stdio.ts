@@ -100,7 +100,7 @@ export class StdioClientTransport implements Transport {
   async start(): Promise<void> {
     if (this._process) {
       throw new Error(
-        "StdioClientTransport already started! If using Client class, note that connect() calls start() automatically.",
+        "StdioClientTransport already started! If using Client class, note that connect() calls start() automatically."
       );
     }
 
@@ -113,17 +113,8 @@ export class StdioClientTransport implements Transport {
           stdio: ["pipe", "pipe", this._serverParams.stderr ?? "inherit"],
           shell: false,
           signal: this._abortController.signal,
-
-          // NB: The behavior of detached varies based on platform, and also
-          // is different based on whether the process is a Win32 Subsystem
-          // process or a Console Subsystem process. Strangely, the behavior
-          // of detached is almost 1:1 the opposite in Electron+Windows vs
-          // what is documented on the node.js website, and also is different
-          // based on whether you launch Electron in a development environment
-          // (i.e. via `electron-forge start`) vs a production environment
-          // (i.e. YourApp.exe).
-          detached: process.platform === "win32" && isElectron(),
-        },
+          windowsHide: process.platform === "win32" && isElectron(),
+        }
       );
 
       this._process.on("error", (error) => {
