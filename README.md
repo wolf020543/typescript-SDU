@@ -32,6 +32,8 @@ const transport = new StdioClientTransport({
 const client = new Client({
   name: "example-client",
   version: "1.0.0",
+}, {
+  capabilities: {}
 });
 
 await client.connect(transport);
@@ -63,6 +65,10 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio";
 const server = new Server({
   name: "example-server",
   version: "1.0.0",
+}, {
+  capabilities: {
+    resources: {}
+  }
 });
 
 server.setRequestHandler(ListResourcesRequestSchema, async () => {
