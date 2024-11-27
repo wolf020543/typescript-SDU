@@ -22,8 +22,8 @@ npm install @modelcontextprotocol/sdk
 ### Creating a Client
 
 ```typescript
-import { Client } from "@modelcontextprotocol/sdk/client";
-import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio";
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 
 const transport = new StdioClientTransport({
   command: "path/to/server",
@@ -32,6 +32,8 @@ const transport = new StdioClientTransport({
 const client = new Client({
   name: "example-client",
   version: "1.0.0",
+}, {
+  capabilities: {}
 });
 
 await client.connect(transport);
@@ -57,12 +59,16 @@ const resourceContent = await client.request(
 ### Creating a Server
 
 ```typescript
-import { Server } from "@modelcontextprotocol/sdk/server";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio";
+import { Server } from "@modelcontextprotocol/sdk/server/index.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 
 const server = new Server({
   name: "example-server",
   version: "1.0.0",
+}, {
+  capabilities: {
+    resources: {}
+  }
 });
 
 server.setRequestHandler(ListResourcesRequestSchema, async () => {
