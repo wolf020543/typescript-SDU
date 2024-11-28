@@ -421,7 +421,7 @@ export abstract class Protocol<
         this._transport
           ?.send({
             jsonrpc: "2.0",
-            method: "cancelled",
+            method: "notifications/cancelled",
             params: {
               requestId: messageId,
               reason: String(reason),
