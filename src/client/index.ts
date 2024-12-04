@@ -11,6 +11,7 @@ import {
   ClientNotification,
   ClientRequest,
   ClientResult,
+  CompatibilityCallToolResultSchema,
   CompleteRequest,
   CompleteResultSchema,
   EmptyResultSchema,
@@ -376,7 +377,9 @@ export class Client<
 
   async callTool(
     params: CallToolRequest["params"],
-    resultSchema: typeof CallToolResultSchema,
+    resultSchema:
+      | typeof CallToolResultSchema
+      | typeof CompatibilityCallToolResultSchema = CallToolResultSchema,
     options?: RequestOptions,
   ) {
     return this.request(
