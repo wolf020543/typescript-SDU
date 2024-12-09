@@ -94,7 +94,7 @@ export class SSEServerTransport implements Transport {
     }
 
     try {
-      await this.handleMessage(typeof body === 'string'? JSON.parse(body): body);
+      await this.handleMessage(typeof body === 'string' ? JSON.parse(body) : body);
     } catch {
       res.writeHead(400).end(`Invalid message: ${body}`);
       return;
