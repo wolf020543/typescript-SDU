@@ -278,7 +278,7 @@ export abstract class Protocol<
   }
 
   private _onprogress(notification: ProgressNotification): void {
-    const { progress, total, progressToken } = notification.params;
+    const { progressToken, ...params } = notification.params;
     const handler = this._progressHandlers.get(Number(progressToken));
     if (handler === undefined) {
       this._onerror(
@@ -289,7 +289,7 @@ export abstract class Protocol<
       return;
     }
 
-    handler({ progress, total });
+    handler(params);
   }
 
   private _onresponse(response: JSONRPCResponse | JSONRPCError): void {
