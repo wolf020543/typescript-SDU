@@ -7,8 +7,17 @@
   "homepage": "https://modelcontextprotocol.io",
   "bugs": "https://github.com/modelcontextprotocol/typescript-sdk/issues",
   "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/modelcontextprotocol/typescript-sdk.git"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "modelcontextprotocol",
+    "mcp"
+  ],
   "exports": {
     "./*": "./dist/*"
   },
@@ -23,8 +32,8 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc",
-    "prepack": "tsc",
+    "build": "tsc -p tsconfig.prod.json",
+    "prepack": "tsc -p tsconfig.prod.json",
     "lint": "eslint src/",
     "test": "jest",
     "start": "npm run server",
