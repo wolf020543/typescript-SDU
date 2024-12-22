@@ -29,7 +29,7 @@ const BaseRequestParamsSchema = z
            */
           progressToken: z.optional(ProgressTokenSchema),
         })
-        .passthrough(),
+        .passthrough()
     ),
   })
   .passthrough();
@@ -100,12 +100,15 @@ export const JSONRPCResponseSchema = z
   .strict();
 
 /**
- * An incomplete set of error codes that may appear in JSON-RPC responses.
+ * @author : Sumitesh Naithani
+ * @link : https://docs.trafficserver.apache.org/en/latest/developer-guide/jsonrpc/jsonrpc-node-errors.en.html#standard-errors
+ * @description : An incomplete set of error codes that may appear in JSON-RPC responses.
+ * @note : SDK-specific errors should use the server error range (-32000 to -32099), as per JSON-RPC 2.0 specification.
  */
 export enum ErrorCode {
-  // SDK error codes
-  ConnectionClosed = -1,
-  RequestTimeout = -2,
+  // SDK error codes (using server error range)
+  ConnectionClosed = -32000,
+  RequestTimeout = -32001,
 
   // Standard JSON-RPC error codes
   ParseError = -32700,
@@ -214,7 +217,7 @@ export const ClientCapabilitiesSchema = z
            */
           listChanged: z.optional(z.boolean()),
         })
-        .passthrough(),
+        .passthrough()
     ),
   })
   .passthrough();
@@ -258,7 +261,7 @@ export const ServerCapabilitiesSchema = z
            */
           listChanged: z.optional(z.boolean()),
         })
-        .passthrough(),
+        .passthrough()
     ),
     /**
      * Present if the server offers any resources to read.
@@ -276,7 +279,7 @@ export const ServerCapabilitiesSchema = z
            */
           listChanged: z.optional(z.boolean()),
         })
-        .passthrough(),
+        .passthrough()
     ),
     /**
      * Present if the server offers any tools to call.
@@ -289,7 +292,7 @@ export const ServerCapabilitiesSchema = z
            */
           listChanged: z.optional(z.boolean()),
         })
-        .passthrough(),
+        .passthrough()
     ),
   })
   .passthrough();
@@ -480,7 +483,7 @@ export const ListResourcesResultSchema = PaginatedResultSchema.extend({
 export const ListResourceTemplatesRequestSchema = PaginatedRequestSchema.extend(
   {
     method: z.literal("resources/templates/list"),
-  },
+  }
 );
 
 /**
@@ -508,7 +511,7 @@ export const ReadResourceRequestSchema = RequestSchema.extend({
  */
 export const ReadResourceResultSchema = ResultSchema.extend({
   contents: z.array(
-    z.union([TextResourceContentsSchema, BlobResourceContentsSchema]),
+    z.union([TextResourceContentsSchema, BlobResourceContentsSchema])
   ),
 });
 
@@ -747,7 +750,7 @@ export const ListToolsResultSchema = PaginatedResultSchema.extend({
  */
 export const CallToolResultSchema = ResultSchema.extend({
   content: z.array(
-    z.union([TextContentSchema, ImageContentSchema, EmbeddedResourceSchema]),
+    z.union([TextContentSchema, ImageContentSchema, EmbeddedResourceSchema])
   ),
   isError: z.boolean().default(false).optional(),
 });
@@ -758,7 +761,7 @@ export const CallToolResultSchema = ResultSchema.extend({
 export const CompatibilityCallToolResultSchema = CallToolResultSchema.or(
   ResultSchema.extend({
     toolResult: z.unknown(),
-  }),
+  })
 );
 
 /**
@@ -919,7 +922,7 @@ export const CreateMessageResultSchema = ResultSchema.extend({
    * The reason why sampling stopped.
    */
   stopReason: z.optional(
-    z.enum(["endTurn", "stopSequence", "maxTokens"]).or(z.string()),
+    z.enum(["endTurn", "stopSequence", "maxTokens"]).or(z.string())
   ),
   role: z.enum(["user", "assistant"]),
   content: z.discriminatedUnion("type", [
@@ -1104,7 +1107,7 @@ export class McpError extends Error {
   constructor(
     public readonly code: number,
     message: string,
-    public readonly data?: unknown,
+    public readonly data?: unknown
   ) {
     super(`MCP error ${code}: ${message}`);
   }
