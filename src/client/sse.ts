@@ -12,13 +12,17 @@ export class SSEClientTransport implements Transport {
   private _endpoint?: URL;
   private _abortController?: AbortController;
   private _url: URL;
+  private _eventSourceInit?: EventSourceInit;
+  private _requestInit?: RequestInit;
 
   onclose?: () => void;
   onerror?: (error: Error) => void;
   onmessage?: (message: JSONRPCMessage) => void;
 
-  constructor(url: URL) {
+  constructor(url: URL, opts?: { eventSourceInit?: EventSourceInit, requestInit?: RequestInit }) {
     this._url = url;
+    this._eventSourceInit = opts?.eventSourceInit;
+    this._requestInit = opts?.requestInit;
   }
 
   start(): Promise<void> {
@@ -29,7 +33,7 @@ export class SSEClientTransport implements Transport {
     }
 
     return new Promise((resolve, reject) => {
-      this._eventSource = new EventSource(this._url.href);
+      this._eventSource = new EventSource(this._url.href, this._eventSourceInit);
       this._abortController = new AbortController();
 
       this._eventSource.onerror = (event) => {
@@ -90,14 +94,17 @@ export class SSEClientTransport implements Transport {
     }
 
     try {
-      const response = await fetch(this._endpoint, {
+      const headers = new Headers(this._requestInit?.headers);
+      headers.set("content-type", "application/json");
+      const init = {
+        ...this._requestInit,
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers,
         body: JSON.stringify(message),
-        signal: this._abortController?.signal,
-      });
+        signal: this._abortController?.signal
+      };
+
+      const response = await fetch(this._endpoint, init);
 
       if (!response.ok) {
         const text = await response.text().catch(() => null);
