@@ -19,12 +19,16 @@
     "mcp"
   ],
   "exports": {
-    "./*": "./dist/*"
+    "./*": {
+      "import": "./dist/esm/*",
+      "require": "./dist/cjs/*"
+    }
   },
   "typesVersions": {
     "*": {
       "*": [
-        "./dist/*"
+        "./dist/esm/*",
+        "./dist/cjs/*"
       ]
     }
   },
@@ -32,8 +36,8 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.prod.json",
-    "prepack": "tsc -p tsconfig.prod.json",
+    "build": "tsup",
+    "prepack": "tsup",
     "lint": "eslint src/",
     "test": "jest",
     "start": "npm run server",
@@ -46,6 +50,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "tsup": "^8.3.5",
     "@eslint/js": "^9.8.0",
     "@types/content-type": "^1.1.8",
     "@types/eslint__js": "^8.42.3",
