@@ -62,13 +62,17 @@ export class StdioServerTransport implements Transport {
   }
 
   async close(): Promise<void> {
-    // Remove our event listeners
+    // Remove our event listeners first
     this._stdin.off("data", this._ondata);
     this._stdin.off("error", this._onerror);
-    
-    // Destroy streams to ensure they're fully closed
-    this._stdin.destroy();
-    this._stdout.destroy();
+
+    // Check if we were the only data listener
+    const remainingDataListeners = this._stdin.listenerCount('data');
+    if (remainingDataListeners === 0) {
+      // Only pause stdin if we were the only listener
+      // This prevents interfering with other parts of the application that might be using stdin
+      this._stdin.pause();
+    }
     
     // Clear the buffer and notify closure
     this._readBuffer.clear();
