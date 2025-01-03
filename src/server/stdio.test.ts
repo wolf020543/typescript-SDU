@@ -123,7 +123,7 @@ test("should properly clean up resources when closed", async () => {
   const transport = new StdioServerTransport(mockStdin, mockStdout);
   await transport.start();
 
-  // Send a message to potentially create 'drain' listeners
+  // Send a message to potentially create listeners
   await transport.send({ jsonrpc: "2.0", method: "test", id: 1 });
 
   // Close the transport
