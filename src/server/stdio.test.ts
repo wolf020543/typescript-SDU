@@ -100,3 +100,41 @@ test("should read multiple messages", async () => {
   await finished;
   expect(readMessages).toEqual(messages);
 });
+
+test("should properly clean up resources when closed", async () => {
+  // Create mock streams that track their destroyed state
+  const mockStdin = new Readable({
+    read() {}, // No-op implementation
+    destroy() {
+      this.destroyed = true;
+      return this;
+    }
+  });
+  const mockStdout = new Writable({
+    write(chunk, encoding, callback) {
+      callback();
+    },
+    destroy() {
+      this.destroyed = true;
+      return this;
+    }
+  });
+
+  const transport = new StdioServerTransport(mockStdin, mockStdout);
+  await transport.start();
+
+  // Send a message to potentially create 'drain' listeners
+  await transport.send({ jsonrpc: "2.0", method: "test", id: 1 });
+
+  // Close the transport
+  await transport.close();
+
+  // Check that all listeners were removed
+  expect(mockStdin.listenerCount('data')).toBe(0);
+  expect(mockStdin.listenerCount('error')).toBe(0);
+  expect(mockStdout.listenerCount('drain')).toBe(0);
+  
+  // Check that streams were properly ended
+  expect(mockStdin.destroyed).toBe(true);
+  expect(mockStdout.destroyed).toBe(true);
+});
