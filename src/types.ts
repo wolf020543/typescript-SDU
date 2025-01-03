@@ -1123,6 +1123,7 @@ type Flatten<T> = T extends Primitive
   ? { [K in keyof T]: Flatten<T[K]> }
   : T;
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Infer<Parse extends (...args: any) => any> = Flatten<ReturnType<Parse>>;
 
 /* JSON-RPC types */
