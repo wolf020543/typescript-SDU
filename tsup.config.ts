@@ -11,12 +11,14 @@ export default defineConfig([
   {
     ...commonConfig,
     entry: ["src/**/*"],
+    bundle: false,
     outDir: "dist/cjs",
     format: ["cjs"],
   },
   {
     ...commonConfig,
     entry: ["src/**/*"],
+    bundle: false,
     outDir: "dist/esm",
     format: ["esm"],
   },
