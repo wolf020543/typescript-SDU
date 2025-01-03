@@ -43,8 +43,8 @@ describe("protocol tests", () => {
         result: z.string(),
       });
       await protocol.request(request, mockSchema, {
-        timeout: 100,
-      }); // Short timeout for test
+        timeout: 0,
+      });
     } catch (error) {
       expect(error).toBeInstanceOf(McpError);
       if (error instanceof McpError) {

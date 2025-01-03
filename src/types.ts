@@ -100,13 +100,10 @@ export const JSONRPCResponseSchema = z
   .strict();
 
 /**
-* @author : Sumitesh Naithani
-* @link : https://docs.trafficserver.apache.org/en/latest/developer-guide/jsonrpc/jsonrpc-node-errors.en.html#standard-errors
-* @description : An incomplete set of error codes that may appear in JSON-RPC responses.
-* @note : SDK-specific errors should use the server error range (-32000 to -32099), as per JSON-RPC 2.0 specification.
-*/
+ * Error codes defined by the JSON-RPC specification.
+ */
 export enum ErrorCode {
-  // SDK error codes (using server error range)
+  // SDK error codes
   ConnectionClosed = -32000,
   RequestTimeout = -32001,
  
