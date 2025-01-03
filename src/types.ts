@@ -100,13 +100,13 @@ export const JSONRPCResponseSchema = z
   .strict();
 
 /**
- * An incomplete set of error codes that may appear in JSON-RPC responses.
+ * Error codes defined by the JSON-RPC specification.
  */
 export enum ErrorCode {
   // SDK error codes
-  ConnectionClosed = -1,
-  RequestTimeout = -2,
-
+  ConnectionClosed = -32000,
+  RequestTimeout = -32001,
+ 
   // Standard JSON-RPC error codes
   ParseError = -32700,
   InvalidRequest = -32600,
