@@ -1164,7 +1164,7 @@ export type PaginatedRequest = Infer<typeof PaginatedRequestSchema>;
 export type PaginatedResult = Infer<typeof PaginatedResultSchema>;
 
 /* Resources */
-export type ResourceContents = Flatten<z.infer<typeof ResourceContentsSchema>>;
+export type ResourceContents = Infer<typeof ResourceContentsSchema>;
 export type TextResourceContents = Infer<typeof TextResourceContentsSchema>;
 export type BlobResourceContents = Infer<typeof BlobResourceContentsSchema>;
 export type Resource = Infer<typeof ResourceSchema>;
