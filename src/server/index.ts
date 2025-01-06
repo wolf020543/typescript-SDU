@@ -1,13 +1,19 @@
+import z, { AnyZodObject, ZodRawShape, ZodTypeAny } from "zod";
+import { zodToJsonSchema } from "zod-to-json-schema";
 import {
   Protocol,
   ProtocolOptions,
+  RequestHandlerExtra,
   RequestOptions,
 } from "../shared/protocol.js";
 import {
+  CallToolRequestSchema,
+  CallToolResult,
   ClientCapabilities,
   CreateMessageRequest,
   CreateMessageResultSchema,
   EmptyResultSchema,
+  ErrorCode,
   Implementation,
   InitializedNotificationSchema,
   InitializeRequest,
@@ -16,7 +22,10 @@ import {
   LATEST_PROTOCOL_VERSION,
   ListRootsRequest,
   ListRootsResultSchema,
+  ListToolsRequestSchema,
+  ListToolsResult,
   LoggingMessageNotification,
+  McpError,
   Notification,
   Request,
   ResourceUpdatedNotification,
@@ -26,6 +35,7 @@ import {
   ServerRequest,
   ServerResult,
   SUPPORTED_PROTOCOL_VERSIONS,
+  Tool
 } from "../types.js";
 
 export type ServerOptions = ProtocolOptions & {
@@ -33,6 +43,31 @@ export type ServerOptions = ProtocolOptions & {
    * Capabilities to advertise as being supported by this server.
    */
   capabilities: ServerCapabilities;
+};
+
+/**
+ * Callback for a tool handler registered with Server.tool().
+ * 
+ * Parameters will include tool arguments, if applicable, as well as other request handler context.
+ */
+export type ToolCallback<Args extends undefined | ZodRawShape = undefined> =
+  Args extends ZodRawShape
+  ? (
+    args: z.objectOutputType<Args, ZodTypeAny>,
+    extra: RequestHandlerExtra,
+  ) => CallToolResult | Promise<CallToolResult>
+  : (
+    extra: RequestHandlerExtra,
+  ) => CallToolResult | Promise<CallToolResult>;
+
+type RegisteredTool = {
+  description?: string;
+  inputSchema?: AnyZodObject;
+  callback: ToolCallback<undefined | ZodRawShape>;
+};
+
+const EMPTY_OBJECT_JSON_SCHEMA = {
+  type: "object" as const
 };
 
 /**
@@ -72,6 +107,7 @@ export class Server<
   private _clientCapabilities?: ClientCapabilities;
   private _clientVersion?: Implementation;
   private _capabilities: ServerCapabilities;
+  private _registeredTools: { [name: string]: RegisteredTool } = {};
 
   /**
    * Callback for when initialization has fully completed (i.e., the client has sent an `initialized` notification).
@@ -304,5 +340,86 @@ export class Server<
 
   async sendPromptListChanged() {
     return this.notification({ method: "notifications/prompts/list_changed" });
+  }
+
+  private setToolRequestHandlers() {
+    // TODO: Check that these handlers do not already exist
+    // TODO: Register tool capability
+
+    this.setRequestHandler(ListToolsRequestSchema, (): ListToolsResult => ({
+      tools: Object.entries(this._registeredTools).map(([name, tool]): Tool => {
+        return {
+          name,
+          description: tool.description,
+          inputSchema: tool.inputSchema ? zodToJsonSchema(tool.inputSchema) as Tool["inputSchema"] : EMPTY_OBJECT_JSON_SCHEMA,
+        };
+      })
+    }));
+
+    this.setRequestHandler(CallToolRequestSchema, async (request, extra): Promise<CallToolResult> => {
+      const tool = this._registeredTools[request.params.name];
+      if (!tool) {
+        throw new McpError(ErrorCode.InvalidParams, `Tool ${request.params.name} not found`);
+      }
+
+      if (tool.inputSchema) {
+        const parseResult = await tool.inputSchema.safeParseAsync(request.params.arguments);
+        if (!parseResult.success) {
+          throw new McpError(ErrorCode.InvalidParams, `Invalid arguments for tool ${request.params.name}: ${parseResult.error.message}`);
+        }
+
+        const args = parseResult.data;
+        const cb = tool.callback as ToolCallback<ZodRawShape>
+        return await Promise.resolve(cb(args, extra));
+      } else {
+        const cb = tool.callback as ToolCallback<undefined>;
+        return await Promise.resolve(cb(extra));
+      }
+    });
+  }
+
+  /**
+   * Registers a zero-argument tool `name`, which will run the given function when the client calls it.
+   */
+  tool(name: string, cb: ToolCallback): void;
+
+  /**
+   * Registers a zero-argument tool `name` (with a description) which will run the given function when the client calls it.
+   */
+  tool(name: string, description: string, cb: ToolCallback): void;
+
+  /**
+   * Registers a tool `name` accepting the given arguments, which must be an object containing named properties associated with Zod schemas. When the client calls it, the function will be run with the parsed and validated arguments.
+   */
+  tool<Args extends ZodRawShape>(name: string, paramsSchema: Args, cb: ToolCallback<Args>): void;
+
+  /**
+   * Registers a tool `name` (with a description) accepting the given arguments, which must be an object containing named properties associated with Zod schemas. When the client calls it, the function will be run with the parsed and validated arguments.
+   */
+  tool<Args extends ZodRawShape>(name: string, description: string, paramsSchema: Args, cb: ToolCallback<Args>): void;
+
+  tool(name: string, ...rest: unknown[]): void {
+    if (this._registeredTools[name]) {
+      throw new Error(`Tool ${name} is already registered`);
+    }
+
+    let description: string | undefined;
+    if (rest[0] instanceof String) {
+      description = rest.shift() as string;
+    }
+
+    let paramsSchema: ZodRawShape | undefined;
+    if (rest.length > 1) {
+      paramsSchema = rest.shift() as ZodRawShape;
+    }
+
+    const cb = rest[0] as ToolCallback<ZodRawShape | undefined>;
+    this._registeredTools[name] = {
+      description,
+      inputSchema: paramsSchema === undefined ? undefined : z.object(paramsSchema),
+      callback: cb,
+    };
+
+    this.setToolRequestHandlers();
   }
 }
