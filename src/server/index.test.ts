@@ -15,6 +15,8 @@ import {
   ListToolsRequestSchema,
   SetLevelRequestSchema,
   ErrorCode,
+  ListToolsResultSchema,
+  CallToolResultSchema,
 } from "../types.js";
 import { Transport } from "../shared/transport.js";
 import { InMemoryTransport } from "../inMemory.js";
@@ -543,5 +545,331 @@ test("should handle request timeout", async () => {
     ),
   ).rejects.toMatchObject({
     code: ErrorCode.RequestTimeout,
+  });
+});
+
+describe("Server.tool", () => {
+  test("should register zero-argument tool", async () => {
+    const server = new Server({
+      name: "test server",
+      version: "1.0",
+    });
+    const client = new Client({
+      name: "test client",
+      version: "1.0",
+    });
+
+    server.tool("test", async () => ({
+      content: [
+        {
+          type: "text",
+          text: "Test response",
+        },
+      ],
+    }));
+
+    const [clientTransport, serverTransport] =
+      InMemoryTransport.createLinkedPair();
+
+    await Promise.all([
+      client.connect(clientTransport),
+      server.connect(serverTransport),
+    ]);
+
+    const result = await client.request(
+      {
+        method: "tools/list",
+      },
+      ListToolsResultSchema,
+    );
+
+    expect(result.tools).toHaveLength(1);
+    expect(result.tools[0].name).toBe("test");
+    expect(result.tools[0].inputSchema).toEqual({
+      type: "object",
+    });
+  });
+
+  test("should register tool with args schema", async () => {
+    const server = new Server({
+      name: "test server",
+      version: "1.0",
+    });
+    const client = new Client({
+      name: "test client",
+      version: "1.0",
+    });
+
+    server.tool(
+      "test",
+      {
+        name: z.string(),
+        value: z.number(),
+      },
+      async (args) => ({
+        content: [
+          {
+            type: "text",
+            text: `${args.name}: ${args.value}`,
+          },
+        ],
+      }),
+    );
+
+    const [clientTransport, serverTransport] =
+      InMemoryTransport.createLinkedPair();
+
+    await Promise.all([
+      client.connect(clientTransport),
+      server.connect(serverTransport),
+    ]);
+
+    const result = await client.request(
+      {
+        method: "tools/list",
+      },
+      ListToolsResultSchema,
+    );
+
+    expect(result.tools).toHaveLength(1);
+    expect(result.tools[0].name).toBe("test");
+    expect(result.tools[0].inputSchema).toMatchObject({
+      type: "object",
+      properties: {
+        name: { type: "string" },
+        value: { type: "number" },
+      },
+    });
+  });
+
+  test("should register tool with description", async () => {
+    const server = new Server({
+      name: "test server",
+      version: "1.0",
+    });
+    const client = new Client({
+      name: "test client",
+      version: "1.0",
+    });
+
+    server.tool("test", "Test description", async () => ({
+      content: [
+        {
+          type: "text",
+          text: "Test response",
+        },
+      ],
+    }));
+
+    const [clientTransport, serverTransport] =
+      InMemoryTransport.createLinkedPair();
+
+    await Promise.all([
+      client.connect(clientTransport),
+      server.connect(serverTransport),
+    ]);
+
+    const result = await client.request(
+      {
+        method: "tools/list",
+      },
+      ListToolsResultSchema,
+    );
+
+    expect(result.tools).toHaveLength(1);
+    expect(result.tools[0].name).toBe("test");
+    expect(result.tools[0].description).toBe("Test description");
+  });
+
+  test("should validate tool args", async () => {
+    const server = new Server({
+      name: "test server",
+      version: "1.0",
+    });
+
+    const client = new Client(
+      {
+        name: "test client",
+        version: "1.0",
+      },
+      {
+        capabilities: {
+          tools: {},
+        },
+      },
+    );
+
+    server.tool(
+      "test",
+      {
+        name: z.string(),
+        value: z.number(),
+      },
+      async (args) => ({
+        content: [
+          {
+            type: "text",
+            text: `${args.name}: ${args.value}`,
+          },
+        ],
+      }),
+    );
+
+    const [clientTransport, serverTransport] =
+      InMemoryTransport.createLinkedPair();
+
+    await Promise.all([
+      client.connect(clientTransport),
+      server.connect(serverTransport),
+    ]);
+
+    await expect(
+      client.request(
+        {
+          method: "tools/call",
+          params: {
+            name: "test",
+            arguments: {
+              name: "test",
+              value: "not a number",
+            },
+          },
+        },
+        CallToolResultSchema,
+      ),
+    ).rejects.toThrow(/Invalid arguments/);
+  });
+
+  test("should prevent duplicate tool registration", () => {
+    const server = new Server({
+      name: "test server",
+      version: "1.0",
+    });
+
+    server.tool("test", async () => ({
+      content: [
+        {
+          type: "text",
+          text: "Test response",
+        },
+      ],
+    }));
+
+    expect(() => {
+      server.tool("test", async () => ({
+        content: [
+          {
+            type: "text",
+            text: "Test response 2",
+          },
+        ],
+      }));
+    }).toThrow(/already registered/);
+  });
+
+  test("should allow client to call server tools", async () => {
+    const server = new Server({
+      name: "test server",
+      version: "1.0",
+    });
+
+    const client = new Client(
+      {
+        name: "test client",
+        version: "1.0",
+      },
+      {
+        capabilities: {
+          tools: {},
+        },
+      },
+    );
+
+    server.tool(
+      "test",
+      "Test tool",
+      {
+        input: z.string(),
+      },
+      async (args) => ({
+        content: [
+          {
+            type: "text",
+            text: `Processed: ${args.input}`,
+          },
+        ],
+      }),
+    );
+
+    const [clientTransport, serverTransport] =
+      InMemoryTransport.createLinkedPair();
+
+    await Promise.all([
+      client.connect(clientTransport),
+      server.connect(serverTransport),
+    ]);
+
+    const result = await client.request(
+      {
+        method: "tools/call",
+        params: {
+          name: "test",
+          arguments: {
+            input: "hello",
+          },
+        },
+      },
+      CallToolResultSchema,
+    );
+
+    expect(result.content).toEqual([
+      {
+        type: "text",
+        text: "Processed: hello",
+      },
+    ]);
+  });
+
+  test("should handle server tool errors gracefully", async () => {
+    const server = new Server({
+      name: "test server",
+      version: "1.0",
+    });
+
+    const client = new Client(
+      {
+        name: "test client",
+        version: "1.0",
+      },
+      {
+        capabilities: {
+          tools: {},
+        },
+      },
+    );
+
+    server.tool("error-test", async () => {
+      throw new Error("Tool execution failed");
+    });
+
+    const [clientTransport, serverTransport] =
+      InMemoryTransport.createLinkedPair();
+
+    await Promise.all([
+      client.connect(clientTransport),
+      server.connect(serverTransport),
+    ]);
+
+    await expect(
+      client.request(
+        {
+          method: "tools/call",
+          params: {
+            name: "error-test",
+          },
+        },
+        CallToolResultSchema,
+      ),
+    ).rejects.toThrow("Tool execution failed");
   });
 });
