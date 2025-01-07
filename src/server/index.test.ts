@@ -606,11 +606,11 @@ describe("Server.tool", () => {
         name: z.string(),
         value: z.number(),
       },
-      async (args) => ({
+      async ({ name, value }) => ({
         content: [
           {
             type: "text",
-            text: `${args.name}: ${args.value}`,
+            text: `${name}: ${value}`,
           },
         ],
       }),
@@ -705,11 +705,11 @@ describe("Server.tool", () => {
         name: z.string(),
         value: z.number(),
       },
-      async (args) => ({
+      async ({ name, value }) => ({
         content: [
           {
             type: "text",
-            text: `${args.name}: ${args.value}`,
+            text: `${name}: ${value}`,
           },
         ],
       }),
@@ -791,11 +791,11 @@ describe("Server.tool", () => {
       {
         input: z.string(),
       },
-      async (args) => ({
+      async ({ input }) => ({
         content: [
           {
             type: "text",
-            text: `Processed: ${args.input}`,
+            text: `Processed: ${input}`,
           },
         ],
       }),
