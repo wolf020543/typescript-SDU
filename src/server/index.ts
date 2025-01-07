@@ -360,7 +360,9 @@ export class Server<
     this.assertCanSetRequestHandler(ListToolsRequestSchema.shape.method.value);
     this.assertCanSetRequestHandler(CallToolRequestSchema.shape.method.value);
 
-    // TODO: Register tool capability
+    this.registerCapabilities({
+      tools: {},
+    });
 
     this.setRequestHandler(
       ListToolsRequestSchema,
