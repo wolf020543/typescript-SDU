@@ -164,4 +164,79 @@ describe("UriTemplate", () => {
       expect(template.match("/users")).toBeNull();
     });
   });
+
+  describe("security and edge cases", () => {
+    it("should handle extremely long input strings", () => {
+      const longString = "x".repeat(100000);
+      const template = new UriTemplate(`/api/{param}`);
+      expect(template.expand({ param: longString })).toBe(`/api/${longString}`);
+      expect(template.match(`/api/${longString}`)).toEqual({ param: longString });
+    });
+
+    it("should handle deeply nested template expressions", () => {
+      const template = new UriTemplate("{a}{b}{c}{d}{e}{f}{g}{h}{i}{j}".repeat(1000));
+      expect(() => template.expand({
+        a: "1", b: "2", c: "3", d: "4", e: "5",
+        f: "6", g: "7", h: "8", i: "9", j: "0"
+      })).not.toThrow();
+    });
+
+    it("should handle malformed template expressions", () => {
+      expect(() => new UriTemplate("{unclosed")).toThrow();
+      expect(() => new UriTemplate("{}")).not.toThrow();
+      expect(() => new UriTemplate("{,}")).not.toThrow();
+      expect(() => new UriTemplate("{a}{")).toThrow();
+    });
+
+    it("should handle pathological regex patterns", () => {
+      const template = new UriTemplate("/api/{param}");
+      // Create a string that could cause catastrophic backtracking
+      const input = "/api/" + "a".repeat(100000);
+      expect(() => template.match(input)).not.toThrow();
+    });
+
+    it("should handle invalid UTF-8 sequences", () => {
+      const template = new UriTemplate("/api/{param}");
+      const invalidUtf8 = "���";
+      expect(() => template.expand({ param: invalidUtf8 })).not.toThrow();
+      expect(() => template.match(`/api/${invalidUtf8}`)).not.toThrow();
+    });
+
+    it("should handle template/URI length mismatches", () => {
+      const template = new UriTemplate("/api/{param}");
+      expect(template.match("/api/")).toBeNull();
+      expect(template.match("/api")).toBeNull();
+      expect(template.match("/api/value/extra")).toBeNull();
+    });
+
+    it("should handle repeated operators", () => {
+      const template = new UriTemplate("{?a}{?b}{?c}");
+      expect(template.expand({ a: "1", b: "2", c: "3" })).toBe("?a=1&b=2&c=3");
+    });
+
+    it("should handle overlapping variable names", () => {
+      const template = new UriTemplate("{var}{vara}");
+      expect(template.expand({ var: "1", vara: "2" })).toBe("12");
+    });
+
+    it("should handle empty segments", () => {
+      const template = new UriTemplate("///{a}////{b}////");
+      expect(template.expand({ a: "1", b: "2" })).toBe("///1////2////");
+      expect(template.match("///1////2////")).toEqual({ a: "1", b: "2" });
+    });
+
+    it("should handle maximum template expression limit", () => {
+      // Create a template with many expressions
+      const expressions = Array(10000).fill("{param}").join("");
+      expect(() => new UriTemplate(expressions)).not.toThrow();
+    });
+
+    it("should handle maximum variable name length", () => {
+      const longName = "a".repeat(10000);
+      const template = new UriTemplate(`{${longName}}`);
+      const vars: Record<string, string> = {};
+      vars[longName] = "value";
+      expect(() => template.expand(vars)).not.toThrow();
+    });
+  });
 });

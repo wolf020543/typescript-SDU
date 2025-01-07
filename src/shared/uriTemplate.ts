@@ -2,13 +2,26 @@
 
 type Variables = Record<string, string | string[]>;
 
+const MAX_TEMPLATE_LENGTH = 1000000; // 1MB
+const MAX_VARIABLE_LENGTH = 1000000; // 1MB
+const MAX_TEMPLATE_EXPRESSIONS = 10000;
+const MAX_REGEX_LENGTH = 1000000; // 1MB
+
 export class UriTemplate {
+  private static validateLength(str: string, max: number, context: string): void {
+    if (str.length > max) {
+      throw new Error(
+        `${context} exceeds maximum length of ${max} characters (got ${str.length})`,
+      );
+    }
+  }
   private readonly parts: Array<
     | string
     | { name: string; operator: string; names: string[]; exploded: boolean }
   >;
 
   constructor(template: string) {
+    UriTemplate.validateLength(template, MAX_TEMPLATE_LENGTH, "Template");
     this.parts = this.parse(template);
   }
 
@@ -24,6 +37,7 @@ export class UriTemplate {
     > = [];
     let currentText = "";
     let i = 0;
+    let expressionCount = 0;
 
     while (i < template.length) {
       if (template[i] === "{") {
@@ -34,11 +48,28 @@ export class UriTemplate {
         const end = template.indexOf("}", i);
         if (end === -1) throw new Error("Unclosed template expression");
 
+        expressionCount++;
+        if (expressionCount > MAX_TEMPLATE_EXPRESSIONS) {
+          throw new Error(
+            `Template contains too many expressions (max ${MAX_TEMPLATE_EXPRESSIONS})`,
+          );
+        }
+
         const expr = template.slice(i + 1, end);
         const operator = this.getOperator(expr);
         const exploded = expr.includes("*");
         const names = this.getNames(expr);
         const name = names[0];
+        
+        // Validate variable name length
+        for (const name of names) {
+          UriTemplate.validateLength(
+            name,
+            MAX_VARIABLE_LENGTH,
+            "Variable name",
+          );
+        }
+
         parts.push({ name, operator, names, exploded });
         i = end + 1;
       } else {
@@ -69,6 +100,7 @@ export class UriTemplate {
   }
 
   private encodeValue(value: string, operator: string): string {
+    UriTemplate.validateLength(value, MAX_VARIABLE_LENGTH, "Variable value");
     if (operator === "+" || operator === "#") {
       return encodeURI(value);
     }
@@ -132,12 +164,31 @@ export class UriTemplate {
   }
 
   expand(variables: Variables): string {
-    return this.parts
-      .map((part) => {
-        if (typeof part === "string") return part;
-        return this.expandPart(part, variables);
-      })
-      .join("");
+    let result = "";
+    let hasQueryParam = false;
+
+    for (const part of this.parts) {
+      if (typeof part === "string") {
+        result += part;
+        continue;
+      }
+
+      const expanded = this.expandPart(part, variables);
+      if (!expanded) continue;
+
+      // Convert ? to & if we already have a query parameter
+      if ((part.operator === "?" || part.operator === "&") && hasQueryParam) {
+        result += expanded.replace("?", "&");
+      } else {
+        result += expanded;
+      }
+
+      if (part.operator === "?" || part.operator === "&") {
+        hasQueryParam = true;
+      }
+    }
+
+    return result;
   }
 
   private escapeRegExp(str: string): string {
@@ -151,6 +202,11 @@ export class UriTemplate {
     exploded: boolean;
   }): Array<{ pattern: string; name: string }> {
     const patterns: Array<{ pattern: string; name: string }> = [];
+
+    // Validate variable name length for matching
+    for (const name of part.names) {
+      UriTemplate.validateLength(name, MAX_VARIABLE_LENGTH, "Variable name");
+    }
 
     if (part.operator === "?" || part.operator === "&") {
       for (let i = 0; i < part.names.length; i++) {
@@ -190,6 +246,7 @@ export class UriTemplate {
   }
 
   match(uri: string): Variables | null {
+    UriTemplate.validateLength(uri, MAX_TEMPLATE_LENGTH, "URI");
     let pattern = "^";
     const names: Array<{ name: string; exploded: boolean }> = [];
 
@@ -206,6 +263,7 @@ export class UriTemplate {
     }
 
     pattern += "$";
+    UriTemplate.validateLength(pattern, MAX_REGEX_LENGTH, "Generated regex pattern");
     const regex = new RegExp(pattern);
     const match = uri.match(regex);
 
