@@ -1,6 +1,7 @@
 import { ZodLiteral, ZodObject, ZodType, z } from "zod";
 import {
   CancelledNotificationSchema,
+  ClientCapabilities,
   ErrorCode,
   JSONRPCError,
   JSONRPCNotification,
@@ -15,6 +16,7 @@ import {
   Request,
   RequestId,
   Result,
+  ServerCapabilities,
 } from "../types.js";
 import { Transport } from "./transport.js";
 
@@ -546,4 +548,18 @@ export abstract class Protocol<
   removeNotificationHandler(method: string): void {
     this._notificationHandlers.delete(method);
   }
+}
+
+export function mergeCapabilities<T extends ServerCapabilities | ClientCapabilities>(base: T, additional: T): T {
+  return Object.entries(additional).reduce(
+    (acc, [key, value]) => {
+      if (value && typeof value === "object") {
+        acc[key] = acc[key] ? { ...acc[key], ...value } : value;
+      } else {
+        acc[key] = value;
+      }
+      return acc;
+    },
+    { ...base },
+  );
 }

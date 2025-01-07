@@ -1,6 +1,7 @@
 import z, { AnyZodObject, ZodRawShape, ZodTypeAny } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import {
+  mergeCapabilities,
   Protocol,
   ProtocolOptions,
   RequestHandlerExtra,
@@ -35,19 +36,19 @@ import {
   ServerRequest,
   ServerResult,
   SUPPORTED_PROTOCOL_VERSIONS,
-  Tool
+  Tool,
 } from "../types.js";
 
 export type ServerOptions = ProtocolOptions & {
   /**
    * Capabilities to advertise as being supported by this server.
    */
-  capabilities: ServerCapabilities;
+  capabilities?: ServerCapabilities;
 };
 
 /**
  * Callback for a tool handler registered with Server.tool().
- * 
+ *
  * Parameters will include tool arguments, if applicable, as well as other request handler context.
  */
 export type ToolCallback<Args extends undefined | ZodRawShape = undefined> =
@@ -56,9 +57,7 @@ export type ToolCallback<Args extends undefined | ZodRawShape = undefined> =
     args: z.objectOutputType<Args, ZodTypeAny>,
     extra: RequestHandlerExtra,
   ) => CallToolResult | Promise<CallToolResult>
-  : (
-    extra: RequestHandlerExtra,
-  ) => CallToolResult | Promise<CallToolResult>;
+  : (extra: RequestHandlerExtra) => CallToolResult | Promise<CallToolResult>;
 
 type RegisteredTool = {
   description?: string;
@@ -67,7 +66,7 @@ type RegisteredTool = {
 };
 
 const EMPTY_OBJECT_JSON_SCHEMA = {
-  type: "object" as const
+  type: "object" as const,
 };
 
 /**
@@ -119,10 +118,10 @@ export class Server<
    */
   constructor(
     private _serverInfo: Implementation,
-    options: ServerOptions,
+    options?: ServerOptions,
   ) {
     super(options);
-    this._capabilities = options.capabilities;
+    this._capabilities = options?.capabilities ?? {};
 
     this.setRequestHandler(InitializeRequestSchema, (request) =>
       this._oninitialize(request),
@@ -130,6 +129,21 @@ export class Server<
     this.setNotificationHandler(InitializedNotificationSchema, () =>
       this.oninitialized?.(),
     );
+  }
+
+  /**
+   * Registers new capabilities. This can only be called before connecting to a transport.
+   *
+   * The new capabilities will be merged with any existing capabilities previously given (e.g., at initialization).
+   */
+  public registerCapabilities(capabilities: ServerCapabilities): void {
+    if (this.transport) {
+      throw new Error(
+        "Cannot register capabilities after connecting to transport",
+      );
+    }
+
+    this._capabilities = mergeCapabilities(this._capabilities, capabilities);
   }
 
   protected assertCapabilityForMethod(method: RequestT["method"]): void {
@@ -348,36 +362,54 @@ export class Server<
 
     // TODO: Register tool capability
 
-    this.setRequestHandler(ListToolsRequestSchema, (): ListToolsResult => ({
-      tools: Object.entries(this._registeredTools).map(([name, tool]): Tool => {
-        return {
-          name,
-          description: tool.description,
-          inputSchema: tool.inputSchema ? zodToJsonSchema(tool.inputSchema) as Tool["inputSchema"] : EMPTY_OBJECT_JSON_SCHEMA,
-        };
-      })
-    }));
+    this.setRequestHandler(
+      ListToolsRequestSchema,
+      (): ListToolsResult => ({
+        tools: Object.entries(this._registeredTools).map(
+          ([name, tool]): Tool => {
+            return {
+              name,
+              description: tool.description,
+              inputSchema: tool.inputSchema
+                ? (zodToJsonSchema(tool.inputSchema) as Tool["inputSchema"])
+                : EMPTY_OBJECT_JSON_SCHEMA,
+            };
+          },
+        ),
+      }),
+    );
 
-    this.setRequestHandler(CallToolRequestSchema, async (request, extra): Promise<CallToolResult> => {
-      const tool = this._registeredTools[request.params.name];
-      if (!tool) {
-        throw new McpError(ErrorCode.InvalidParams, `Tool ${request.params.name} not found`);
-      }
-
-      if (tool.inputSchema) {
-        const parseResult = await tool.inputSchema.safeParseAsync(request.params.arguments);
-        if (!parseResult.success) {
-          throw new McpError(ErrorCode.InvalidParams, `Invalid arguments for tool ${request.params.name}: ${parseResult.error.message}`);
+    this.setRequestHandler(
+      CallToolRequestSchema,
+      async (request, extra): Promise<CallToolResult> => {
+        const tool = this._registeredTools[request.params.name];
+        if (!tool) {
+          throw new McpError(
+            ErrorCode.InvalidParams,
+            `Tool ${request.params.name} not found`,
+          );
         }
 
-        const args = parseResult.data;
-        const cb = tool.callback as ToolCallback<ZodRawShape>
-        return await Promise.resolve(cb(args, extra));
-      } else {
-        const cb = tool.callback as ToolCallback<undefined>;
-        return await Promise.resolve(cb(extra));
-      }
-    });
+        if (tool.inputSchema) {
+          const parseResult = await tool.inputSchema.safeParseAsync(
+            request.params.arguments,
+          );
+          if (!parseResult.success) {
+            throw new McpError(
+              ErrorCode.InvalidParams,
+              `Invalid arguments for tool ${request.params.name}: ${parseResult.error.message}`,
+            );
+          }
+
+          const args = parseResult.data;
+          const cb = tool.callback as ToolCallback<ZodRawShape>;
+          return await Promise.resolve(cb(args, extra));
+        } else {
+          const cb = tool.callback as ToolCallback<undefined>;
+          return await Promise.resolve(cb(extra));
+        }
+      },
+    );
   }
 
   /**
@@ -393,12 +425,21 @@ export class Server<
   /**
    * Registers a tool `name` accepting the given arguments, which must be an object containing named properties associated with Zod schemas. When the client calls it, the function will be run with the parsed and validated arguments.
    */
-  tool<Args extends ZodRawShape>(name: string, paramsSchema: Args, cb: ToolCallback<Args>): void;
+  tool<Args extends ZodRawShape>(
+    name: string,
+    paramsSchema: Args,
+    cb: ToolCallback<Args>,
+  ): void;
 
   /**
    * Registers a tool `name` (with a description) accepting the given arguments, which must be an object containing named properties associated with Zod schemas. When the client calls it, the function will be run with the parsed and validated arguments.
    */
-  tool<Args extends ZodRawShape>(name: string, description: string, paramsSchema: Args, cb: ToolCallback<Args>): void;
+  tool<Args extends ZodRawShape>(
+    name: string,
+    description: string,
+    paramsSchema: Args,
+    cb: ToolCallback<Args>,
+  ): void;
 
   tool(name: string, ...rest: unknown[]): void {
     if (this._registeredTools[name]) {
@@ -418,7 +459,8 @@ export class Server<
     const cb = rest[0] as ToolCallback<ZodRawShape | undefined>;
     this._registeredTools[name] = {
       description,
-      inputSchema: paramsSchema === undefined ? undefined : z.object(paramsSchema),
+      inputSchema:
+        paramsSchema === undefined ? undefined : z.object(paramsSchema),
       callback: cb,
     };
 
