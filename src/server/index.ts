@@ -343,7 +343,9 @@ export class Server<
   }
 
   private setToolRequestHandlers() {
-    // TODO: Check that these handlers do not already exist
+    this.assertCanSetRequestHandler(ListToolsRequestSchema.shape.method.value);
+    this.assertCanSetRequestHandler(CallToolRequestSchema.shape.method.value);
+
     // TODO: Register tool capability
 
     this.setRequestHandler(ListToolsRequestSchema, (): ListToolsResult => ({

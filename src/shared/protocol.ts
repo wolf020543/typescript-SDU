@@ -512,6 +512,15 @@ export abstract class Protocol<
   }
 
   /**
+   * Asserts that a request handler has not already been set for the given method, in preparation for a new one being automatically installed.
+   */
+  protected assertCanSetRequestHandler(method: string): void {
+    if (this._requestHandlers.has(method)) {
+      throw new Error(`A request handler for ${method} already exists, which would be overridden`);
+    }
+  }
+
+  /**
    * Registers a handler to invoke when this protocol object receives a notification with the given method.
    *
    * Note that this will replace any previous notification handler for the same method.
