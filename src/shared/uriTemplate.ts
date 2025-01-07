@@ -1,6 +1,6 @@
 // Claude-authored implementation of RFC 6570 URI Templates
 
-type Variables = Record<string, string | string[]>;
+export type Variables = Record<string, string | string[]>;
 
 const MAX_TEMPLATE_LENGTH = 1000000; // 1MB
 const MAX_VARIABLE_LENGTH = 1000000; // 1MB
@@ -8,7 +8,22 @@ const MAX_TEMPLATE_EXPRESSIONS = 10000;
 const MAX_REGEX_LENGTH = 1000000; // 1MB
 
 export class UriTemplate {
-  private static validateLength(str: string, max: number, context: string): void {
+  /**
+   * Returns true if the given string contains any URI template expressions.
+   * A template expression is a sequence of characters enclosed in curly braces,
+   * like {foo} or {?bar}.
+   */
+  static isTemplate(str: string): boolean {
+    // Look for any sequence of characters between curly braces
+    // that isn't just whitespace
+    return /\{[^}\s]+\}/.test(str);
+  }
+
+  private static validateLength(
+    str: string,
+    max: number,
+    context: string,
+  ): void {
     if (str.length > max) {
       throw new Error(
         `${context} exceeds maximum length of ${max} characters (got ${str.length})`,
@@ -60,7 +75,7 @@ export class UriTemplate {
         const exploded = expr.includes("*");
         const names = this.getNames(expr);
         const name = names[0];
-        
+
         // Validate variable name length
         for (const name of names) {
           UriTemplate.validateLength(
@@ -263,7 +278,11 @@ export class UriTemplate {
     }
 
     pattern += "$";
-    UriTemplate.validateLength(pattern, MAX_REGEX_LENGTH, "Generated regex pattern");
+    UriTemplate.validateLength(
+      pattern,
+      MAX_REGEX_LENGTH,
+      "Generated regex pattern",
+    );
     const regex = new RegExp(pattern);
     const match = uri.match(regex);
 

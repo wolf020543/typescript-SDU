@@ -1,6 +1,23 @@
 import { UriTemplate } from "./uriTemplate.js";
 
 describe("UriTemplate", () => {
+  describe("isTemplate", () => {
+    it("should return true for strings containing template expressions", () => {
+      expect(UriTemplate.isTemplate("{foo}")).toBe(true);
+      expect(UriTemplate.isTemplate("/users/{id}")).toBe(true);
+      expect(UriTemplate.isTemplate("http://example.com/{path}/{file}")).toBe(true);
+      expect(UriTemplate.isTemplate("/search{?q,limit}")).toBe(true);
+    });
+
+    it("should return false for strings without template expressions", () => {
+      expect(UriTemplate.isTemplate("")).toBe(false);
+      expect(UriTemplate.isTemplate("plain string")).toBe(false);
+      expect(UriTemplate.isTemplate("http://example.com/foo/bar")).toBe(false);
+      expect(UriTemplate.isTemplate("{}")).toBe(false); // Empty braces don't count
+      expect(UriTemplate.isTemplate("{ }")).toBe(false); // Just whitespace doesn't count
+    });
+  });
+
   describe("simple string expansion", () => {
     it("should expand simple string variables", () => {
       const template = new UriTemplate("http://example.com/users/{username}");
