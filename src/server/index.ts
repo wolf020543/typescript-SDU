@@ -405,10 +405,34 @@ export class Server<
 
           const args = parseResult.data;
           const cb = tool.callback as ToolCallback<ZodRawShape>;
-          return await Promise.resolve(cb(args, extra));
+          try {
+            return await Promise.resolve(cb(args, extra));
+          } catch (error) {
+            return {
+              content: [
+                {
+                  type: "text",
+                  text: error instanceof Error ? error.message : String(error),
+                },
+              ],
+              isError: true,
+            };
+          }
         } else {
           const cb = tool.callback as ToolCallback<undefined>;
-          return await Promise.resolve(cb(extra));
+          try {
+            return await Promise.resolve(cb(extra));
+          } catch (error) {
+            return {
+              content: [
+                {
+                  type: "text",
+                  text: error instanceof Error ? error.message : String(error),
+                },
+              ],
+              isError: true,
+            };
+          }
         }
       },
     );

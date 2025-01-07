@@ -860,16 +860,70 @@ describe("Server.tool", () => {
       server.connect(serverTransport),
     ]);
 
+    const result = await client.request(
+      {
+        method: "tools/call",
+        params: {
+          name: "error-test",
+        },
+      },
+      CallToolResultSchema,
+    );
+
+    expect(result.isError).toBe(true);
+    expect(result.content).toEqual([
+      {
+        type: "text",
+        text: "Tool execution failed",
+      },
+    ]);
+  });
+
+  test("should throw McpError for invalid tool name", async () => {
+    const server = new Server({
+      name: "test server",
+      version: "1.0",
+    });
+
+    const client = new Client(
+      {
+        name: "test client",
+        version: "1.0",
+      },
+      {
+        capabilities: {
+          tools: {},
+        },
+      },
+    );
+
+    server.tool("test-tool", async () => ({
+      content: [
+        {
+          type: "text",
+          text: "Test response",
+        },
+      ],
+    }));
+
+    const [clientTransport, serverTransport] =
+      InMemoryTransport.createLinkedPair();
+
+    await Promise.all([
+      client.connect(clientTransport),
+      server.connect(serverTransport),
+    ]);
+
     await expect(
       client.request(
         {
           method: "tools/call",
           params: {
-            name: "error-test",
+            name: "nonexistent-tool",
           },
         },
         CallToolResultSchema,
       ),
-    ).rejects.toThrow("Tool execution failed");
+    ).rejects.toThrow(/Tool nonexistent-tool not found/);
   });
 });
