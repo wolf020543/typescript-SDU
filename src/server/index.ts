@@ -603,8 +603,14 @@ export class Server<
     });
   }
 
+  /**
+   * Registers a resource `name` at a fixed URI, which will use the given callback to respond to read requests.
+   */
   resource(name: string, uri: string, readCallback: ReadResourceCallback): void;
 
+  /**
+   * Registers a resource `name` at a fixed URI with metadata, which will use the given callback to respond to read requests.
+   */
   resource(
     name: string,
     uri: string,
@@ -612,12 +618,18 @@ export class Server<
     readCallback: ReadResourceCallback,
   ): void;
 
+  /**
+   * Registers a resource `name` with a URI template pattern, which will use the given callback to respond to read requests.
+   */
   resource(
     name: string,
     uriTemplate: UriTemplate,
     readCallback: ReadResourceCallback,
   ): void;
 
+  /**
+   * Registers a resource `name` with a URI template pattern and metadata, which will use the given callback to respond to read requests.
+   */
   resource(
     name: string,
     uriTemplate: UriTemplate,
@@ -625,6 +637,9 @@ export class Server<
     readCallback: ReadResourceCallback,
   ): void;
 
+  /**
+   * Registers a resource `name` with a URI template pattern, which will use the list callback to enumerate matching resources and read callback to respond to read requests.
+   */
   resource(
     name: string,
     uriTemplate: UriTemplate,
@@ -632,6 +647,9 @@ export class Server<
     readCallback: ReadResourceCallback,
   ): void;
 
+  /**
+   * Registers a resource `name` with a URI template pattern and metadata, which will use the list callback to enumerate matching resources and read callback to respond to read requests.
+   */
   resource(
     name: string,
     uriTemplate: UriTemplate,
