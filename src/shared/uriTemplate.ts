@@ -30,6 +30,7 @@ export class UriTemplate {
       );
     }
   }
+  private readonly template: string;
   private readonly parts: Array<
     | string
     | { name: string; operator: string; names: string[]; exploded: boolean }
@@ -37,7 +38,12 @@ export class UriTemplate {
 
   constructor(template: string) {
     UriTemplate.validateLength(template, MAX_TEMPLATE_LENGTH, "Template");
+    this.template = template;
     this.parts = this.parse(template);
+  }
+
+  toString(): string {
+    return this.template;
   }
 
   private parse(
