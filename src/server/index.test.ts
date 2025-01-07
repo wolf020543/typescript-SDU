@@ -1122,6 +1122,50 @@ describe("Server.resource", () => {
     expect(result.resources[1].uri).toBe("test://resource/2");
   });
 
+  test("should pass template variables to readCallback", async () => {
+    const server = new Server({
+      name: "test server",
+      version: "1.0",
+    });
+    const client = new Client({
+      name: "test client",
+      version: "1.0",
+    });
+
+    server.resource(
+      "test",
+      new UriTemplate("test://resource/{category}/{id}"),
+      async (uri, { category, id }) => ({
+        contents: [
+          {
+            uri: uri.href,
+            text: `Category: ${category}, ID: ${id}`,
+          },
+        ],
+      }),
+    );
+
+    const [clientTransport, serverTransport] =
+      InMemoryTransport.createLinkedPair();
+
+    await Promise.all([
+      client.connect(clientTransport),
+      server.connect(serverTransport),
+    ]);
+
+    const result = await client.request(
+      {
+        method: "resources/read",
+        params: {
+          uri: "test://resource/books/123",
+        },
+      },
+      ReadResourceResultSchema,
+    );
+
+    expect(result.contents[0].text).toBe("Category: books, ID: 123");
+  });
+
   test("should prevent duplicate resource registration", () => {
     const server = new Server({
       name: "test server",

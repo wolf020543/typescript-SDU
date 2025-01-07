@@ -78,14 +78,13 @@ const EMPTY_OBJECT_JSON_SCHEMA = {
 
 export type ResourceMetadata = Omit<Resource, "uri" | "name">;
 
-export type ReadResourceCallback = (
-  uri: URL,
-  variables?: Variables,
-) => ReadResourceResult | Promise<ReadResourceResult>;
-
 export type ListResourcesCallback = () =>
   | ListResourcesResult
   | Promise<ListResourcesResult>;
+
+export type ReadResourceCallback = (
+  uri: URL,
+) => ReadResourceResult | Promise<ReadResourceResult>;
 
 type RegisteredResource = {
   name: string;
@@ -93,11 +92,16 @@ type RegisteredResource = {
   readCallback: ReadResourceCallback;
 };
 
+export type ReadResourceTemplateCallback = (
+  uri: URL,
+  variables: Variables,
+) => ReadResourceResult | Promise<ReadResourceResult>;
+
 type RegisteredResourceTemplate = {
   uriTemplate: UriTemplate;
   metadata?: ResourceMetadata;
   listCallback?: ListResourcesCallback;
-  readCallback: ReadResourceCallback;
+  readCallback: ReadResourceTemplateCallback;
 };
 
 /**
@@ -624,7 +628,7 @@ export class Server<
   resource(
     name: string,
     uriTemplate: UriTemplate,
-    readCallback: ReadResourceCallback,
+    readCallback: ReadResourceTemplateCallback,
   ): void;
 
   /**
@@ -634,7 +638,7 @@ export class Server<
     name: string,
     uriTemplate: UriTemplate,
     metadata: ResourceMetadata,
-    readCallback: ReadResourceCallback,
+    readCallback: ReadResourceTemplateCallback,
   ): void;
 
   /**
@@ -644,7 +648,7 @@ export class Server<
     name: string,
     uriTemplate: UriTemplate,
     listCallback: ListResourcesCallback,
-    readCallback: ReadResourceCallback,
+    readCallback: ReadResourceTemplateCallback,
   ): void;
 
   /**
@@ -655,7 +659,7 @@ export class Server<
     uriTemplate: UriTemplate,
     metadata: ResourceMetadata,
     listCallback: ListResourcesCallback,
-    readCallback: ReadResourceCallback,
+    readCallback: ReadResourceTemplateCallback,
   ): void;
 
   resource(
@@ -673,8 +677,8 @@ export class Server<
       listCallback = rest.shift() as ListResourcesCallback;
     }
 
-    const readCallback = rest[0] as ReadResourceCallback;
     if (typeof uriOrTemplate === "string") {
+      const readCallback = rest[0] as ReadResourceCallback;
       this.registerResource({
         name,
         uri: uriOrTemplate,
@@ -682,6 +686,7 @@ export class Server<
         readCallback,
       });
     } else {
+      const readCallback = rest[0] as ReadResourceTemplateCallback;
       this.registerResourceTemplate({
         name,
         uriTemplate: uriOrTemplate,
@@ -727,7 +732,7 @@ export class Server<
     uriTemplate: UriTemplate;
     metadata?: ResourceMetadata;
     listCallback?: ListResourcesCallback;
-    readCallback: ReadResourceCallback;
+    readCallback: ReadResourceTemplateCallback;
   }): void {
     if (this._registeredResourceTemplates[name]) {
       throw new Error(`Resource template ${name} is already registered`);
