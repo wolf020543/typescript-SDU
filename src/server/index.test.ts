@@ -1065,6 +1065,63 @@ describe("Server.resource", () => {
     );
   });
 
+  test("should register resource template with listCallback", async () => {
+    const server = new Server({
+      name: "test server",
+      version: "1.0",
+    });
+    const client = new Client({
+      name: "test client",
+      version: "1.0",
+    });
+
+    server.resource(
+      "test",
+      new UriTemplate("test://resource/{id}"),
+      async () => ({
+        resources: [
+          {
+            name: "Resource 1",
+            uri: "test://resource/1",
+          },
+          {
+            name: "Resource 2",
+            uri: "test://resource/2",
+          },
+        ],
+      }),
+      async (uri) => ({
+        contents: [
+          {
+            uri: uri.href,
+            text: "Test content",
+          },
+        ],
+      }),
+    );
+
+    const [clientTransport, serverTransport] =
+      InMemoryTransport.createLinkedPair();
+
+    await Promise.all([
+      client.connect(clientTransport),
+      server.connect(serverTransport),
+    ]);
+
+    const result = await client.request(
+      {
+        method: "resources/list",
+      },
+      ListResourcesResultSchema,
+    );
+
+    expect(result.resources).toHaveLength(2);
+    expect(result.resources[0].name).toBe("Resource 1");
+    expect(result.resources[0].uri).toBe("test://resource/1");
+    expect(result.resources[1].name).toBe("Resource 2");
+    expect(result.resources[1].uri).toBe("test://resource/2");
+  });
+
   test("should prevent duplicate resource registration", () => {
     const server = new Server({
       name: "test server",
