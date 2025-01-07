@@ -449,7 +449,7 @@ export class Server<
     }
 
     let description: string | undefined;
-    if (rest[0] instanceof String) {
+    if (typeof rest[0] === "string") {
       description = rest.shift() as string;
     }
 
