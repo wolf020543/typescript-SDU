@@ -21,6 +21,9 @@ import {
   InitializeRequestSchema,
   InitializeResult,
   LATEST_PROTOCOL_VERSION,
+  ListResourcesRequestSchema,
+  ListResourcesResult,
+  ListResourceTemplatesRequestSchema,
   ListRootsRequest,
   ListRootsResultSchema,
   ListToolsRequestSchema,
@@ -28,7 +31,10 @@ import {
   LoggingMessageNotification,
   McpError,
   Notification,
+  ReadResourceRequestSchema,
+  ReadResourceResult,
   Request,
+  Resource,
   ResourceUpdatedNotification,
   Result,
   ServerCapabilities,
@@ -38,6 +44,7 @@ import {
   SUPPORTED_PROTOCOL_VERSIONS,
   Tool,
 } from "../types.js";
+import { UriTemplate, Variables } from "../shared/uriTemplate.js";
 
 export type ServerOptions = ProtocolOptions & {
   /**
@@ -53,11 +60,11 @@ export type ServerOptions = ProtocolOptions & {
  */
 export type ToolCallback<Args extends undefined | ZodRawShape = undefined> =
   Args extends ZodRawShape
-  ? (
-    args: z.objectOutputType<Args, ZodTypeAny>,
-    extra: RequestHandlerExtra,
-  ) => CallToolResult | Promise<CallToolResult>
-  : (extra: RequestHandlerExtra) => CallToolResult | Promise<CallToolResult>;
+    ? (
+        args: z.objectOutputType<Args, ZodTypeAny>,
+        extra: RequestHandlerExtra,
+      ) => CallToolResult | Promise<CallToolResult>
+    : (extra: RequestHandlerExtra) => CallToolResult | Promise<CallToolResult>;
 
 type RegisteredTool = {
   description?: string;
@@ -67,6 +74,30 @@ type RegisteredTool = {
 
 const EMPTY_OBJECT_JSON_SCHEMA = {
   type: "object" as const,
+};
+
+export type ResourceMetadata = Omit<Resource, "uri" | "name">;
+
+export type ReadResourceCallback = (
+  uri: URL,
+  variables?: Variables,
+) => ReadResourceResult | Promise<ReadResourceResult>;
+
+export type ListResourcesCallback = () =>
+  | ListResourcesResult
+  | Promise<ListResourcesResult>;
+
+type RegisteredResource = {
+  name: string;
+  metadata?: ResourceMetadata;
+  readCallback: ReadResourceCallback;
+};
+
+type RegisteredResourceTemplate = {
+  uriTemplate: UriTemplate;
+  metadata?: ResourceMetadata;
+  listCallback?: ListResourcesCallback;
+  readCallback: ReadResourceCallback;
 };
 
 /**
@@ -107,6 +138,10 @@ export class Server<
   private _clientVersion?: Implementation;
   private _capabilities: ServerCapabilities;
   private _registeredTools: { [name: string]: RegisteredTool } = {};
+  private _registeredResources: { [uri: string]: RegisteredResource } = {};
+  private _registeredResourceTemplates: {
+    [name: string]: RegisteredResourceTemplate;
+  } = {};
 
   /**
    * Callback for when initialization has fully completed (i.e., the client has sent an `initialized` notification).
@@ -491,5 +526,202 @@ export class Server<
     };
 
     this.setToolRequestHandlers();
+  }
+
+  private setResourceRequestHandlers() {
+    this.assertCanSetRequestHandler(
+      ListResourcesRequestSchema.shape.method.value,
+    );
+    this.assertCanSetRequestHandler(
+      ListResourceTemplatesRequestSchema.shape.method.value,
+    );
+    this.assertCanSetRequestHandler(
+      ReadResourceRequestSchema.shape.method.value,
+    );
+
+    this.registerCapabilities({
+      resources: {},
+    });
+
+    this.setRequestHandler(ListResourcesRequestSchema, async () => {
+      const resources = Object.entries(this._registeredResources).map(
+        ([uri, resource]) => ({
+          uri,
+          name: resource.name,
+          ...resource.metadata,
+        }),
+      );
+
+      const templateResources: Resource[] = [];
+      for (const template of Object.values(this._registeredResourceTemplates)) {
+        if (!template.listCallback) {
+          continue;
+        }
+
+        const result = await template.listCallback();
+        for (const resource of result.resources) {
+          templateResources.push({
+            ...resource,
+            ...template.metadata,
+          });
+        }
+      }
+
+      return { resources: [...resources, ...templateResources] };
+    });
+
+    this.setRequestHandler(ListResourceTemplatesRequestSchema, async () => {
+      const resourceTemplates = Object.entries(
+        this._registeredResourceTemplates,
+      ).map(([name, template]) => ({
+        name,
+        uriTemplate: template.uriTemplate.toString(),
+        ...template.metadata,
+      }));
+
+      return { resourceTemplates };
+    });
+
+    this.setRequestHandler(ReadResourceRequestSchema, async (request) => {
+      const uri = new URL(request.params.uri);
+
+      // First check for exact resource match
+      const resource = this._registeredResources[uri.toString()];
+      if (resource) {
+        return resource.readCallback(uri);
+      }
+
+      // Then check templates
+      for (const template of Object.values(this._registeredResourceTemplates)) {
+        const variables = template.uriTemplate.match(uri.toString());
+        if (variables) {
+          return template.readCallback(uri, variables);
+        }
+      }
+
+      throw new McpError(ErrorCode.InvalidParams, `Resource ${uri} not found`);
+    });
+  }
+
+  resource(name: string, uri: string, readCallback: ReadResourceCallback): void;
+
+  resource(
+    name: string,
+    uri: string,
+    metadata: ResourceMetadata,
+    readCallback: ReadResourceCallback,
+  ): void;
+
+  resource(
+    name: string,
+    uriTemplate: UriTemplate,
+    readCallback: ReadResourceCallback,
+  ): void;
+
+  resource(
+    name: string,
+    uriTemplate: UriTemplate,
+    metadata: ResourceMetadata,
+    readCallback: ReadResourceCallback,
+  ): void;
+
+  resource(
+    name: string,
+    uriTemplate: UriTemplate,
+    listCallback: ListResourcesCallback,
+    readCallback: ReadResourceCallback,
+  ): void;
+
+  resource(
+    name: string,
+    uriTemplate: UriTemplate,
+    metadata: ResourceMetadata,
+    listCallback: ListResourcesCallback,
+    readCallback: ReadResourceCallback,
+  ): void;
+
+  resource(
+    name: string,
+    uriOrTemplate: string | UriTemplate,
+    ...rest: unknown[]
+  ): void {
+    let metadata: ResourceMetadata | undefined;
+    if (typeof rest[0] === "object") {
+      metadata = rest.shift() as ResourceMetadata;
+    }
+
+    let listCallback: ListResourcesCallback | undefined;
+    if (rest.length > 1) {
+      listCallback = rest.shift() as ListResourcesCallback;
+    }
+
+    const readCallback = rest[0] as ReadResourceCallback;
+    if (typeof uriOrTemplate === "string") {
+      this.registerResource({
+        name,
+        uri: uriOrTemplate,
+        metadata,
+        readCallback,
+      });
+    } else {
+      this.registerResourceTemplate({
+        name,
+        uriTemplate: uriOrTemplate,
+        metadata,
+        listCallback,
+        readCallback,
+      });
+    }
+  }
+
+  private registerResource({
+    name,
+    uri,
+    metadata,
+    readCallback,
+  }: {
+    name: string;
+    uri: string;
+    metadata?: ResourceMetadata;
+    readCallback: ReadResourceCallback;
+  }): void {
+    if (this._registeredResources[uri]) {
+      throw new Error(`Resource ${uri} is already registered`);
+    }
+
+    this._registeredResources[uri] = {
+      name,
+      metadata,
+      readCallback,
+    };
+
+    this.setResourceRequestHandlers();
+  }
+
+  private registerResourceTemplate({
+    name,
+    uriTemplate,
+    metadata,
+    listCallback,
+    readCallback,
+  }: {
+    name: string;
+    uriTemplate: UriTemplate;
+    metadata?: ResourceMetadata;
+    listCallback?: ListResourcesCallback;
+    readCallback: ReadResourceCallback;
+  }): void {
+    if (this._registeredResourceTemplates[name]) {
+      throw new Error(`Resource template ${name} is already registered`);
+    }
+
+    this._registeredResourceTemplates[name] = {
+      uriTemplate,
+      metadata,
+      listCallback,
+      readCallback,
+    };
+
+    this.setResourceRequestHandlers();
   }
 }

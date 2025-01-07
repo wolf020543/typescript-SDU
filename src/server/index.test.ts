@@ -17,10 +17,14 @@ import {
   ErrorCode,
   ListToolsResultSchema,
   CallToolResultSchema,
+  ListResourcesResultSchema,
+  ListResourceTemplatesResultSchema,
+  ReadResourceResultSchema,
 } from "../types.js";
 import { Transport } from "../shared/transport.js";
 import { InMemoryTransport } from "../inMemory.js";
 import { Client } from "../client/index.js";
+import { UriTemplate } from "../shared/uriTemplate.js";
 
 test("should accept latest protocol version", async () => {
   let sendPromiseResolve: (value: unknown) => void;
@@ -478,6 +482,7 @@ test("should handle server cancelling a request", async () => {
   // Request should be rejected
   await expect(createMessagePromise).rejects.toBe("Cancelled by test");
 });
+
 test("should handle request timeout", async () => {
   const server = new Server(
     {
@@ -925,5 +930,275 @@ describe("Server.tool", () => {
         CallToolResultSchema,
       ),
     ).rejects.toThrow(/Tool nonexistent-tool not found/);
+  });
+});
+
+describe("Server.resource", () => {
+  test("should register resource with uri and readCallback", async () => {
+    const server = new Server({
+      name: "test server",
+      version: "1.0",
+    });
+    const client = new Client({
+      name: "test client",
+      version: "1.0",
+    });
+
+    server.resource("test", "test://resource", async () => ({
+      contents: [
+        {
+          uri: "test://resource",
+          text: "Test content",
+        },
+      ],
+    }));
+
+    const [clientTransport, serverTransport] =
+      InMemoryTransport.createLinkedPair();
+
+    await Promise.all([
+      client.connect(clientTransport),
+      server.connect(serverTransport),
+    ]);
+
+    const result = await client.request(
+      {
+        method: "resources/list",
+      },
+      ListResourcesResultSchema,
+    );
+
+    expect(result.resources).toHaveLength(1);
+    expect(result.resources[0].name).toBe("test");
+    expect(result.resources[0].uri).toBe("test://resource");
+  });
+
+  test("should register resource with metadata", async () => {
+    const server = new Server({
+      name: "test server",
+      version: "1.0",
+    });
+    const client = new Client({
+      name: "test client",
+      version: "1.0",
+    });
+
+    server.resource(
+      "test",
+      "test://resource",
+      {
+        description: "Test resource",
+        mimeType: "text/plain",
+      },
+      async () => ({
+        contents: [
+          {
+            uri: "test://resource",
+            text: "Test content",
+          },
+        ],
+      }),
+    );
+
+    const [clientTransport, serverTransport] =
+      InMemoryTransport.createLinkedPair();
+
+    await Promise.all([
+      client.connect(clientTransport),
+      server.connect(serverTransport),
+    ]);
+
+    const result = await client.request(
+      {
+        method: "resources/list",
+      },
+      ListResourcesResultSchema,
+    );
+
+    expect(result.resources).toHaveLength(1);
+    expect(result.resources[0].description).toBe("Test resource");
+    expect(result.resources[0].mimeType).toBe("text/plain");
+  });
+
+  test("should register resource template", async () => {
+    const server = new Server({
+      name: "test server",
+      version: "1.0",
+    });
+    const client = new Client({
+      name: "test client",
+      version: "1.0",
+    });
+
+    server.resource(
+      "test",
+      new UriTemplate("test://resource/{id}"),
+      async () => ({
+        contents: [
+          {
+            uri: "test://resource/123",
+            text: "Test content",
+          },
+        ],
+      }),
+    );
+
+    const [clientTransport, serverTransport] =
+      InMemoryTransport.createLinkedPair();
+
+    await Promise.all([
+      client.connect(clientTransport),
+      server.connect(serverTransport),
+    ]);
+
+    const result = await client.request(
+      {
+        method: "resources/templates/list",
+      },
+      ListResourceTemplatesResultSchema,
+    );
+
+    expect(result.resourceTemplates).toHaveLength(1);
+    expect(result.resourceTemplates[0].name).toBe("test");
+    expect(result.resourceTemplates[0].uriTemplate).toBe(
+      "test://resource/{id}",
+    );
+  });
+
+  test("should prevent duplicate resource registration", () => {
+    const server = new Server({
+      name: "test server",
+      version: "1.0",
+    });
+
+    server.resource("test", "test://resource", async () => ({
+      contents: [
+        {
+          uri: "test://resource",
+          text: "Test content",
+        },
+      ],
+    }));
+
+    expect(() => {
+      server.resource("test2", "test://resource", async () => ({
+        contents: [
+          {
+            uri: "test://resource",
+            text: "Test content 2",
+          },
+        ],
+      }));
+    }).toThrow(/already registered/);
+  });
+
+  test("should prevent duplicate resource template registration", () => {
+    const server = new Server({
+      name: "test server",
+      version: "1.0",
+    });
+
+    server.resource(
+      "test",
+      new UriTemplate("test://resource/{id}"),
+      async () => ({
+        contents: [
+          {
+            uri: "test://resource/123",
+            text: "Test content",
+          },
+        ],
+      }),
+    );
+
+    expect(() => {
+      server.resource(
+        "test",
+        new UriTemplate("test://resource/{id}"),
+        async () => ({
+          contents: [
+            {
+              uri: "test://resource/123",
+              text: "Test content 2",
+            },
+          ],
+        }),
+      );
+    }).toThrow(/already registered/);
+  });
+
+  test("should handle resource read errors gracefully", async () => {
+    const server = new Server({
+      name: "test server",
+      version: "1.0",
+    });
+    const client = new Client({
+      name: "test client",
+      version: "1.0",
+    });
+
+    server.resource("error-test", "test://error", async () => {
+      throw new Error("Resource read failed");
+    });
+
+    const [clientTransport, serverTransport] =
+      InMemoryTransport.createLinkedPair();
+
+    await Promise.all([
+      client.connect(clientTransport),
+      server.connect(serverTransport),
+    ]);
+
+    await expect(
+      client.request(
+        {
+          method: "resources/read",
+          params: {
+            uri: "test://error",
+          },
+        },
+        ReadResourceResultSchema,
+      ),
+    ).rejects.toThrow(/Resource read failed/);
+  });
+
+  test("should throw McpError for invalid resource URI", async () => {
+    const server = new Server({
+      name: "test server",
+      version: "1.0",
+    });
+    const client = new Client({
+      name: "test client",
+      version: "1.0",
+    });
+
+    server.resource("test", "test://resource", async () => ({
+      contents: [
+        {
+          uri: "test://resource",
+          text: "Test content",
+        },
+      ],
+    }));
+
+    const [clientTransport, serverTransport] =
+      InMemoryTransport.createLinkedPair();
+
+    await Promise.all([
+      client.connect(clientTransport),
+      server.connect(serverTransport),
+    ]);
+
+    await expect(
+      client.request(
+        {
+          method: "resources/read",
+          params: {
+            uri: "test://nonexistent",
+          },
+        },
+        ReadResourceResultSchema,
+      ),
+    ).rejects.toThrow(/Resource test:\/\/nonexistent not found/);
   });
 });
