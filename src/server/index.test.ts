@@ -560,32 +560,34 @@ test("should handle request timeout", async () => {
 
 describe("ResourceTemplate", () => {
   test("should create ResourceTemplate with string pattern", () => {
-    const template = new ResourceTemplate("test://{category}/{id}", undefined);
+    const template = new ResourceTemplate("test://{category}/{id}", {
+      list: undefined,
+    });
     expect(template.uriTemplate.toString()).toBe("test://{category}/{id}");
     expect(template.listCallback).toBeUndefined();
   });
 
   test("should create ResourceTemplate with UriTemplate", () => {
     const uriTemplate = new UriTemplate("test://{category}/{id}");
-    const template = new ResourceTemplate(uriTemplate, undefined);
+    const template = new ResourceTemplate(uriTemplate, { list: undefined });
     expect(template.uriTemplate).toBe(uriTemplate);
     expect(template.listCallback).toBeUndefined();
   });
 
   test("should create ResourceTemplate with list callback", async () => {
-    const listCallback = jest.fn().mockResolvedValue({
+    const list = jest.fn().mockResolvedValue({
       resources: [{ name: "Test", uri: "test://example" }],
     });
 
-    const template = new ResourceTemplate("test://{id}", listCallback);
-    expect(template.listCallback).toBe(listCallback);
+    const template = new ResourceTemplate("test://{id}", { list });
+    expect(template.listCallback).toBe(list);
 
     const abortController = new AbortController();
     const result = await template.listCallback?.({
       signal: abortController.signal,
     });
     expect(result?.resources).toHaveLength(1);
-    expect(listCallback).toHaveBeenCalled();
+    expect(list).toHaveBeenCalled();
   });
 });
 
@@ -1068,7 +1070,7 @@ describe("Server.resource", () => {
 
     server.resource(
       "test",
-      new ResourceTemplate("test://resource/{id}", undefined),
+      new ResourceTemplate("test://resource/{id}", { list: undefined }),
       async () => ({
         contents: [
           {
@@ -1113,18 +1115,20 @@ describe("Server.resource", () => {
 
     server.resource(
       "test",
-      new ResourceTemplate("test://resource/{id}", async () => ({
-        resources: [
-          {
-            name: "Resource 1",
-            uri: "test://resource/1",
-          },
-          {
-            name: "Resource 2",
-            uri: "test://resource/2",
-          },
-        ],
-      })),
+      new ResourceTemplate("test://resource/{id}", {
+        list: async () => ({
+          resources: [
+            {
+              name: "Resource 1",
+              uri: "test://resource/1",
+            },
+            {
+              name: "Resource 2",
+              uri: "test://resource/2",
+            },
+          ],
+        }),
+      }),
       async (uri) => ({
         contents: [
           {
@@ -1169,7 +1173,9 @@ describe("Server.resource", () => {
 
     server.resource(
       "test",
-      new ResourceTemplate("test://resource/{category}/{id}", undefined),
+      new ResourceTemplate("test://resource/{category}/{id}", {
+        list: undefined,
+      }),
       async (uri, { category, id }) => ({
         contents: [
           {
@@ -1236,7 +1242,7 @@ describe("Server.resource", () => {
 
     server.resource(
       "test",
-      new ResourceTemplate("test://resource/{id}", undefined),
+      new ResourceTemplate("test://resource/{id}", { list: undefined }),
       async () => ({
         contents: [
           {
@@ -1250,7 +1256,7 @@ describe("Server.resource", () => {
     expect(() => {
       server.resource(
         "test",
-        new ResourceTemplate("test://resource/{id}", undefined),
+        new ResourceTemplate("test://resource/{id}", { list: undefined }),
         async () => ({
           contents: [
             {
@@ -1336,6 +1342,139 @@ describe("Server.resource", () => {
         ReadResourceResultSchema,
       ),
     ).rejects.toThrow(/Resource test:\/\/nonexistent not found/);
+  });
+
+  test("should support completion of resource template parameters", async () => {
+    const server = new Server({
+      name: "test server",
+      version: "1.0",
+    });
+
+    const client = new Client(
+      {
+        name: "test client",
+        version: "1.0",
+      },
+      {
+        capabilities: {
+          resources: {},
+        },
+      },
+    );
+
+    server.resource(
+      "test",
+      new ResourceTemplate("test://resource/{category}", {
+        list: undefined,
+        complete: {
+          category: () => ["books", "movies", "music"],
+        },
+      }),
+      async () => ({
+        contents: [
+          {
+            uri: "test://resource/test",
+            text: "Test content",
+          },
+        ],
+      }),
+    );
+
+    const [clientTransport, serverTransport] =
+      InMemoryTransport.createLinkedPair();
+
+    await Promise.all([
+      client.connect(clientTransport),
+      server.connect(serverTransport),
+    ]);
+
+    const result = await client.request(
+      {
+        method: "completion/complete",
+        params: {
+          ref: {
+            type: "ref/resource",
+            uri: "test://resource/{category}",
+          },
+          argument: {
+            name: "category",
+            value: "",
+          },
+        },
+      },
+      CompleteResultSchema,
+    );
+
+    expect(result.completion.values).toEqual(["books", "movies", "music"]);
+    expect(result.completion.total).toBe(3);
+  });
+
+  test("should support filtered completion of resource template parameters", async () => {
+    const server = new Server({
+      name: "test server",
+      version: "1.0",
+    });
+
+    const client = new Client(
+      {
+        name: "test client",
+        version: "1.0",
+      },
+      {
+        capabilities: {
+          resources: {},
+        },
+      },
+    );
+
+    server.resource(
+      "test",
+      new ResourceTemplate("test://resource/{category}", {
+        list: undefined,
+        complete: {
+          category: (test) =>
+            ["books", "movies", "music"].filter((value) =>
+              value.startsWith(test),
+            ),
+        },
+      }),
+      async () => ({
+        contents: [
+          {
+            uri: "test://resource/test",
+            text: "Test content",
+          },
+        ],
+      }),
+    );
+
+    const [clientTransport, serverTransport] =
+      InMemoryTransport.createLinkedPair();
+
+    await Promise.all([
+      client.connect(clientTransport),
+      server.connect(serverTransport),
+    ]);
+
+    const result = await client.request(
+      {
+        method: "completion/complete",
+        params: {
+          ref: {
+            type: "ref/resource",
+            uri: "test://resource/{category}",
+          },
+          argument: {
+            name: "category",
+            value: "m",
+          },
+        },
+      },
+      CompleteResultSchema,
+    );
+
+    expect(result.completion.values).toEqual(["movies", "music"]);
+    expect(result.completion.total).toBe(2);
   });
 });
 

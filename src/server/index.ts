@@ -20,6 +20,7 @@ import {
   CallToolRequestSchema,
   CallToolResult,
   ClientCapabilities,
+  CompleteRequest,
   CompleteRequestSchema,
   CompleteResult,
   CreateMessageRequest,
@@ -48,10 +49,12 @@ import {
   Notification,
   Prompt,
   PromptArgument,
+  PromptReference,
   ReadResourceRequestSchema,
   ReadResourceResult,
   Request,
   Resource,
+  ResourceReference,
   ResourceUpdatedNotification,
   Result,
   ServerCapabilities,
@@ -500,6 +503,86 @@ export class Server<
     this.setToolRequestHandlers();
   }
 
+  private setCompletionRequestHandler() {
+    this.assertCanSetRequestHandler(CompleteRequestSchema.shape.method.value);
+
+    this.setRequestHandler(
+      CompleteRequestSchema,
+      async (request): Promise<CompleteResult> => {
+        switch (request.params.ref.type) {
+          case "ref/prompt":
+            return this.handlePromptCompletion(request, request.params.ref);
+
+          case "ref/resource":
+            return this.handleResourceCompletion(request, request.params.ref);
+
+          default:
+            throw new McpError(
+              ErrorCode.InvalidParams,
+              `Invalid completion reference: ${request.params.ref}`,
+            );
+        }
+      },
+    );
+  }
+
+  private async handlePromptCompletion(
+    request: CompleteRequest,
+    ref: PromptReference,
+  ): Promise<CompleteResult> {
+    const prompt = this._registeredPrompts[ref.name];
+    if (!prompt) {
+      throw new McpError(
+        ErrorCode.InvalidParams,
+        `Prompt ${request.params.ref.name} not found`,
+      );
+    }
+
+    if (!prompt.argsSchema) {
+      return EMPTY_COMPLETION_RESULT;
+    }
+
+    const field = prompt.argsSchema.shape[request.params.argument.name];
+    if (!(field instanceof Completable)) {
+      return EMPTY_COMPLETION_RESULT;
+    }
+
+    const def: CompletableDef<ZodString> = field._def;
+    const suggestions = await def.complete(request.params.argument.value);
+    return createCompletionResult(suggestions);
+  }
+
+  private async handleResourceCompletion(
+    request: CompleteRequest,
+    ref: ResourceReference,
+  ): Promise<CompleteResult> {
+    const template = Object.values(this._registeredResourceTemplates).find(
+      (t) => t.resourceTemplate.uriTemplate.toString() === ref.uri,
+    );
+
+    if (!template) {
+      if (this._registeredResources[ref.uri]) {
+        // Attempting to autocomplete a fixed resource URI is not an error in the spec (but probably should be).
+        return EMPTY_COMPLETION_RESULT;
+      }
+
+      throw new McpError(
+        ErrorCode.InvalidParams,
+        `Resource template ${request.params.ref.uri} not found`,
+      );
+    }
+
+    const completer = template.resourceTemplate.completeCallback(
+      request.params.argument.name,
+    );
+    if (!completer) {
+      return EMPTY_COMPLETION_RESULT;
+    }
+
+    const suggestions = await completer(request.params.argument.value);
+    return createCompletionResult(suggestions);
+  }
+
   private setResourceRequestHandlers() {
     this.assertCanSetRequestHandler(
       ListResourcesRequestSchema.shape.method.value,
@@ -588,6 +671,8 @@ export class Server<
         );
       },
     );
+
+    this.setCompletionRequestHandler();
   }
 
   /**
@@ -708,7 +793,6 @@ export class Server<
       ListPromptsRequestSchema.shape.method.value,
     );
     this.assertCanSetRequestHandler(GetPromptRequestSchema.shape.method.value);
-    this.assertCanSetRequestHandler(CompleteRequestSchema.shape.method.value);
 
     this.registerCapabilities({
       prompts: {},
@@ -763,55 +847,7 @@ export class Server<
       },
     );
 
-    this.setRequestHandler(
-      CompleteRequestSchema,
-      async (request): Promise<CompleteResult> => {
-        if (request.params.ref.type !== "ref/prompt") {
-          throw new McpError(
-            ErrorCode.InvalidParams,
-            "Only prompt completions are supported",
-          );
-        }
-
-        const prompt = this._registeredPrompts[request.params.ref.name];
-        if (!prompt) {
-          throw new McpError(
-            ErrorCode.InvalidParams,
-            `Prompt ${request.params.ref.name} not found`,
-          );
-        }
-
-        if (!prompt.argsSchema) {
-          return {
-            completion: {
-              values: [],
-              hasMore: false,
-            },
-          };
-        }
-
-        const field = prompt.argsSchema.shape[request.params.argument.name];
-        if (!(field instanceof Completable)) {
-          return {
-            completion: {
-              values: [],
-              hasMore: false,
-            },
-          };
-        }
-
-        const def: CompletableDef<ZodString> = field._def;
-        const completer = def.complete;
-        const suggestions = await completer(request.params.argument.value);
-        return {
-          completion: {
-            values: suggestions.slice(0, 100),
-            total: suggestions.length,
-            hasMore: suggestions.length > 100,
-          },
-        };
-      },
-    );
+    this.setCompletionRequestHandler();
   }
 
   prompt(name: string, cb: PromptCallback): void;
@@ -855,6 +891,13 @@ export class Server<
 }
 
 /**
+ * A callback to complete one variable within a resource template's URI template.
+ */
+export type CompleteResourceTemplateCallback = (
+  value: string,
+) => string[] | Promise<string[]>;
+
+/**
  * A resource template combines a URI pattern with optional functionality to enumerate
  * all resources matching that pattern.
  */
@@ -863,7 +906,19 @@ export class ResourceTemplate {
 
   constructor(
     uriTemplate: string | UriTemplate,
-    private _listCallback: ListResourcesCallback | undefined,
+    private _callbacks: {
+      /**
+       * A callback to list all resources matching this template. This is required to specified, even if `undefined`, to avoid accidentally forgetting resource listing.
+       */
+      list: ListResourcesCallback | undefined;
+
+      /**
+       * An optional callback to autocomplete variables within the URI template. Useful for clients and users to discover possible values.
+       */
+      complete?: {
+        [variable: string]: CompleteResourceTemplateCallback;
+      };
+    },
   ) {
     this._uriTemplate =
       typeof uriTemplate === "string"
@@ -882,7 +937,16 @@ export class ResourceTemplate {
    * Gets the list callback, if one was provided.
    */
   get listCallback(): ListResourcesCallback | undefined {
-    return this._listCallback;
+    return this._callbacks.list;
+  }
+
+  /**
+   * Gets the callback for completing a specific URI template variable, if one was provided.
+   */
+  completeCallback(
+    variable: string,
+  ): CompleteResourceTemplateCallback | undefined {
+    return this._callbacks.complete?.[variable];
   }
 }
 
@@ -982,3 +1046,20 @@ function promptArgumentsFromSchema(
     }),
   );
 }
+
+function createCompletionResult(suggestions: string[]): CompleteResult {
+  return {
+    completion: {
+      values: suggestions.slice(0, 100),
+      total: suggestions.length,
+      hasMore: suggestions.length > 100,
+    },
+  };
+}
+
+const EMPTY_COMPLETION_RESULT: CompleteResult = {
+  completion: {
+    values: [],
+    hasMore: false,
+  },
+};
