@@ -516,9 +516,11 @@ export abstract class Protocol<
   /**
    * Asserts that a request handler has not already been set for the given method, in preparation for a new one being automatically installed.
    */
-  protected assertCanSetRequestHandler(method: string): void {
+  assertCanSetRequestHandler(method: string): void {
     if (this._requestHandlers.has(method)) {
-      throw new Error(`A request handler for ${method} already exists, which would be overridden`);
+      throw new Error(
+        `A request handler for ${method} already exists, which would be overridden`,
+      );
     }
   }
 
@@ -550,7 +552,9 @@ export abstract class Protocol<
   }
 }
 
-export function mergeCapabilities<T extends ServerCapabilities | ClientCapabilities>(base: T, additional: T): T {
+export function mergeCapabilities<
+  T extends ServerCapabilities | ClientCapabilities,
+>(base: T, additional: T): T {
   return Object.entries(additional).reduce(
     (acc, [key, value]) => {
       if (value && typeof value === "object") {
