@@ -54,56 +54,6 @@ export type ServerOptions = ProtocolOptions & {
 };
 
 /**
- * Callback for a tool handler registered with Server.tool().
- *
- * Parameters will include tool arguments, if applicable, as well as other request handler context.
- */
-export type ToolCallback<Args extends undefined | ZodRawShape = undefined> =
-  Args extends ZodRawShape
-    ? (
-        args: z.objectOutputType<Args, ZodTypeAny>,
-        extra: RequestHandlerExtra,
-      ) => CallToolResult | Promise<CallToolResult>
-    : (extra: RequestHandlerExtra) => CallToolResult | Promise<CallToolResult>;
-
-type RegisteredTool = {
-  description?: string;
-  inputSchema?: AnyZodObject;
-  callback: ToolCallback<undefined | ZodRawShape>;
-};
-
-const EMPTY_OBJECT_JSON_SCHEMA = {
-  type: "object" as const,
-};
-
-export type ResourceMetadata = Omit<Resource, "uri" | "name">;
-
-export type ListResourcesCallback = () =>
-  | ListResourcesResult
-  | Promise<ListResourcesResult>;
-
-export type ReadResourceCallback = (
-  uri: URL,
-) => ReadResourceResult | Promise<ReadResourceResult>;
-
-type RegisteredResource = {
-  name: string;
-  metadata?: ResourceMetadata;
-  readCallback: ReadResourceCallback;
-};
-
-export type ReadResourceTemplateCallback = (
-  uri: URL,
-  variables: Variables,
-) => ReadResourceResult | Promise<ReadResourceResult>;
-
-type RegisteredResourceTemplate = {
-  resourceTemplate: ResourceTemplate;
-  metadata?: ResourceMetadata;
-  readCallback: ReadResourceTemplateCallback;
-};
-
-/**
  * An MCP server on top of a pluggable transport.
  *
  * This server will automatically respond to the initialization flow as initiated from the client.
@@ -753,3 +703,65 @@ export class ResourceTemplate {
     return this._listCallback;
   }
 }
+
+/**
+ * Callback for a tool handler registered with Server.tool().
+ *
+ * Parameters will include tool arguments, if applicable, as well as other request handler context.
+ */
+export type ToolCallback<Args extends undefined | ZodRawShape = undefined> =
+  Args extends ZodRawShape
+    ? (
+        args: z.objectOutputType<Args, ZodTypeAny>,
+        extra: RequestHandlerExtra,
+      ) => CallToolResult | Promise<CallToolResult>
+    : (extra: RequestHandlerExtra) => CallToolResult | Promise<CallToolResult>;
+
+type RegisteredTool = {
+  description?: string;
+  inputSchema?: AnyZodObject;
+  callback: ToolCallback<undefined | ZodRawShape>;
+};
+
+const EMPTY_OBJECT_JSON_SCHEMA = {
+  type: "object" as const,
+};
+
+/**
+ * Additional, optional information for annotating a resource.
+ */
+export type ResourceMetadata = Omit<Resource, "uri" | "name">;
+
+/**
+ * Callback to list all resources matching a given template.
+ */
+export type ListResourcesCallback = () =>
+  | ListResourcesResult
+  | Promise<ListResourcesResult>;
+
+/**
+ * Callback to read a resource at a given URI.
+ */
+export type ReadResourceCallback = (
+  uri: URL,
+) => ReadResourceResult | Promise<ReadResourceResult>;
+
+type RegisteredResource = {
+  name: string;
+  metadata?: ResourceMetadata;
+  readCallback: ReadResourceCallback;
+};
+
+/**
+ * Callback to read a resource at a given URI, following a filled-in URI template.
+ */
+export type ReadResourceTemplateCallback = (
+  uri: URL,
+  variables: Variables,
+) => ReadResourceResult | Promise<ReadResourceResult>;
+
+type RegisteredResourceTemplate = {
+  resourceTemplate: ResourceTemplate;
+  metadata?: ResourceMetadata;
+  readCallback: ReadResourceTemplateCallback;
+};
