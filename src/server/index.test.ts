@@ -22,12 +22,14 @@ import {
   ReadResourceResultSchema,
   ListPromptsResultSchema,
   GetPromptResultSchema,
+  CompleteResultSchema,
 } from "../types.js";
 import { Transport } from "../shared/transport.js";
 import { InMemoryTransport } from "../inMemory.js";
 import { Client } from "../client/index.js";
 import { UriTemplate } from "../shared/uriTemplate.js";
 import { ResourceTemplate } from "./index.js";
+import { completable } from "./completable.js";
 
 test("should accept latest protocol version", async () => {
   let sendPromiseResolve: (value: unknown) => void;
@@ -1618,5 +1620,136 @@ describe("Server.prompt", () => {
         GetPromptResultSchema,
       ),
     ).rejects.toThrow(/Prompt nonexistent-prompt not found/);
+  });
+  test("should support completion of prompt arguments", async () => {
+    const server = new Server({
+      name: "test server",
+      version: "1.0",
+    });
+
+    const client = new Client(
+      {
+        name: "test client",
+        version: "1.0",
+      },
+      {
+        capabilities: {
+          prompts: {},
+        },
+      },
+    );
+
+    server.prompt(
+      "test-prompt",
+      {
+        name: completable(z.string(), () => ["Alice", "Bob", "Charlie"]),
+      },
+      async ({ name }) => ({
+        messages: [
+          {
+            role: "assistant",
+            content: {
+              type: "text",
+              text: `Hello ${name}`,
+            },
+          },
+        ],
+      }),
+    );
+
+    const [clientTransport, serverTransport] =
+      InMemoryTransport.createLinkedPair();
+
+    await Promise.all([
+      client.connect(clientTransport),
+      server.connect(serverTransport),
+    ]);
+
+    const result = await client.request(
+      {
+        method: "completion/complete",
+        params: {
+          ref: {
+            type: "ref/prompt",
+            name: "test-prompt",
+          },
+          argument: {
+            name: "name",
+            value: "",
+          },
+        },
+      },
+      CompleteResultSchema,
+    );
+
+    expect(result.completion.values).toEqual(["Alice", "Bob", "Charlie"]);
+    expect(result.completion.total).toBe(3);
+  });
+
+  test("should support filtered completion of prompt arguments", async () => {
+    const server = new Server({
+      name: "test server",
+      version: "1.0",
+    });
+
+    const client = new Client(
+      {
+        name: "test client",
+        version: "1.0",
+      },
+      {
+        capabilities: {
+          prompts: {},
+        },
+      },
+    );
+
+    server.prompt(
+      "test-prompt",
+      {
+        name: completable(z.string(), (test) =>
+          ["Alice", "Bob", "Charlie"].filter((value) => value.startsWith(test)),
+        ),
+      },
+      async ({ name }) => ({
+        messages: [
+          {
+            role: "assistant",
+            content: {
+              type: "text",
+              text: `Hello ${name}`,
+            },
+          },
+        ],
+      }),
+    );
+
+    const [clientTransport, serverTransport] =
+      InMemoryTransport.createLinkedPair();
+
+    await Promise.all([
+      client.connect(clientTransport),
+      server.connect(serverTransport),
+    ]);
+
+    const result = await client.request(
+      {
+        method: "completion/complete",
+        params: {
+          ref: {
+            type: "ref/prompt",
+            name: "test-prompt",
+          },
+          argument: {
+            name: "name",
+            value: "A",
+          },
+        },
+      },
+      CompleteResultSchema,
+    );
+
+    expect(result.completion.values).toEqual(["Alice"]);
+    expect(result.completion.total).toBe(1);
   });
 });

@@ -4,7 +4,9 @@ import z, {
   ZodOptional,
   ZodRawShape,
   ZodString,
+  ZodType,
   ZodTypeAny,
+  ZodTypeDef,
 } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import {
@@ -18,6 +20,8 @@ import {
   CallToolRequestSchema,
   CallToolResult,
   ClientCapabilities,
+  CompleteRequestSchema,
+  CompleteResult,
   CreateMessageRequest,
   CreateMessageResultSchema,
   EmptyResultSchema,
@@ -58,6 +62,7 @@ import {
   Tool,
 } from "../types.js";
 import { UriTemplate, Variables } from "../shared/uriTemplate.js";
+import { Completable, CompletableDef } from "./completable.js";
 
 export type ServerOptions = ProtocolOptions & {
   /**
@@ -703,6 +708,7 @@ export class Server<
       ListPromptsRequestSchema.shape.method.value,
     );
     this.assertCanSetRequestHandler(GetPromptRequestSchema.shape.method.value);
+    this.assertCanSetRequestHandler(CompleteRequestSchema.shape.method.value);
 
     this.registerCapabilities({
       prompts: {},
@@ -756,6 +762,56 @@ export class Server<
         }
       },
     );
+
+    this.setRequestHandler(
+      CompleteRequestSchema,
+      async (request): Promise<CompleteResult> => {
+        if (request.params.ref.type !== "ref/prompt") {
+          throw new McpError(
+            ErrorCode.InvalidParams,
+            "Only prompt completions are supported",
+          );
+        }
+
+        const prompt = this._registeredPrompts[request.params.ref.name];
+        if (!prompt) {
+          throw new McpError(
+            ErrorCode.InvalidParams,
+            `Prompt ${request.params.ref.name} not found`,
+          );
+        }
+
+        if (!prompt.argsSchema) {
+          return {
+            completion: {
+              values: [],
+              hasMore: false,
+            },
+          };
+        }
+
+        const field = prompt.argsSchema.shape[request.params.argument.name];
+        if (!(field instanceof Completable)) {
+          return {
+            completion: {
+              values: [],
+              hasMore: false,
+            },
+          };
+        }
+
+        const def: CompletableDef<ZodString> = field._def;
+        const completer = def.complete;
+        const suggestions = await completer(request.params.argument.value);
+        return {
+          completion: {
+            values: suggestions.slice(0, 100),
+            total: suggestions.length,
+            hasMore: suggestions.length > 100,
+          },
+        };
+      },
+    );
   }
 
   prompt(name: string, cb: PromptCallback): void;
@@ -765,7 +821,6 @@ export class Server<
     argsSchema: Args,
     cb: PromptCallback<Args>,
   ): void;
-
   prompt<Args extends PromptArgsRawShape>(
     name: string,
     description: string,
@@ -896,7 +951,9 @@ type RegisteredResourceTemplate = {
 };
 
 type PromptArgsRawShape = {
-  [k: string]: ZodString | ZodOptional<ZodString>;
+  [k: string]:
+    | ZodType<string, ZodTypeDef, string>
+    | ZodOptional<ZodType<string, ZodTypeDef, string>>;
 };
 
 export type PromptCallback<
