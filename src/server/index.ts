@@ -98,9 +98,8 @@ export type ReadResourceTemplateCallback = (
 ) => ReadResourceResult | Promise<ReadResourceResult>;
 
 type RegisteredResourceTemplate = {
-  uriTemplate: UriTemplate;
+  resourceTemplate: ResourceTemplate;
   metadata?: ResourceMetadata;
-  listCallback?: ListResourcesCallback;
   readCallback: ReadResourceTemplateCallback;
 };
 
@@ -558,11 +557,11 @@ export class Server<
 
       const templateResources: Resource[] = [];
       for (const template of Object.values(this._registeredResourceTemplates)) {
-        if (!template.listCallback) {
+        if (!template.resourceTemplate.listCallback) {
           continue;
         }
 
-        const result = await template.listCallback();
+        const result = await template.resourceTemplate.listCallback();
         for (const resource of result.resources) {
           templateResources.push({
             ...resource,
@@ -579,7 +578,7 @@ export class Server<
         this._registeredResourceTemplates,
       ).map(([name, template]) => ({
         name,
-        uriTemplate: template.uriTemplate.toString(),
+        uriTemplate: template.resourceTemplate.uriTemplate.toString(),
         ...template.metadata,
       }));
 
@@ -597,7 +596,9 @@ export class Server<
 
       // Then check templates
       for (const template of Object.values(this._registeredResourceTemplates)) {
-        const variables = template.uriTemplate.match(uri.toString());
+        const variables = template.resourceTemplate.uriTemplate.match(
+          uri.toString(),
+        );
         if (variables) {
           return template.readCallback(uri, variables);
         }
@@ -623,48 +624,27 @@ export class Server<
   ): void;
 
   /**
-   * Registers a resource `name` with a URI template pattern, which will use the given callback to respond to read requests.
+   * Registers a resource `name` with a template pattern, which will use the given callback to respond to read requests.
    */
   resource(
     name: string,
-    uriTemplate: UriTemplate,
+    template: ResourceTemplate,
     readCallback: ReadResourceTemplateCallback,
   ): void;
 
   /**
-   * Registers a resource `name` with a URI template pattern and metadata, which will use the given callback to respond to read requests.
+   * Registers a resource `name` with a template pattern and metadata, which will use the given callback to respond to read requests.
    */
   resource(
     name: string,
-    uriTemplate: UriTemplate,
+    template: ResourceTemplate,
     metadata: ResourceMetadata,
     readCallback: ReadResourceTemplateCallback,
   ): void;
 
-  /**
-   * Registers a resource `name` with a URI template pattern, which will use the list callback to enumerate matching resources and read callback to respond to read requests.
-   */
   resource(
     name: string,
-    uriTemplate: UriTemplate,
-    listCallback: ListResourcesCallback,
-    readCallback: ReadResourceTemplateCallback,
-  ): void;
-
-  /**
-   * Registers a resource `name` with a URI template pattern and metadata, which will use the list callback to enumerate matching resources and read callback to respond to read requests.
-   */
-  resource(
-    name: string,
-    uriTemplate: UriTemplate,
-    metadata: ResourceMetadata,
-    listCallback: ListResourcesCallback,
-    readCallback: ReadResourceTemplateCallback,
-  ): void;
-
-  resource(
-    name: string,
-    uriOrTemplate: string | UriTemplate,
+    uriOrTemplate: string | ResourceTemplate,
     ...rest: unknown[]
   ): void {
     let metadata: ResourceMetadata | undefined;
@@ -672,27 +652,23 @@ export class Server<
       metadata = rest.shift() as ResourceMetadata;
     }
 
-    let listCallback: ListResourcesCallback | undefined;
-    if (rest.length > 1) {
-      listCallback = rest.shift() as ListResourcesCallback;
-    }
+    const readCallback = rest[0] as
+      | ReadResourceCallback
+      | ReadResourceTemplateCallback;
 
     if (typeof uriOrTemplate === "string") {
-      const readCallback = rest[0] as ReadResourceCallback;
       this.registerResource({
         name,
         uri: uriOrTemplate,
         metadata,
-        readCallback,
+        readCallback: readCallback as ReadResourceCallback,
       });
     } else {
-      const readCallback = rest[0] as ReadResourceTemplateCallback;
       this.registerResourceTemplate({
         name,
-        uriTemplate: uriOrTemplate,
+        resourceTemplate: uriOrTemplate,
         metadata,
-        listCallback,
-        readCallback,
+        readCallback: readCallback as ReadResourceTemplateCallback,
       });
     }
   }
@@ -723,15 +699,13 @@ export class Server<
 
   private registerResourceTemplate({
     name,
-    uriTemplate,
+    resourceTemplate,
     metadata,
-    listCallback,
     readCallback,
   }: {
     name: string;
-    uriTemplate: UriTemplate;
+    resourceTemplate: ResourceTemplate;
     metadata?: ResourceMetadata;
-    listCallback?: ListResourcesCallback;
     readCallback: ReadResourceTemplateCallback;
   }): void {
     if (this._registeredResourceTemplates[name]) {
@@ -739,12 +713,43 @@ export class Server<
     }
 
     this._registeredResourceTemplates[name] = {
-      uriTemplate,
+      resourceTemplate,
       metadata,
-      listCallback,
       readCallback,
     };
 
     this.setResourceRequestHandlers();
+  }
+}
+
+/**
+ * A resource template combines a URI pattern with optional functionality to enumerate
+ * all resources matching that pattern.
+ */
+export class ResourceTemplate {
+  private _uriTemplate: UriTemplate;
+
+  constructor(
+    uriTemplate: string | UriTemplate,
+    private _listCallback: ListResourcesCallback | undefined,
+  ) {
+    this._uriTemplate =
+      typeof uriTemplate === "string"
+        ? new UriTemplate(uriTemplate)
+        : uriTemplate;
+  }
+
+  /**
+   * Gets the URI template pattern.
+   */
+  get uriTemplate(): UriTemplate {
+    return this._uriTemplate;
+  }
+
+  /**
+   * Gets the list callback, if one was provided.
+   */
+  get listCallback(): ListResourcesCallback | undefined {
+    return this._listCallback;
   }
 }

@@ -25,6 +25,7 @@ import { Transport } from "../shared/transport.js";
 import { InMemoryTransport } from "../inMemory.js";
 import { Client } from "../client/index.js";
 import { UriTemplate } from "../shared/uriTemplate.js";
+import { ResourceTemplate } from "./index.js";
 
 test("should accept latest protocol version", async () => {
   let sendPromiseResolve: (value: unknown) => void;
@@ -553,6 +554,34 @@ test("should handle request timeout", async () => {
   });
 });
 
+describe("ResourceTemplate", () => {
+  test("should create ResourceTemplate with string pattern", () => {
+    const template = new ResourceTemplate("test://{category}/{id}", undefined);
+    expect(template.uriTemplate.toString()).toBe("test://{category}/{id}");
+    expect(template.listCallback).toBeUndefined();
+  });
+
+  test("should create ResourceTemplate with UriTemplate", () => {
+    const uriTemplate = new UriTemplate("test://{category}/{id}");
+    const template = new ResourceTemplate(uriTemplate, undefined);
+    expect(template.uriTemplate).toBe(uriTemplate);
+    expect(template.listCallback).toBeUndefined();
+  });
+
+  test("should create ResourceTemplate with list callback", async () => {
+    const listCallback = jest.fn().mockResolvedValue({
+      resources: [{ name: "Test", uri: "test://example" }],
+    });
+
+    const template = new ResourceTemplate("test://{id}", listCallback);
+    expect(template.listCallback).toBe(listCallback);
+
+    const result = await template.listCallback?.();
+    expect(result?.resources).toHaveLength(1);
+    expect(listCallback).toHaveBeenCalled();
+  });
+});
+
 describe("Server.tool", () => {
   test("should register zero-argument tool", async () => {
     const server = new Server({
@@ -1032,7 +1061,7 @@ describe("Server.resource", () => {
 
     server.resource(
       "test",
-      new UriTemplate("test://resource/{id}"),
+      new ResourceTemplate("test://resource/{id}", undefined),
       async () => ({
         contents: [
           {
@@ -1077,8 +1106,7 @@ describe("Server.resource", () => {
 
     server.resource(
       "test",
-      new UriTemplate("test://resource/{id}"),
-      async () => ({
+      new ResourceTemplate("test://resource/{id}", async () => ({
         resources: [
           {
             name: "Resource 1",
@@ -1089,7 +1117,7 @@ describe("Server.resource", () => {
             uri: "test://resource/2",
           },
         ],
-      }),
+      })),
       async (uri) => ({
         contents: [
           {
@@ -1134,7 +1162,7 @@ describe("Server.resource", () => {
 
     server.resource(
       "test",
-      new UriTemplate("test://resource/{category}/{id}"),
+      new ResourceTemplate("test://resource/{category}/{id}", undefined),
       async (uri, { category, id }) => ({
         contents: [
           {
@@ -1201,7 +1229,7 @@ describe("Server.resource", () => {
 
     server.resource(
       "test",
-      new UriTemplate("test://resource/{id}"),
+      new ResourceTemplate("test://resource/{id}", undefined),
       async () => ({
         contents: [
           {
@@ -1215,7 +1243,7 @@ describe("Server.resource", () => {
     expect(() => {
       server.resource(
         "test",
-        new UriTemplate("test://resource/{id}"),
+        new ResourceTemplate("test://resource/{id}", undefined),
         async () => ({
           contents: [
             {
