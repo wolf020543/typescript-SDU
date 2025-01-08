@@ -37,7 +37,6 @@ import {
   PromptArgument,
   GetPromptResult,
   ReadResourceResult,
-  CallToolResultSchema,
 } from "../types.js";
 import { Completable, CompletableDef } from "./completable.js";
 import { UriTemplate, Variables } from "../shared/uriTemplate.js";
