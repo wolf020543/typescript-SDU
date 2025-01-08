@@ -1,4 +1,11 @@
-import z, { AnyZodObject, ZodRawShape, ZodTypeAny } from "zod";
+import z, {
+  AnyZodObject,
+  ZodObject,
+  ZodOptional,
+  ZodRawShape,
+  ZodString,
+  ZodTypeAny,
+} from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import {
   mergeCapabilities,
@@ -15,12 +22,16 @@ import {
   CreateMessageResultSchema,
   EmptyResultSchema,
   ErrorCode,
+  GetPromptRequestSchema,
+  GetPromptResult,
   Implementation,
   InitializedNotificationSchema,
   InitializeRequest,
   InitializeRequestSchema,
   InitializeResult,
   LATEST_PROTOCOL_VERSION,
+  ListPromptsRequestSchema,
+  ListPromptsResult,
   ListResourcesRequestSchema,
   ListResourcesResult,
   ListResourceTemplatesRequestSchema,
@@ -31,6 +42,8 @@ import {
   LoggingMessageNotification,
   McpError,
   Notification,
+  Prompt,
+  PromptArgument,
   ReadResourceRequestSchema,
   ReadResourceResult,
   Request,
@@ -90,11 +103,12 @@ export class Server<
   private _clientCapabilities?: ClientCapabilities;
   private _clientVersion?: Implementation;
   private _capabilities: ServerCapabilities;
-  private _registeredTools: { [name: string]: RegisteredTool } = {};
   private _registeredResources: { [uri: string]: RegisteredResource } = {};
   private _registeredResourceTemplates: {
     [name: string]: RegisteredResourceTemplate;
   } = {};
+  private _registeredTools: { [name: string]: RegisteredTool } = {};
+  private _registeredPrompts: { [name: string]: RegisteredPrompt } = {};
 
   /**
    * Callback for when initialization has fully completed (i.e., the client has sent an `initialized` notification).
@@ -683,6 +697,106 @@ export class Server<
 
     this.setResourceRequestHandlers();
   }
+
+  private setPromptRequestHandlers() {
+    this.assertCanSetRequestHandler(
+      ListPromptsRequestSchema.shape.method.value,
+    );
+    this.assertCanSetRequestHandler(GetPromptRequestSchema.shape.method.value);
+
+    this.registerCapabilities({
+      prompts: {},
+    });
+
+    this.setRequestHandler(
+      ListPromptsRequestSchema,
+      (): ListPromptsResult => ({
+        prompts: Object.entries(this._registeredPrompts).map(
+          ([name, prompt]): Prompt => {
+            return {
+              name,
+              description: prompt.description,
+              arguments: prompt.argsSchema
+                ? promptArgumentsFromSchema(prompt.argsSchema)
+                : undefined,
+            };
+          },
+        ),
+      }),
+    );
+
+    this.setRequestHandler(
+      GetPromptRequestSchema,
+      async (request, extra): Promise<GetPromptResult> => {
+        const prompt = this._registeredPrompts[request.params.name];
+        if (!prompt) {
+          throw new McpError(
+            ErrorCode.InvalidParams,
+            `Prompt ${request.params.name} not found`,
+          );
+        }
+
+        if (prompt.argsSchema) {
+          const parseResult = await prompt.argsSchema.safeParseAsync(
+            request.params.arguments,
+          );
+          if (!parseResult.success) {
+            throw new McpError(
+              ErrorCode.InvalidParams,
+              `Invalid arguments for prompt ${request.params.name}: ${parseResult.error.message}`,
+            );
+          }
+
+          const args = parseResult.data;
+          const cb = prompt.callback as PromptCallback<PromptArgsRawShape>;
+          return await Promise.resolve(cb(args, extra));
+        } else {
+          const cb = prompt.callback as PromptCallback<undefined>;
+          return await Promise.resolve(cb(extra));
+        }
+      },
+    );
+  }
+
+  prompt(name: string, cb: PromptCallback): void;
+  prompt(name: string, description: string, cb: PromptCallback): void;
+  prompt<Args extends PromptArgsRawShape>(
+    name: string,
+    argsSchema: Args,
+    cb: PromptCallback<Args>,
+  ): void;
+
+  prompt<Args extends PromptArgsRawShape>(
+    name: string,
+    description: string,
+    argsSchema: Args,
+    cb: PromptCallback<Args>,
+  ): void;
+
+  prompt(name: string, ...rest: unknown[]): void {
+    if (this._registeredPrompts[name]) {
+      throw new Error(`Prompt ${name} is already registered`);
+    }
+
+    let description: string | undefined;
+    if (typeof rest[0] === "string") {
+      description = rest.shift() as string;
+    }
+
+    let argsSchema: PromptArgsRawShape | undefined;
+    if (rest.length > 1) {
+      argsSchema = rest.shift() as PromptArgsRawShape;
+    }
+
+    const cb = rest[0] as PromptCallback<PromptArgsRawShape | undefined>;
+    this._registeredPrompts[name] = {
+      description,
+      argsSchema: argsSchema === undefined ? undefined : z.object(argsSchema),
+      callback: cb,
+    };
+
+    this.setPromptRequestHandlers();
+  }
 }
 
 /**
@@ -780,3 +894,34 @@ type RegisteredResourceTemplate = {
   metadata?: ResourceMetadata;
   readCallback: ReadResourceTemplateCallback;
 };
+
+type PromptArgsRawShape = {
+  [k: string]: ZodString | ZodOptional<ZodString>;
+};
+
+export type PromptCallback<
+  Args extends undefined | PromptArgsRawShape = undefined,
+> = Args extends PromptArgsRawShape
+  ? (
+      args: z.objectOutputType<Args, ZodTypeAny>,
+      extra: RequestHandlerExtra,
+    ) => GetPromptResult | Promise<GetPromptResult>
+  : (extra: RequestHandlerExtra) => GetPromptResult | Promise<GetPromptResult>;
+
+type RegisteredPrompt = {
+  description?: string;
+  argsSchema?: ZodObject<PromptArgsRawShape>;
+  callback: PromptCallback<undefined | PromptArgsRawShape>;
+};
+
+function promptArgumentsFromSchema(
+  schema: ZodObject<PromptArgsRawShape>,
+): PromptArgument[] {
+  return Object.entries(schema.shape).map(
+    ([name, field]): PromptArgument => ({
+      name,
+      description: field.description,
+      required: !field.isOptional(),
+    }),
+  );
+}

@@ -20,6 +20,8 @@ import {
   ListResourcesResultSchema,
   ListResourceTemplatesResultSchema,
   ReadResourceResultSchema,
+  ListPromptsResultSchema,
+  GetPromptResultSchema,
 } from "../types.js";
 import { Transport } from "../shared/transport.js";
 import { InMemoryTransport } from "../inMemory.js";
@@ -1332,5 +1334,289 @@ describe("Server.resource", () => {
         ReadResourceResultSchema,
       ),
     ).rejects.toThrow(/Resource test:\/\/nonexistent not found/);
+  });
+});
+
+describe("Server.prompt", () => {
+  test("should register zero-argument prompt", async () => {
+    const server = new Server({
+      name: "test server",
+      version: "1.0",
+    });
+    const client = new Client({
+      name: "test client",
+      version: "1.0",
+    });
+
+    server.prompt("test", async () => ({
+      messages: [
+        {
+          role: "assistant",
+          content: {
+            type: "text",
+            text: "Test response",
+          },
+        },
+      ],
+    }));
+
+    const [clientTransport, serverTransport] =
+      InMemoryTransport.createLinkedPair();
+
+    await Promise.all([
+      client.connect(clientTransport),
+      server.connect(serverTransport),
+    ]);
+
+    const result = await client.request(
+      {
+        method: "prompts/list",
+      },
+      ListPromptsResultSchema,
+    );
+
+    expect(result.prompts).toHaveLength(1);
+    expect(result.prompts[0].name).toBe("test");
+    expect(result.prompts[0].arguments).toBeUndefined();
+  });
+
+  test("should register prompt with args schema", async () => {
+    const server = new Server({
+      name: "test server",
+      version: "1.0",
+    });
+    const client = new Client({
+      name: "test client",
+      version: "1.0",
+    });
+
+    server.prompt(
+      "test",
+      {
+        name: z.string(),
+        value: z.string(),
+      },
+      async ({ name, value }) => ({
+        messages: [
+          {
+            role: "assistant",
+            content: {
+              type: "text",
+              text: `${name}: ${value}`,
+            },
+          },
+        ],
+      }),
+    );
+
+    const [clientTransport, serverTransport] =
+      InMemoryTransport.createLinkedPair();
+
+    await Promise.all([
+      client.connect(clientTransport),
+      server.connect(serverTransport),
+    ]);
+
+    const result = await client.request(
+      {
+        method: "prompts/list",
+      },
+      ListPromptsResultSchema,
+    );
+
+    expect(result.prompts).toHaveLength(1);
+    expect(result.prompts[0].name).toBe("test");
+    expect(result.prompts[0].arguments).toEqual([
+      { name: "name", required: true },
+      { name: "value", required: true },
+    ]);
+  });
+
+  test("should register prompt with description", async () => {
+    const server = new Server({
+      name: "test server",
+      version: "1.0",
+    });
+    const client = new Client({
+      name: "test client",
+      version: "1.0",
+    });
+
+    server.prompt("test", "Test description", async () => ({
+      messages: [
+        {
+          role: "assistant",
+          content: {
+            type: "text",
+            text: "Test response",
+          },
+        },
+      ],
+    }));
+
+    const [clientTransport, serverTransport] =
+      InMemoryTransport.createLinkedPair();
+
+    await Promise.all([
+      client.connect(clientTransport),
+      server.connect(serverTransport),
+    ]);
+
+    const result = await client.request(
+      {
+        method: "prompts/list",
+      },
+      ListPromptsResultSchema,
+    );
+
+    expect(result.prompts).toHaveLength(1);
+    expect(result.prompts[0].name).toBe("test");
+    expect(result.prompts[0].description).toBe("Test description");
+  });
+
+  test("should validate prompt args", async () => {
+    const server = new Server({
+      name: "test server",
+      version: "1.0",
+    });
+
+    const client = new Client(
+      {
+        name: "test client",
+        version: "1.0",
+      },
+      {
+        capabilities: {
+          prompts: {},
+        },
+      },
+    );
+
+    server.prompt(
+      "test",
+      {
+        name: z.string(),
+        value: z.string().min(3),
+      },
+      async ({ name, value }) => ({
+        messages: [
+          {
+            role: "assistant",
+            content: {
+              type: "text",
+              text: `${name}: ${value}`,
+            },
+          },
+        ],
+      }),
+    );
+
+    const [clientTransport, serverTransport] =
+      InMemoryTransport.createLinkedPair();
+
+    await Promise.all([
+      client.connect(clientTransport),
+      server.connect(serverTransport),
+    ]);
+
+    await expect(
+      client.request(
+        {
+          method: "prompts/get",
+          params: {
+            name: "test",
+            arguments: {
+              name: "test",
+              value: "ab", // Too short
+            },
+          },
+        },
+        GetPromptResultSchema,
+      ),
+    ).rejects.toThrow(/Invalid arguments/);
+  });
+
+  test("should prevent duplicate prompt registration", () => {
+    const server = new Server({
+      name: "test server",
+      version: "1.0",
+    });
+
+    server.prompt("test", async () => ({
+      messages: [
+        {
+          role: "assistant",
+          content: {
+            type: "text",
+            text: "Test response",
+          },
+        },
+      ],
+    }));
+
+    expect(() => {
+      server.prompt("test", async () => ({
+        messages: [
+          {
+            role: "assistant",
+            content: {
+              type: "text",
+              text: "Test response 2",
+            },
+          },
+        ],
+      }));
+    }).toThrow(/already registered/);
+  });
+
+  test("should throw McpError for invalid prompt name", async () => {
+    const server = new Server({
+      name: "test server",
+      version: "1.0",
+    });
+
+    const client = new Client(
+      {
+        name: "test client",
+        version: "1.0",
+      },
+      {
+        capabilities: {
+          prompts: {},
+        },
+      },
+    );
+
+    server.prompt("test-prompt", async () => ({
+      messages: [
+        {
+          role: "assistant",
+          content: {
+            type: "text",
+            text: "Test response",
+          },
+        },
+      ],
+    }));
+
+    const [clientTransport, serverTransport] =
+      InMemoryTransport.createLinkedPair();
+
+    await Promise.all([
+      client.connect(clientTransport),
+      server.connect(serverTransport),
+    ]);
+
+    await expect(
+      client.request(
+        {
+          method: "prompts/get",
+          params: {
+            name: "nonexistent-prompt",
+          },
+        },
+        GetPromptResultSchema,
+      ),
+    ).rejects.toThrow(/Prompt nonexistent-prompt not found/);
   });
 });
