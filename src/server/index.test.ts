@@ -576,7 +576,10 @@ describe("ResourceTemplate", () => {
     const template = new ResourceTemplate("test://{id}", listCallback);
     expect(template.listCallback).toBe(listCallback);
 
-    const result = await template.listCallback?.();
+    const abortController = new AbortController();
+    const result = await template.listCallback?.({
+      signal: abortController.signal,
+    });
     expect(result?.resources).toHaveLength(1);
     expect(listCallback).toHaveBeenCalled();
   });

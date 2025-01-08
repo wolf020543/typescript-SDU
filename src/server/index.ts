@@ -496,32 +496,37 @@ export class Server<
       resources: {},
     });
 
-    this.setRequestHandler(ListResourcesRequestSchema, async () => {
-      const resources = Object.entries(this._registeredResources).map(
-        ([uri, resource]) => ({
-          uri,
-          name: resource.name,
-          ...resource.metadata,
-        }),
-      );
+    this.setRequestHandler(
+      ListResourcesRequestSchema,
+      async (request, extra) => {
+        const resources = Object.entries(this._registeredResources).map(
+          ([uri, resource]) => ({
+            uri,
+            name: resource.name,
+            ...resource.metadata,
+          }),
+        );
 
-      const templateResources: Resource[] = [];
-      for (const template of Object.values(this._registeredResourceTemplates)) {
-        if (!template.resourceTemplate.listCallback) {
-          continue;
+        const templateResources: Resource[] = [];
+        for (const template of Object.values(
+          this._registeredResourceTemplates,
+        )) {
+          if (!template.resourceTemplate.listCallback) {
+            continue;
+          }
+
+          const result = await template.resourceTemplate.listCallback(extra);
+          for (const resource of result.resources) {
+            templateResources.push({
+              ...resource,
+              ...template.metadata,
+            });
+          }
         }
 
-        const result = await template.resourceTemplate.listCallback();
-        for (const resource of result.resources) {
-          templateResources.push({
-            ...resource,
-            ...template.metadata,
-          });
-        }
-      }
-
-      return { resources: [...resources, ...templateResources] };
-    });
+        return { resources: [...resources, ...templateResources] };
+      },
+    );
 
     this.setRequestHandler(ListResourceTemplatesRequestSchema, async () => {
       const resourceTemplates = Object.entries(
@@ -535,27 +540,35 @@ export class Server<
       return { resourceTemplates };
     });
 
-    this.setRequestHandler(ReadResourceRequestSchema, async (request) => {
-      const uri = new URL(request.params.uri);
+    this.setRequestHandler(
+      ReadResourceRequestSchema,
+      async (request, extra) => {
+        const uri = new URL(request.params.uri);
 
-      // First check for exact resource match
-      const resource = this._registeredResources[uri.toString()];
-      if (resource) {
-        return resource.readCallback(uri);
-      }
-
-      // Then check templates
-      for (const template of Object.values(this._registeredResourceTemplates)) {
-        const variables = template.resourceTemplate.uriTemplate.match(
-          uri.toString(),
-        );
-        if (variables) {
-          return template.readCallback(uri, variables);
+        // First check for exact resource match
+        const resource = this._registeredResources[uri.toString()];
+        if (resource) {
+          return resource.readCallback(uri, extra);
         }
-      }
 
-      throw new McpError(ErrorCode.InvalidParams, `Resource ${uri} not found`);
-    });
+        // Then check templates
+        for (const template of Object.values(
+          this._registeredResourceTemplates,
+        )) {
+          const variables = template.resourceTemplate.uriTemplate.match(
+            uri.toString(),
+          );
+          if (variables) {
+            return template.readCallback(uri, variables, extra);
+          }
+        }
+
+        throw new McpError(
+          ErrorCode.InvalidParams,
+          `Resource ${uri} not found`,
+        );
+      },
+    );
   }
 
   /**
@@ -735,15 +748,16 @@ export type ResourceMetadata = Omit<Resource, "uri" | "name">;
 /**
  * Callback to list all resources matching a given template.
  */
-export type ListResourcesCallback = () =>
-  | ListResourcesResult
-  | Promise<ListResourcesResult>;
+export type ListResourcesCallback = (
+  extra: RequestHandlerExtra,
+) => ListResourcesResult | Promise<ListResourcesResult>;
 
 /**
  * Callback to read a resource at a given URI.
  */
 export type ReadResourceCallback = (
   uri: URL,
+  extra: RequestHandlerExtra,
 ) => ReadResourceResult | Promise<ReadResourceResult>;
 
 type RegisteredResource = {
@@ -758,6 +772,7 @@ type RegisteredResource = {
 export type ReadResourceTemplateCallback = (
   uri: URL,
   variables: Variables,
+  extra: RequestHandlerExtra,
 ) => ReadResourceResult | Promise<ReadResourceResult>;
 
 type RegisteredResourceTemplate = {
