@@ -241,7 +241,7 @@ export class Server<
         : LATEST_PROTOCOL_VERSION,
       capabilities: this.getCapabilities(),
       serverInfo: this._serverInfo,
-      ...(this.getInstructions() && { instructions: this.getInstructions() }),
+      ...(this._instructions && { instructions: this._instructions }),
     };
   }
 
@@ -261,10 +261,6 @@ export class Server<
 
   private getCapabilities(): ServerCapabilities {
     return this._capabilities;
-  }
-
-  private getInstructions(): string | undefined {
-    return this._instructions;
   }
 
   async ping() {
