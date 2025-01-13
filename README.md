@@ -62,6 +62,67 @@ const resourceContent = await client.request(
 
 ### Creating a Server
 
+The SDK provides two ways to create a server: using the low-level `Server` class or the simplified `McpServer` class with an Express-style API.
+
+#### Using McpServer (Recommended)
+
+```typescript
+import { McpServer } from "@modelcontextprotocol/sdk/server/index.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { z } from "zod";
+
+const server = new McpServer({
+  name: "example-server",
+  version: "1.0.0",
+});
+
+// Define a simple tool with no parameters
+server.tool("save", async () => {
+  return {
+    content: [{ type: "text", text: "Saved successfully." }]
+  };
+});
+
+// Define a tool with parameters
+server.tool("add", { a: z.number(), b: z.number() }, async ({ a, b }) => {
+  return {
+    content: [{ type: "text", text: String(a + b) }]
+  };
+});
+
+// Define a static resource
+server.resource(
+  "welcome-message",
+  "file:///welcome.txt", 
+  async (uri) => ({
+    contents: [{
+      uri: uri.href,
+      text: "Welcome to the server!"
+    }]
+  })
+);
+
+// Define a prompt with parameters
+server.prompt(
+  "greeting",
+  { name: z.string(), language: z.string().optional() },
+  ({ name, language }) => ({
+    messages: [{
+      role: "assistant",
+      content: {
+        type: "text",
+        text: `${language === "es" ? "¡Hola" : "Hello"} ${name}!`
+      }
+    }]
+  })
+);
+
+const transport = new StdioServerTransport();
+await server.connect(transport);
+```
+
+#### Using Server (Low-level API)
+
 ```typescript
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
