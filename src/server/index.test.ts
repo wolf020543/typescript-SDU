@@ -38,6 +38,7 @@ test("should accept latest protocol version", async () => {
             name: "test server",
             version: "1.0",
           },
+          instructions: "Test instructions",
         });
         sendPromiseResolve(undefined);
       }
@@ -57,6 +58,7 @@ test("should accept latest protocol version", async () => {
         tools: {},
         logging: {},
       },
+      instructions: "Test instructions",
     },
   );
 
