@@ -125,7 +125,7 @@ export class UriTemplate {
     if (operator === "+" || operator === "#") {
       return encodeURI(value);
     }
-    return encodeURIComponent(value).replace(/%20/g, "+");
+    return encodeURIComponent(value);
   }
 
   private expandPart(

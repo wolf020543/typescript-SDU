@@ -34,7 +34,7 @@ describe("UriTemplate", () => {
     it("should encode reserved characters", () => {
       const template = new UriTemplate("{var}");
       expect(template.expand({ var: "value with spaces" })).toBe(
-        "value+with+spaces",
+        "value%20with%20spaces",
       );
     });
   });
