@@ -42,7 +42,7 @@ npm install @modelcontextprotocol/sdk
 Let's create a simple MCP server that exposes a calculator tool and some data:
 
 ```typescript
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 
 // Create an MCP server
@@ -62,7 +62,7 @@ server.tool("add",
 // Add a dynamic greeting resource
 server.resource(
   "greeting",
-  "greeting://{name}",
+  new ResourceTemplate("greeting://{name}", { list: undefined }),
   async (uri, { name }) => ({
     contents: [{
       uri: uri.href,
@@ -114,7 +114,7 @@ server.resource(
 // Dynamic resource with parameters
 server.resource(
   "user-profile",
-  "users://{userId}/profile",
+  new ResourceTemplate("users://{userId}/profile", { list: undefined }),
   async (uri, { userId }) => ({
     contents: [{
       uri: uri.href,
@@ -185,7 +185,7 @@ server.prompt(
 A simple server demonstrating resources, tools, and prompts:
 
 ```typescript
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 
 const server = new McpServer({
@@ -195,7 +195,7 @@ const server = new McpServer({
 
 server.resource(
   "echo",
-  "echo://{message}",
+  new ResourceTemplate("echo://{message}", { list: undefined }),
   async (uri, { message }) => ({
     contents: [{
       uri: uri.href,
