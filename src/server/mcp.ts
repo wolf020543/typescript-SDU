@@ -81,7 +81,13 @@ export class McpServer {
     await this.server.close();
   }
 
+  private _toolHandlersInitialized = false;
+
   private setToolRequestHandlers() {
+    if (this._toolHandlersInitialized) {
+      return;
+    }
+    
     this.server.assertCanSetRequestHandler(
       ListToolsRequestSchema.shape.method.value,
     );
@@ -165,6 +171,8 @@ export class McpServer {
         }
       },
     );
+
+    this._toolHandlersInitialized = true;
   }
 
   private setCompletionRequestHandler() {
@@ -249,7 +257,13 @@ export class McpServer {
     return createCompletionResult(suggestions);
   }
 
+  private _resourceHandlersInitialized = false;
+
   private setResourceRequestHandlers() {
+    if (this._resourceHandlersInitialized) {
+      return;
+    }
+
     this.server.assertCanSetRequestHandler(
       ListResourcesRequestSchema.shape.method.value,
     );
@@ -342,9 +356,17 @@ export class McpServer {
     );
 
     this.setCompletionRequestHandler();
+    
+    this._resourceHandlersInitialized = true;
   }
 
+  private _promptHandlersInitialized = false;
+
   private setPromptRequestHandlers() {
+    if (this._promptHandlersInitialized) {
+      return;
+    }
+
     this.server.assertCanSetRequestHandler(
       ListPromptsRequestSchema.shape.method.value,
     );
@@ -406,6 +428,8 @@ export class McpServer {
     );
 
     this.setCompletionRequestHandler();
+    
+    this._promptHandlersInitialized = true;
   }
 
   /**
