@@ -310,6 +310,19 @@ describe("tool()", () => {
     }).toThrow(/already registered/);
   });
 
+  test("should allow registering multiple tools", () => {
+    const mcpServer = new McpServer({
+      name: "test server",
+      version: "1.0",
+    });
+
+    // This should succeed
+    mcpServer.tool("tool1", () => ({ content: [] }));
+    
+    // This should also succeed and not throw about request handlers
+    mcpServer.tool("tool2", () => ({ content: [] }));
+  });
+
   test("should allow client to call server tools", async () => {
     const mcpServer = new McpServer({
       name: "test server",
@@ -732,6 +745,33 @@ describe("resource()", () => {
         ],
       }));
     }).toThrow(/already registered/);
+  });
+
+  test("should allow registering multiple resources", () => {
+    const mcpServer = new McpServer({
+      name: "test server",
+      version: "1.0",
+    });
+
+    // This should succeed
+    mcpServer.resource("resource1", "test://resource1", async () => ({
+      contents: [
+        {
+          uri: "test://resource1",
+          text: "Test content 1",
+        },
+      ],
+    }));
+    
+    // This should also succeed and not throw about request handlers
+    mcpServer.resource("resource2", "test://resource2", async () => ({
+      contents: [
+        {
+          uri: "test://resource2",
+          text: "Test content 2",
+        },
+      ],
+    }));
   });
 
   test("should prevent duplicate resource template registration", () => {
@@ -1208,6 +1248,39 @@ describe("prompt()", () => {
         ],
       }));
     }).toThrow(/already registered/);
+  });
+
+  test("should allow registering multiple prompts", () => {
+    const mcpServer = new McpServer({
+      name: "test server",
+      version: "1.0",
+    });
+
+    // This should succeed
+    mcpServer.prompt("prompt1", async () => ({
+      messages: [
+        {
+          role: "assistant",
+          content: {
+            type: "text",
+            text: "Test response 1",
+          },
+        },
+      ],
+    }));
+    
+    // This should also succeed and not throw about request handlers
+    mcpServer.prompt("prompt2", async () => ({
+      messages: [
+        {
+          role: "assistant",
+          content: {
+            type: "text",
+            text: "Test response 2",
+          },
+        },
+      ],
+    }));
   });
 
   test("should throw McpError for invalid prompt name", async () => {
