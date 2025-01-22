@@ -11,9 +11,9 @@
   - [Tools](#tools)
   - [Prompts](#prompts)
 - [Running Your Server](#running-your-server)
-  - [Development Mode](#development-mode)
-  - [Claude Desktop Integration](#claude-desktop-integration)
-  - [Direct Execution](#direct-execution)
+  - [stdio](#stdio)
+  - [HTTP with SSE](#http-with-sse)
+  - [Testing and Debugging](#testing-and-debugging)
 - [Examples](#examples)
   - [Echo Server](#echo-server)
   - [SQLite Explorer](#sqlite-explorer)
@@ -177,6 +177,61 @@ server.prompt(
   })
 );
 ```
+
+## Running Your Server
+
+MCP servers in TypeScript need to be connected to a transport to communicate with clients. How you start the server depends on the choice of transport:
+
+### stdio
+
+For command-line tools and direct integrations:
+
+```typescript
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+
+const server = new McpServer({
+  name: "example-server",
+  version: "1.0.0"
+});
+
+const transport = new StdioServerTransport();
+await server.connect(transport);
+```
+
+### HTTP with SSE
+
+For remote servers, start a web server with a Server-Sent Events (SSE) endpoint, and a separate endpoint for the client to send its messages to:
+
+```typescript
+import express from "express";
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
+
+const app = express();
+const server = new McpServer({
+  name: "example-server",
+  version: "1.0.0"
+});
+
+app.get("/mcp", async (req, res) => {
+  const transport = new SSEServerTransport("/messages", res);
+  await server.connect(transport);
+});
+
+app.post("/messages", async (req, res) => {
+  // Note: to support multiple simultaneous connections, these messages will
+  // need to be routed to a specific matching transport. (This logic isn't
+  // implemented here, for simplicity.)
+  await transport.handlePostMessage(req, res);
+});
+
+app.listen(3000);
+```
+
+### Testing and Debugging
+
+To test your server, you can use the [MCP Inspector](https://github.com/modelcontextprotocol/inspector). See its README for more information.
 
 ## Examples
 
