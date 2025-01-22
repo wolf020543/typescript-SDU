@@ -85,6 +85,7 @@ export class Client<
   private _serverCapabilities?: ServerCapabilities;
   private _serverVersion?: Implementation;
   private _capabilities: ClientCapabilities;
+  private _instructions?: string;
 
   /**
    * Initializes this client with the given name and version information.
@@ -152,6 +153,8 @@ export class Client<
       this._serverCapabilities = result.capabilities;
       this._serverVersion = result.serverInfo;
 
+      this._instructions = result.instructions;
+
       await this.notification({
         method: "notifications/initialized",
       });
@@ -174,6 +177,13 @@ export class Client<
    */
   getServerVersion(): Implementation | undefined {
     return this._serverVersion;
+  }
+
+  /**
+   * After initialization has completed, this may be populated with information about the server's instructions.
+   */
+  getInstructions(): String | undefined {
+    return this._instructions;
   }
 
   protected assertCapabilityForMethod(method: RequestT["method"]): void {
