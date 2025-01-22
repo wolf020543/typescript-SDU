@@ -182,7 +182,7 @@ export class Client<
   /**
    * After initialization has completed, this may be populated with information about the server's instructions.
    */
-  getInstructions(): String | undefined {
+  getInstructions(): string | undefined {
     return this._instructions;
   }
 
