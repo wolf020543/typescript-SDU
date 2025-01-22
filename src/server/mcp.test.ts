@@ -1283,6 +1283,69 @@ describe("prompt()", () => {
     }));
   });
 
+  test("should allow registering prompts with arguments", () => {
+    const mcpServer = new McpServer({
+      name: "test server",
+      version: "1.0",
+    });
+
+    // This should succeed
+    mcpServer.prompt(
+      "echo",
+      { message: z.string() },
+      ({ message }) => ({
+        messages: [{
+          role: "user",
+          content: {
+            type: "text",
+            text: `Please process this message: ${message}`
+          }
+        }]
+      })
+    );
+  });
+
+  test("should allow registering both resources and prompts with completion handlers", () => {
+    const mcpServer = new McpServer({
+      name: "test server",
+      version: "1.0",
+    });
+
+    // Register a resource with completion
+    mcpServer.resource(
+      "test",
+      new ResourceTemplate("test://resource/{category}", {
+        list: undefined,
+        complete: {
+          category: () => ["books", "movies", "music"],
+        },
+      }),
+      async () => ({
+        contents: [
+          {
+            uri: "test://resource/test",
+            text: "Test content",
+          },
+        ],
+      }),
+    );
+
+    // Register a prompt with completion
+    mcpServer.prompt(
+      "echo",
+      { message: completable(z.string(), () => ["hello", "world"]) },
+      ({ message }) => ({
+        messages: [{
+          role: "user",
+          content: {
+            type: "text",
+            text: `Please process this message: ${message}`
+          }
+        }]
+      })
+    );
+  });
+
   test("should throw McpError for invalid prompt name", async () => {
     const mcpServer = new McpServer({
       name: "test server",

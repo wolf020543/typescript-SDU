@@ -175,7 +175,13 @@ export class McpServer {
     this._toolHandlersInitialized = true;
   }
 
+  private _completionHandlerInitialized = false;
+
   private setCompletionRequestHandler() {
+    if (this._completionHandlerInitialized) {
+      return;
+    }
+
     this.server.assertCanSetRequestHandler(
       CompleteRequestSchema.shape.method.value,
     );
@@ -198,6 +204,8 @@ export class McpServer {
         }
       },
     );
+
+    this._completionHandlerInitialized = true;
   }
 
   private async handlePromptCompletion(
