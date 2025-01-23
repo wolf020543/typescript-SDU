@@ -43,6 +43,7 @@ Let's create a simple MCP server that exposes a calculator tool and some data:
 
 ```typescript
 import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 
 // Create an MCP server
@@ -70,6 +71,10 @@ server.resource(
     }]
   })
 );
+
+// Start receiving messages on stdin and sending messages on stdout
+const transport = new StdioServerTransport();
+await server.connect(transport);
 ```
 
 ## What is MCP?
@@ -195,6 +200,8 @@ const server = new McpServer({
   version: "1.0.0"
 });
 
+// ... set up server resources, tools, and prompts ...
+
 const transport = new StdioServerTransport();
 await server.connect(transport);
 ```
@@ -208,11 +215,14 @@ import express from "express";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 
-const app = express();
 const server = new McpServer({
   name: "example-server",
   version: "1.0.0"
 });
+
+// ... set up server resources, tools, and prompts ...
+
+const app = express();
 
 app.get("/mcp", async (req, res) => {
   const transport = new SSEServerTransport("/messages", res);
