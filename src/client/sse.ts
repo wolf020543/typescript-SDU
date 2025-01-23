@@ -1,11 +1,10 @@
 import { Transport } from "../shared/transport.js";
 import { JSONRPCMessage, JSONRPCMessageSchema } from "../types.js";
+import { EventSource, type EventSourceInit } from "eventsource";
 
 /**
  * Client transport for SSE: this will connect to a server using Server-Sent Events for receiving
  * messages and make separate POST requests for sending messages.
- *
- * This uses the EventSource API in browsers. You can install the `eventsource` package for Node.js.
  */
 export class SSEClientTransport implements Transport {
   private _eventSource?: EventSource;
@@ -19,7 +18,10 @@ export class SSEClientTransport implements Transport {
   onerror?: (error: Error) => void;
   onmessage?: (message: JSONRPCMessage) => void;
 
-  constructor(url: URL, opts?: { eventSourceInit?: EventSourceInit, requestInit?: RequestInit }) {
+  constructor(
+    url: URL,
+    opts?: { eventSourceInit?: EventSourceInit; requestInit?: RequestInit },
+  ) {
     this._url = url;
     this._eventSourceInit = opts?.eventSourceInit;
     this._requestInit = opts?.requestInit;
@@ -33,7 +35,10 @@ export class SSEClientTransport implements Transport {
     }
 
     return new Promise((resolve, reject) => {
-      this._eventSource = new EventSource(this._url.href, this._eventSourceInit);
+      this._eventSource = new EventSource(
+        this._url.href,
+        this._eventSourceInit,
+      );
       this._abortController = new AbortController();
 
       this._eventSource.onerror = (event) => {
@@ -101,7 +106,7 @@ export class SSEClientTransport implements Transport {
         method: "POST",
         headers,
         body: JSON.stringify(message),
-        signal: this._abortController?.signal
+        signal: this._abortController?.signal,
       };
 
       const response = await fetch(this._endpoint, init);

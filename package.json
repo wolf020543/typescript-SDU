@@ -47,6 +47,7 @@
   },
   "dependencies": {
     "content-type": "^1.0.5",
+    "eventsource": "^3.0.2",
     "raw-body": "^3.0.0",
     "zod": "^3.23.8",
     "zod-to-json-schema": "^3.24.1"
@@ -61,7 +62,6 @@
     "@types/node": "^22.0.2",
     "@types/ws": "^8.5.12",
     "eslint": "^9.8.0",
-    "eventsource": "^2.0.2",
     "express": "^4.19.2",
     "jest": "^29.7.0",
     "ts-jest": "^29.2.4",
