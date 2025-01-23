@@ -1,7 +1,7 @@
-import { SSEClientTransport } from "./sse.js";
-import { createServer, type Server, type IncomingMessage } from "http";
-import { JSONRPCMessage } from "../types.js";
+import { createServer, type IncomingMessage, type Server } from "http";
 import { AddressInfo } from "net";
+import { JSONRPCMessage } from "../types.js";
+import { SSEClientTransport } from "./sse.js";
 
 describe("SSEClientTransport", () => {
   let server: Server;
@@ -56,10 +56,9 @@ describe("SSEClientTransport", () => {
     });
   });
 
-  afterEach((done) => {
-    transport?.close().then(() => {
-      server.close(done);
-    });
+  afterEach(async () => {
+    await transport.close();
+    await server.close();
   });
 
   describe("connection handling", () => {
