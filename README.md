@@ -200,6 +200,8 @@ const server = new McpServer({
   version: "1.0.0"
 });
 
+// ... set up server resources, tools, and prompts ...
+
 const transport = new StdioServerTransport();
 await server.connect(transport);
 ```
@@ -213,11 +215,14 @@ import express from "express";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 
-const app = express();
 const server = new McpServer({
   name: "example-server",
   version: "1.0.0"
 });
+
+// ... set up server resources, tools, and prompts ...
+
+const app = express();
 
 app.get("/mcp", async (req, res) => {
   const transport = new SSEServerTransport("/messages", res);
