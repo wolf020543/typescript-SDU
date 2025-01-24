@@ -1,6 +1,16 @@
+import { EventSource, type ErrorEvent, type EventSourceInit } from "eventsource";
 import { Transport } from "../shared/transport.js";
 import { JSONRPCMessage, JSONRPCMessageSchema } from "../types.js";
-import { EventSource, type EventSourceInit } from "eventsource";
+
+export class SseError extends Error {
+  constructor(
+    public readonly code: number | undefined,
+    message: string | undefined,
+    public readonly event: ErrorEvent,
+  ) {
+    super(`SSE error: ${message}`);
+  }
+}
 
 /**
  * Client transport for SSE: this will connect to a server using Server-Sent Events for receiving
@@ -42,7 +52,7 @@ export class SSEClientTransport implements Transport {
       this._abortController = new AbortController();
 
       this._eventSource.onerror = (event) => {
-        const error = new Error(`SSE error: ${JSON.stringify(event)}`);
+        const error = new SseError(event.code, event.message, event);
         reject(error);
         this.onerror?.(error);
       };
