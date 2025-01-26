@@ -224,7 +224,7 @@ const server = new McpServer({
 
 const app = express();
 
-app.get("/mcp", async (req, res) => {
+app.get("/sse", async (req, res) => {
   const transport = new SSEServerTransport("/messages", res);
   await server.connect(transport);
 });
@@ -236,7 +236,7 @@ app.post("/messages", async (req, res) => {
   await transport.handlePostMessage(req, res);
 });
 
-app.listen(3000);
+app.listen(3001);
 ```
 
 ### Testing and Debugging
