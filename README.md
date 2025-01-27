@@ -470,8 +470,11 @@ const resources = await client.listResources();
 const resource = await client.readResource("file:///example.txt");
 
 // Call a tool
-const result = await client.callTool("example-tool", {
-  arg1: "value"
+const result = await client.callTool({
+  name: "example-tool",
+  arguments: {
+    arg1: "value"
+  }
 });
 ```
 
