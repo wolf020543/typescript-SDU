@@ -129,12 +129,10 @@ export async function exchangeAuthorization(
     metadata,
     authorizationCode,
     codeVerifier,
-    redirectUrl,
   }: {
     metadata: OAuthMetadata;
     authorizationCode: string;
     codeVerifier: string;
-    redirectUrl: string | URL;
   },
 ): Promise<OAuthTokens> {
   const grantType = "authorization_code";
@@ -165,7 +163,55 @@ export async function exchangeAuthorization(
       grant_type: grantType,
       code: authorizationCode,
       code_verifier: codeVerifier,
-      redirect_uri: String(redirectUrl),
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Token exchange failed: HTTP ${response.status}`);
+  }
+
+  return OAuthTokensSchema.parse(await response.json());
+}
+
+/**
+ * Exchange a refresh token for an updated access token.
+ */
+export async function refreshAuthorization(
+  serverUrl: string | URL,
+  {
+    metadata,
+    refreshToken,
+  }: {
+    metadata: OAuthMetadata;
+    refreshToken: string;
+  },
+): Promise<OAuthTokens> {
+  const grantType = "refresh_token";
+
+  let tokenUrl: URL;
+  if (metadata) {
+    tokenUrl = new URL(metadata.token_endpoint);
+
+    if (
+      metadata.grant_types_supported &&
+      !(grantType in metadata.grant_types_supported)
+    ) {
+      throw new Error(
+        `Incompatible auth server: does not support grant type ${grantType}`,
+      );
+    }
+  } else {
+    tokenUrl = new URL("/token", serverUrl);
+  }
+
+  const response = await fetch(tokenUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: new URLSearchParams({
+      grant_type: grantType,
+      refresh_token: refreshToken,
     }),
   });
 
