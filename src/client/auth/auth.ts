@@ -70,14 +70,37 @@ export async function startAuthorization(
   const codeVerifier = challenge.code_verifier;
   const codeChallenge = challenge.code_challenge;
 
-  const authorizationUrl = metadata?.authorization_endpoint
-    ? new URL(metadata?.authorization_endpoint)
-    : new URL("/authorize", serverUrl);
+  const responseType = "code";
+  const codeChallengeMethod = "S256";
 
-  // TODO: Validate that these parameters are listed as supported in the metadata, if present.
-  authorizationUrl.searchParams.set("response_type", "code");
+  let authorizationUrl: URL;
+  if (metadata) {
+    authorizationUrl = new URL(metadata.authorization_endpoint);
+
+    if (!(responseType in metadata.response_types_supported)) {
+      throw new Error(
+        `Incompatible auth server: does not support response type ${responseType}`,
+      );
+    }
+
+    if (
+      !metadata.code_challenge_methods_supported ||
+      !(codeChallengeMethod in metadata.code_challenge_methods_supported)
+    ) {
+      throw new Error(
+        `Incompatible auth server: does not support code challenge method ${codeChallengeMethod}`,
+      );
+    }
+  } else {
+    authorizationUrl = new URL("/authorize", serverUrl);
+  }
+
+  authorizationUrl.searchParams.set("response_type", responseType);
   authorizationUrl.searchParams.set("code_challenge", codeChallenge);
-  authorizationUrl.searchParams.set("code_challenge_method", "S256");
+  authorizationUrl.searchParams.set(
+    "code_challenge_method",
+    codeChallengeMethod,
+  );
   authorizationUrl.searchParams.set("redirect_uri", String(redirectUrl));
 
   return { authorizationUrl, codeVerifier };
