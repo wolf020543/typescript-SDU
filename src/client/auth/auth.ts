@@ -32,7 +32,18 @@ export const OAuthMetadataSchema = z
   })
   .passthrough();
 
+export const OAuthTokensSchema = z
+  .object({
+    access_token: z.string(),
+    token_type: z.string(),
+    expires_in: z.number().optional(),
+    scope: z.string().optional(),
+    refresh_token: z.string().optional(),
+  })
+  .strip();
+
 export type OAuthMetadata = z.infer<typeof OAuthMetadataSchema>;
+export type OAuthTokens = z.infer<typeof OAuthTokensSchema>;
 
 /**
  * Looks up RFC 8414 OAuth 2.0 Authorization Server Metadata.
@@ -58,6 +69,9 @@ export async function discoverOAuthMetadata(
   return OAuthMetadataSchema.parse(await response.json());
 }
 
+/**
+ * Begins the authorization flow with the given server, by generating a PKCE challenge and constructing the authorization URL.
+ */
 export async function startAuthorization(
   serverUrl: string | URL,
   {
@@ -65,11 +79,6 @@ export async function startAuthorization(
     redirectUrl,
   }: { metadata: OAuthMetadata; redirectUrl: string | URL },
 ): Promise<{ authorizationUrl: URL; codeVerifier: string }> {
-  // Generate PKCE challenge
-  const challenge = await pkceChallenge();
-  const codeVerifier = challenge.code_verifier;
-  const codeChallenge = challenge.code_challenge;
-
   const responseType = "code";
   const codeChallengeMethod = "S256";
 
@@ -95,6 +104,11 @@ export async function startAuthorization(
     authorizationUrl = new URL("/authorize", serverUrl);
   }
 
+  // Generate PKCE challenge
+  const challenge = await pkceChallenge();
+  const codeVerifier = challenge.code_verifier;
+  const codeChallenge = challenge.code_challenge;
+
   authorizationUrl.searchParams.set("response_type", responseType);
   authorizationUrl.searchParams.set("code_challenge", codeChallenge);
   authorizationUrl.searchParams.set(
@@ -104,4 +118,60 @@ export async function startAuthorization(
   authorizationUrl.searchParams.set("redirect_uri", String(redirectUrl));
 
   return { authorizationUrl, codeVerifier };
+}
+
+/**
+ * Exchanges an authorization code for an access token with the given server.
+ */
+export async function exchangeAuthorization(
+  serverUrl: string | URL,
+  {
+    metadata,
+    authorizationCode,
+    codeVerifier,
+    redirectUrl,
+  }: {
+    metadata: OAuthMetadata;
+    authorizationCode: string;
+    codeVerifier: string;
+    redirectUrl: string | URL;
+  },
+): Promise<OAuthTokens> {
+  const grantType = "authorization_code";
+
+  let tokenUrl: URL;
+  if (metadata) {
+    tokenUrl = new URL(metadata.token_endpoint);
+
+    if (
+      metadata.grant_types_supported &&
+      !(grantType in metadata.grant_types_supported)
+    ) {
+      throw new Error(
+        `Incompatible auth server: does not support grant type ${grantType}`,
+      );
+    }
+  } else {
+    tokenUrl = new URL("/token", serverUrl);
+  }
+
+  // Exchange code for tokens
+  const response = await fetch(tokenUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: new URLSearchParams({
+      grant_type: grantType,
+      code: authorizationCode,
+      code_verifier: codeVerifier,
+      redirect_uri: String(redirectUrl),
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Token exchange failed: HTTP ${response.status}`);
+  }
+
+  return OAuthTokensSchema.parse(await response.json());
 }
