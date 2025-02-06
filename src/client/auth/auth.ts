@@ -1,3 +1,4 @@
+import pkceChallenge from "pkce-challenge";
 import { z } from "zod";
 
 export const OAuthMetadataSchema = z
@@ -55,4 +56,29 @@ export async function discoverOAuthMetadata(
   }
 
   return OAuthMetadataSchema.parse(await response.json());
+}
+
+export async function startAuthorization(
+  serverUrl: string | URL,
+  {
+    metadata,
+    redirectUrl,
+  }: { metadata: OAuthMetadata; redirectUrl: string | URL },
+): Promise<{ authorizationUrl: URL; codeVerifier: string }> {
+  // Generate PKCE challenge
+  const challenge = await pkceChallenge();
+  const codeVerifier = challenge.code_verifier;
+  const codeChallenge = challenge.code_challenge;
+
+  const authorizationUrl = metadata?.authorization_endpoint
+    ? new URL(metadata?.authorization_endpoint)
+    : new URL("/authorize", serverUrl);
+
+  // TODO: Validate that these parameters are listed as supported in the metadata, if present.
+  authorizationUrl.searchParams.set("response_type", "code");
+  authorizationUrl.searchParams.set("code_challenge", codeChallenge);
+  authorizationUrl.searchParams.set("code_challenge_method", "S256");
+  authorizationUrl.searchParams.set("redirect_uri", String(redirectUrl));
+
+  return { authorizationUrl, codeVerifier };
 }
