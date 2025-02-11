@@ -96,10 +96,18 @@ describe("OAuth Authorization", () => {
       code_challenge_methods_supported: ["S256"],
     };
 
+    const validClientInfo = {
+      client_id: "client123",
+      client_secret: "secret123",
+      redirect_uris: ["http://localhost:3000/callback"],
+      client_name: "Test Client",
+    };
+
     it("generates authorization URL with PKCE challenge", async () => {
       const { authorizationUrl, codeVerifier } = await startAuthorization(
         "https://auth.example.com",
         {
+          clientInformation: validClientInfo,
           redirectUrl: "http://localhost:3000/callback",
         }
       );
@@ -123,6 +131,7 @@ describe("OAuth Authorization", () => {
         "https://auth.example.com",
         {
           metadata: validMetadata,
+          clientInformation: validClientInfo,
           redirectUrl: "http://localhost:3000/callback",
         }
       );
@@ -141,6 +150,7 @@ describe("OAuth Authorization", () => {
       await expect(
         startAuthorization("https://auth.example.com", {
           metadata,
+          clientInformation: validClientInfo,
           redirectUrl: "http://localhost:3000/callback",
         })
       ).rejects.toThrow(/does not support response type/);
@@ -156,6 +166,7 @@ describe("OAuth Authorization", () => {
       await expect(
         startAuthorization("https://auth.example.com", {
           metadata,
+          clientInformation: validClientInfo,
           redirectUrl: "http://localhost:3000/callback",
         })
       ).rejects.toThrow(/does not support code challenge method/);
@@ -170,6 +181,13 @@ describe("OAuth Authorization", () => {
       refresh_token: "refresh123",
     };
 
+    const validClientInfo = {
+      client_id: "client123",
+      client_secret: "secret123",
+      redirect_uris: ["http://localhost:3000/callback"],
+      client_name: "Test Client",
+    };
+
     it("exchanges code for tokens", async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
@@ -178,6 +196,7 @@ describe("OAuth Authorization", () => {
       });
 
       const tokens = await exchangeAuthorization("https://auth.example.com", {
+        clientInformation: validClientInfo,
         authorizationCode: "code123",
         codeVerifier: "verifier123",
       });
@@ -199,6 +218,8 @@ describe("OAuth Authorization", () => {
       expect(body.get("grant_type")).toBe("authorization_code");
       expect(body.get("code")).toBe("code123");
       expect(body.get("code_verifier")).toBe("verifier123");
+      expect(body.get("client_id")).toBe("client123");
+      expect(body.get("client_secret")).toBe("secret123");
     });
 
     it("validates token response schema", async () => {
@@ -213,6 +234,7 @@ describe("OAuth Authorization", () => {
 
       await expect(
         exchangeAuthorization("https://auth.example.com", {
+          clientInformation: validClientInfo,
           authorizationCode: "code123",
           codeVerifier: "verifier123",
         })
@@ -227,6 +249,7 @@ describe("OAuth Authorization", () => {
 
       await expect(
         exchangeAuthorization("https://auth.example.com", {
+          clientInformation: validClientInfo,
           authorizationCode: "code123",
           codeVerifier: "verifier123",
         })
@@ -242,6 +265,13 @@ describe("OAuth Authorization", () => {
       refresh_token: "newrefresh123",
     };
 
+    const validClientInfo = {
+      client_id: "client123",
+      client_secret: "secret123",
+      redirect_uris: ["http://localhost:3000/callback"],
+      client_name: "Test Client",
+    };
+
     it("exchanges refresh token for new tokens", async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
@@ -250,6 +280,7 @@ describe("OAuth Authorization", () => {
       });
 
       const tokens = await refreshAuthorization("https://auth.example.com", {
+        clientInformation: validClientInfo,
         refreshToken: "refresh123",
       });
 
@@ -269,6 +300,8 @@ describe("OAuth Authorization", () => {
       const body = mockFetch.mock.calls[0][1].body as URLSearchParams;
       expect(body.get("grant_type")).toBe("refresh_token");
       expect(body.get("refresh_token")).toBe("refresh123");
+      expect(body.get("client_id")).toBe("client123");
+      expect(body.get("client_secret")).toBe("secret123");
     });
 
     it("validates token response schema", async () => {
@@ -283,6 +316,7 @@ describe("OAuth Authorization", () => {
 
       await expect(
         refreshAuthorization("https://auth.example.com", {
+          clientInformation: validClientInfo,
           refreshToken: "refresh123",
         })
       ).rejects.toThrow();
@@ -296,9 +330,10 @@ describe("OAuth Authorization", () => {
 
       await expect(
         refreshAuthorization("https://auth.example.com", {
+          clientInformation: validClientInfo,
           refreshToken: "refresh123",
         })
-      ).rejects.toThrow("Token exchange failed");
+      ).rejects.toThrow("Token refresh failed");
     });
   });
 

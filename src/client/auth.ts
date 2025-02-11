@@ -89,9 +89,6 @@ export type OAuthClientInformation = z.infer<typeof OAuthClientInformationSchema
 export interface OAuthClientProvider {
   /**
    * The URL to redirect the user agent to after authorization.
-   * 
-   * If the client is not redirecting to localhost, `clientInformation` must be
-   * implemented.
    */
   get redirectUrl(): string | URL;
 
@@ -104,19 +101,16 @@ export interface OAuthClientProvider {
    * Loads information about this OAuth client, as registered already with the
    * server, or returns `undefined` if the client is not registered with the
    * server.
-   * 
-   * This method must be implemented _unless_ redirecting to `localhost`.
    */
-  clientInformation?(): OAuthClientInformation | undefined | Promise<OAuthClientInformation | undefined>;
+  clientInformation(): OAuthClientInformation | undefined | Promise<OAuthClientInformation | undefined>;
 
   /**
    * If implemented, this permits the OAuth client to dynamically register with
    * the server. Client information saved this way should later be read via
    * `clientInformation()`.
    * 
-   * This method is not required to be implemented if redirecting to
-   * `localhost`, or if client information is statically known (e.g.,
-   * pre-registered).
+   * This method is not required to be implemented if client information is
+   * statically known (e.g., pre-registered).
    */
   saveClientInformation?(clientInformation: OAuthClientInformation): void | Promise<void>;
 
@@ -164,31 +158,22 @@ export async function auth(
   const metadata = await discoverOAuthMetadata(serverUrl);
 
   // Handle client registration if needed
-  const hostname = new URL(provider.redirectUrl).hostname;
-  if (hostname !== "localhost" && hostname !== "127.0.0.1") {
-    if (!provider.clientInformation) {
-      throw new Error("OAuth client information is required when not redirecting to localhost")
+  let clientInformation = await Promise.resolve(provider.clientInformation());
+  if (!clientInformation) {
+    if (authorizationCode !== undefined) {
+      throw new Error("Existing OAuth client information is required when exchanging an authorization code");
     }
 
-    let clientInformation = await Promise.resolve(provider.clientInformation());
-    if (!clientInformation) {
-      if (authorizationCode !== undefined) {
-        throw new Error("Existing OAuth client information is required when exchanging an authorization code");
-      }
-
-      if (!provider.saveClientInformation) {
-        throw new Error("OAuth client information must be saveable when not provided and not redirecting to localhost");
-      }
-
-      clientInformation = await registerClient(serverUrl, {
-        metadata,
-        clientMetadata: provider.clientMetadata,
-      });
-
-      await provider.saveClientInformation(clientInformation);
+    if (!provider.saveClientInformation) {
+      throw new Error("OAuth client information must be saveable for dynamic registration");
     }
 
-    // TODO: Send clientInformation into auth flow
+    clientInformation = await registerClient(serverUrl, {
+      metadata,
+      clientMetadata: provider.clientMetadata,
+    });
+
+    await provider.saveClientInformation(clientInformation);
   }
 
   // Exchange authorization code for tokens
@@ -196,6 +181,7 @@ export async function auth(
     const codeVerifier = await provider.codeVerifier();
     const tokens = await exchangeAuthorization(serverUrl, {
       metadata,
+      clientInformation,
       authorizationCode,
       codeVerifier,
     });
@@ -212,6 +198,7 @@ export async function auth(
       // Attempt to refresh the token
       const newTokens = await refreshAuthorization(serverUrl, {
         metadata,
+        clientInformation,
         refreshToken: tokens.refresh_token,
       });
 
@@ -223,7 +210,12 @@ export async function auth(
   }
 
   // Start new authorization flow
-  const { authorizationUrl, codeVerifier } = await startAuthorization(serverUrl, { metadata, redirectUrl: provider.redirectUrl });
+  const { authorizationUrl, codeVerifier } = await startAuthorization(serverUrl, {
+    metadata,
+    clientInformation,
+    redirectUrl: provider.redirectUrl
+  });
+
   await provider.saveCodeVerifier(codeVerifier);
   await provider.redirectToAuthorization(authorizationUrl);
   return "REDIRECT";
@@ -260,8 +252,13 @@ export async function startAuthorization(
   serverUrl: string | URL,
   {
     metadata,
+    clientInformation,
     redirectUrl,
-  }: { metadata?: OAuthMetadata; redirectUrl: string | URL },
+  }: {
+    metadata?: OAuthMetadata;
+    clientInformation: OAuthClientInformation;
+    redirectUrl: string | URL;
+  },
 ): Promise<{ authorizationUrl: URL; codeVerifier: string }> {
   const responseType = "code";
   const codeChallengeMethod = "S256";
@@ -294,6 +291,7 @@ export async function startAuthorization(
   const codeChallenge = challenge.code_challenge;
 
   authorizationUrl.searchParams.set("response_type", responseType);
+  authorizationUrl.searchParams.set("client_id", clientInformation.client_id);
   authorizationUrl.searchParams.set("code_challenge", codeChallenge);
   authorizationUrl.searchParams.set(
     "code_challenge_method",
@@ -311,10 +309,12 @@ export async function exchangeAuthorization(
   serverUrl: string | URL,
   {
     metadata,
+    clientInformation,
     authorizationCode,
     codeVerifier,
   }: {
     metadata?: OAuthMetadata;
+    clientInformation: OAuthClientInformation;
     authorizationCode: string;
     codeVerifier: string;
   },
@@ -338,16 +338,23 @@ export async function exchangeAuthorization(
   }
 
   // Exchange code for tokens
+  const params = new URLSearchParams({
+    grant_type: grantType,
+    client_id: clientInformation.client_id,
+    code: authorizationCode,
+    code_verifier: codeVerifier,
+  });
+
+  if (clientInformation.client_secret) {
+    params.set("client_secret", clientInformation.client_secret);
+  }
+
   const response = await fetch(tokenUrl, {
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
     },
-    body: new URLSearchParams({
-      grant_type: grantType,
-      code: authorizationCode,
-      code_verifier: codeVerifier,
-    }),
+    body: params,
   });
 
   if (!response.ok) {
@@ -364,9 +371,11 @@ export async function refreshAuthorization(
   serverUrl: string | URL,
   {
     metadata,
+    clientInformation,
     refreshToken,
   }: {
     metadata?: OAuthMetadata;
+    clientInformation: OAuthClientInformation;
     refreshToken: string;
   },
 ): Promise<OAuthTokens> {
@@ -388,19 +397,27 @@ export async function refreshAuthorization(
     tokenUrl = new URL("/token", serverUrl);
   }
 
+  // Exchange refresh token
+  const params = new URLSearchParams({
+    grant_type: grantType,
+    client_id: clientInformation.client_id,
+    refresh_token: refreshToken,
+  });
+
+  if (clientInformation.client_secret) {
+    params.set("client_secret", clientInformation.client_secret);
+  }
+
   const response = await fetch(tokenUrl, {
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
     },
-    body: new URLSearchParams({
-      grant_type: grantType,
-      refresh_token: refreshToken,
-    }),
+    body: params,
   });
 
   if (!response.ok) {
-    throw new Error(`Token exchange failed: HTTP ${response.status}`);
+    throw new Error(`Token refresh failed: HTTP ${response.status}`);
   }
 
   return OAuthTokensSchema.parse(await response.json());
