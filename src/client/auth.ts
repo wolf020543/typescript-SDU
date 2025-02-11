@@ -1,5 +1,6 @@
 import pkceChallenge from "pkce-challenge";
 import { z } from "zod";
+import { LATEST_PROTOCOL_VERSION } from "../types.js";
 
 export const OAuthMetadataSchema = z
   .object({
@@ -229,9 +230,15 @@ export async function auth(
  */
 export async function discoverOAuthMetadata(
   serverUrl: string | URL,
+  opts?: { protocolVersion?: string },
 ): Promise<OAuthMetadata | undefined> {
   const url = new URL("/.well-known/oauth-authorization-server", serverUrl);
-  const response = await fetch(url);
+  const response = await fetch(url, {
+    headers: {
+      "MCP-Protocol-Version": opts?.protocolVersion ?? LATEST_PROTOCOL_VERSION
+    }
+  });
+
   if (response.status === 404) {
     return undefined;
   }
