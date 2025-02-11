@@ -42,8 +42,42 @@ export const OAuthTokensSchema = z
   })
   .strip();
 
+/**
+ * Client metadata schema according to RFC 7591 OAuth 2.0 Dynamic Client Registration
+ */
+export const ClientMetadataSchema = z.object({
+  redirect_uris: z.array(z.string()),
+  token_endpoint_auth_method: z.string().optional(),
+  grant_types: z.array(z.string()).optional(),
+  response_types: z.array(z.string()).optional(),
+  client_name: z.string().optional(),
+  client_uri: z.string().optional(),
+  logo_uri: z.string().optional(),
+  scope: z.string().optional(),
+  contacts: z.array(z.string()).optional(),
+  tos_uri: z.string().optional(),
+  policy_uri: z.string().optional(),
+  jwks_uri: z.string().optional(),
+  jwks: z.any().optional(),
+  software_id: z.string().optional(),
+  software_version: z.string().optional(),
+}).passthrough();
+
+/**
+ * Client information response schema according to RFC 7591
+ */
+export const ClientInformationSchema = z.object({
+  client_id: z.string(),
+  client_secret: z.string().optional(),
+  client_id_issued_at: z.number().optional(),
+  client_secret_expires_at: z.number().optional(),
+}).merge(ClientMetadataSchema);
+
 export type OAuthMetadata = z.infer<typeof OAuthMetadataSchema>;
 export type OAuthTokens = z.infer<typeof OAuthTokensSchema>;
+
+export type ClientMetadata = z.infer<typeof ClientMetadataSchema>;
+export type ClientInformation = z.infer<typeof ClientInformationSchema>;
 
 /**
  * Looks up RFC 8414 OAuth 2.0 Authorization Server Metadata.
@@ -77,7 +111,7 @@ export async function startAuthorization(
   {
     metadata,
     redirectUrl,
-  }: { metadata: OAuthMetadata; redirectUrl: string | URL },
+  }: { metadata?: OAuthMetadata; redirectUrl: string | URL },
 ): Promise<{ authorizationUrl: URL; codeVerifier: string }> {
   const responseType = "code";
   const codeChallengeMethod = "S256";
@@ -130,7 +164,7 @@ export async function exchangeAuthorization(
     authorizationCode,
     codeVerifier,
   }: {
-    metadata: OAuthMetadata;
+    metadata?: OAuthMetadata;
     authorizationCode: string;
     codeVerifier: string;
   },
@@ -182,7 +216,7 @@ export async function refreshAuthorization(
     metadata,
     refreshToken,
   }: {
-    metadata: OAuthMetadata;
+    metadata?: OAuthMetadata;
     refreshToken: string;
   },
 ): Promise<OAuthTokens> {
@@ -220,4 +254,51 @@ export async function refreshAuthorization(
   }
 
   return OAuthTokensSchema.parse(await response.json());
+}
+
+/**
+ * Performs OAuth 2.0 Dynamic Client Registration according to RFC 7591.
+ * 
+ * @param serverUrl - The base URL of the authorization server
+ * @param options - Registration options
+ * @param options.metadata - OAuth server metadata containing the registration endpoint
+ * @param options.clientMetadata - Client metadata for registration
+ * @returns The registered client information
+ * @throws Error if the server doesn't support dynamic registration or if registration fails
+ */
+export async function registerClient(
+  serverUrl: string | URL,
+  {
+    metadata,
+    clientMetadata,
+  }: {
+    metadata?: OAuthMetadata;
+    clientMetadata: ClientMetadata;
+  },
+): Promise<ClientInformation> {
+  let registrationUrl: URL;
+
+  if (metadata) {
+    if (!metadata.registration_endpoint) {
+      throw new Error("Incompatible auth server: does not support dynamic client registration");
+    }
+
+    registrationUrl = new URL(metadata.registration_endpoint);
+  } else {
+    registrationUrl = new URL("/register", serverUrl);
+  }
+
+  const response = await fetch(registrationUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(clientMetadata),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Dynamic client registration failed: HTTP ${response.status}`);
+  }
+
+  return ClientInformationSchema.parse(await response.json());
 }
