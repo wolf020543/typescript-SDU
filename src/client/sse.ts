@@ -105,7 +105,13 @@ export class SSEClientTransport implements Transport {
       this._eventSource = new EventSource(
         this._url.href,
         this._eventSourceInit ?? {
-          fetch: (url, init) => this._commonHeaders().then((headers) => fetch(url, { ...init, headers })),
+          fetch: (url, init) => this._commonHeaders().then((headers) => fetch(url, {
+            ...init,
+            headers: {
+              ...headers,
+              Accept: "text/event-stream"
+            }
+          })),
         },
       );
       this._abortController = new AbortController();

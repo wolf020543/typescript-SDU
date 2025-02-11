@@ -6,14 +6,6 @@ import {
   registerClient,
 } from "./auth.js";
 
-// Mock pkce-challenge
-jest.mock("pkce-challenge", () => ({
-  __esModule: true,
-  default: () => ({
-    code_verifier: "test_verifier",
-    code_challenge: "test_challenge",
-  }),
-}));
 
 // Mock fetch globally
 const mockFetch = jest.fn();
@@ -43,11 +35,13 @@ describe("OAuth Authorization", () => {
 
       const metadata = await discoverOAuthMetadata("https://auth.example.com");
       expect(metadata).toEqual(validMetadata);
-      expect(mockFetch).toHaveBeenCalledWith(
-        expect.objectContaining({
-          href: "https://auth.example.com/.well-known/oauth-authorization-server",
-        })
-      );
+      const calls = mockFetch.mock.calls;
+      expect(calls.length).toBe(1);
+      const [url, options] = calls[0];
+      expect(url.toString()).toBe("https://auth.example.com/.well-known/oauth-authorization-server");
+      expect(options.headers).toEqual({
+        "MCP-Protocol-Version": "2024-11-05"
+      });
     });
 
     it("returns undefined when discovery endpoint returns 404", async () => {
