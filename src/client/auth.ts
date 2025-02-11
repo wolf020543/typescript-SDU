@@ -80,6 +80,156 @@ export type OAuthClientMetadata = z.infer<typeof OAuthClientMetadataSchema>;
 export type OAuthClientInformation = z.infer<typeof OAuthClientInformationSchema>;
 
 /**
+ * Implements an end-to-end OAuth client to be used with one MCP server.
+ * 
+ * This client relies upon a concept of an authorized "session," the exact
+ * meaning of which is application-defined. Tokens, authorization codes, and
+ * code verifiers should not cross different sessions.
+ */
+export interface OAuthClientProvider {
+  /**
+   * The URL to redirect the user agent to after authorization.
+   * 
+   * If the client is not redirecting to localhost, `clientInformation` must be
+   * implemented.
+   */
+  get redirectUrl(): string | URL;
+
+  /**
+   * Metadata about this OAuth client.
+   */
+  get clientMetadata(): OAuthClientMetadata;
+
+  /**
+   * Loads information about this OAuth client, as registered already with the
+   * server, or returns `undefined` if the client is not registered with the
+   * server.
+   * 
+   * This method must be implemented _unless_ redirecting to `localhost`.
+   */
+  clientInformation?(): OAuthClientInformation | undefined | Promise<OAuthClientInformation | undefined>;
+
+  /**
+   * If implemented, this permits the OAuth client to dynamically register with
+   * the server. Client information saved this way should later be read via
+   * `clientInformation()`.
+   * 
+   * This method is not required to be implemented if redirecting to
+   * `localhost`, or if client information is statically known (e.g.,
+   * pre-registered).
+   */
+  saveClientInformation?(clientInformation: OAuthClientInformation): void | Promise<void>;
+
+  /**
+   * Loads any existing OAuth tokens for the current session, or returns
+   * `undefined` if there are no saved tokens.
+   */
+  tokens(): OAuthTokens | undefined | Promise<OAuthTokens | undefined>;
+
+  /**
+   * Stores new OAuth tokens for the current session, after a successful
+   * authorization.
+   */
+  saveTokens(tokens: OAuthTokens): void | Promise<void>;
+
+  /**
+   * Invoked to redirect the user agent to the given URL to begin the authorization flow.
+   */
+  redirectToAuthorization(authorizationUrl: URL): void | Promise<void>;
+
+  /**
+   * Saves a PKCE code verifier for the current session, before redirecting to
+   * the authorization flow.
+   */
+  saveCodeVerifier(codeVerifier: string): void | Promise<void>;
+
+  /**
+   * Loads the PKCE code verifier for the current session, necessary to validate
+   * the authorization result.
+   */
+  codeVerifier(): string | Promise<string>;
+}
+
+export type AuthResult = "AUTHORIZED" | "REDIRECT";
+
+/**
+ * Orchestrates the full auth flow with a server.
+ * 
+ * This can be used as a single entry point for all authorization functionality,
+ * instead of linking together the other lower-level functions in this module.
+ */
+export async function auth(
+  provider: OAuthClientProvider,
+  { serverUrl, authorizationCode }: { serverUrl: string | URL, authorizationCode?: string }): Promise<AuthResult> {
+  const metadata = await discoverOAuthMetadata(serverUrl);
+
+  // Handle client registration if needed
+  const hostname = new URL(provider.redirectUrl).hostname;
+  if (hostname !== "localhost" && hostname !== "127.0.0.1") {
+    if (!provider.clientInformation) {
+      throw new Error("OAuth client information is required when not redirecting to localhost")
+    }
+
+    let clientInformation = await Promise.resolve(provider.clientInformation());
+    if (!clientInformation) {
+      if (authorizationCode !== undefined) {
+        throw new Error("Existing OAuth client information is required when exchanging an authorization code");
+      }
+
+      if (!provider.saveClientInformation) {
+        throw new Error("OAuth client information must be saveable when not provided and not redirecting to localhost");
+      }
+
+      clientInformation = await registerClient(serverUrl, {
+        metadata,
+        clientMetadata: provider.clientMetadata,
+      });
+
+      await provider.saveClientInformation(clientInformation);
+    }
+
+    // TODO: Send clientInformation into auth flow
+  }
+
+  // Exchange authorization code for tokens
+  if (authorizationCode !== undefined) {
+    const codeVerifier = await provider.codeVerifier();
+    const tokens = await exchangeAuthorization(serverUrl, {
+      metadata,
+      authorizationCode,
+      codeVerifier,
+    });
+
+    await provider.saveTokens(tokens);
+    return "AUTHORIZED";
+  }
+
+  const tokens = await provider.tokens();
+
+  // Handle token refresh or new authorization
+  if (tokens?.refresh_token) {
+    try {
+      // Attempt to refresh the token
+      const newTokens = await refreshAuthorization(serverUrl, {
+        metadata,
+        refreshToken: tokens.refresh_token,
+      });
+
+      await provider.saveTokens(newTokens);
+      return "AUTHORIZED";
+    } catch (error) {
+      console.error("Could not refresh OAuth tokens:", error);
+    }
+  }
+
+  // Start new authorization flow
+  const { authorizationUrl, codeVerifier } = await startAuthorization(serverUrl, { metadata, redirectUrl: provider.redirectUrl });
+  await provider.saveCodeVerifier(codeVerifier);
+  await provider.redirectToAuthorization(authorizationUrl);
+  return "REDIRECT";
+}
+
+/**
  * Looks up RFC 8414 OAuth 2.0 Authorization Server Metadata.
  *
  * If the server returns a 404 for the well-known endpoint, this function will
