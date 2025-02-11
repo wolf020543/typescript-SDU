@@ -120,7 +120,7 @@ export async function startAuthorization(
   if (metadata) {
     authorizationUrl = new URL(metadata.authorization_endpoint);
 
-    if (!(responseType in metadata.response_types_supported)) {
+    if (!metadata.response_types_supported.includes(responseType)) {
       throw new Error(
         `Incompatible auth server: does not support response type ${responseType}`,
       );
@@ -128,7 +128,7 @@ export async function startAuthorization(
 
     if (
       !metadata.code_challenge_methods_supported ||
-      !(codeChallengeMethod in metadata.code_challenge_methods_supported)
+      !metadata.code_challenge_methods_supported.includes(codeChallengeMethod)
     ) {
       throw new Error(
         `Incompatible auth server: does not support code challenge method ${codeChallengeMethod}`,
@@ -177,7 +177,7 @@ export async function exchangeAuthorization(
 
     if (
       metadata.grant_types_supported &&
-      !(grantType in metadata.grant_types_supported)
+      !metadata.grant_types_supported.includes(grantType)
     ) {
       throw new Error(
         `Incompatible auth server: does not support grant type ${grantType}`,
@@ -228,7 +228,7 @@ export async function refreshAuthorization(
 
     if (
       metadata.grant_types_supported &&
-      !(grantType in metadata.grant_types_supported)
+      !metadata.grant_types_supported.includes(grantType)
     ) {
       throw new Error(
         `Incompatible auth server: does not support grant type ${grantType}`,
