@@ -195,8 +195,17 @@ export class SSEClientTransport implements Transport {
       };
 
       const response = await fetch(this._endpoint, init);
-
       if (!response.ok) {
+        if (response.status === 401 && this._authProvider) {
+          const result = await auth(this._authProvider, { serverUrl: this._url });
+          if (result !== "AUTHORIZED") {
+            throw new Error("Unauthorized");
+          }
+
+          // Purposely _not_ awaited, so we don't call onerror twice
+          return this.send(message);
+        }
+
         const text = await response.text().catch(() => null);
         throw new Error(
           `Error POSTing to endpoint (HTTP ${response.status}): ${text}`,
