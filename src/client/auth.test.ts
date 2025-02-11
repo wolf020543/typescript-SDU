@@ -4,7 +4,7 @@ import {
   exchangeAuthorization,
   refreshAuthorization,
   registerClient,
-} from "./auth";
+} from "./auth.js";
 
 // Mock pkce-challenge
 jest.mock("pkce-challenge", () => ({
