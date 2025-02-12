@@ -2,6 +2,7 @@ import { createServer, type IncomingMessage, type Server } from "http";
 import { AddressInfo } from "net";
 import { JSONRPCMessage } from "../types.js";
 import { SSEClientTransport } from "./sse.js";
+import { auth, OAuthClientProvider } from "./auth.js";
 
 describe("SSEClientTransport", () => {
   let server: Server;
@@ -282,6 +283,182 @@ describe("SSEClientTransport", () => {
         customHeaders["X-Custom-Header"],
       );
       expect(calledHeaders.get("content-type")).toBe("application/json");
+    });
+  });
+
+  describe("auth handling", () => {
+    let mockAuthProvider: jest.Mocked<OAuthClientProvider>;
+
+    beforeEach(() => {
+      mockAuthProvider = {
+        get redirectUrl() { return "http://localhost/callback"; },
+        get clientMetadata() { return { redirect_uris: ["http://localhost/callback"] }; },
+        clientInformation: jest.fn(() => ({ client_id: "test-client-id" })),
+        tokens: jest.fn(),
+        saveTokens: jest.fn(),
+        redirectToAuthorization: jest.fn(),
+        saveCodeVerifier: jest.fn(),
+        codeVerifier: jest.fn(),
+      };
+    });
+
+    it("attaches auth header from provider on SSE connection", async () => {
+      mockAuthProvider.tokens.mockResolvedValue({
+        access_token: "test-token",
+        token_type: "Bearer"
+      });
+
+      transport = new SSEClientTransport(baseUrl, {
+        authProvider: mockAuthProvider,
+      });
+
+      await transport.start();
+
+      expect(lastServerRequest.headers.authorization).toBe("Bearer test-token");
+      expect(mockAuthProvider.tokens).toHaveBeenCalled();
+    });
+
+    it("attaches auth header from provider on POST requests", async () => {
+      mockAuthProvider.tokens.mockResolvedValue({
+        access_token: "test-token",
+        token_type: "Bearer"
+      });
+
+      transport = new SSEClientTransport(baseUrl, {
+        authProvider: mockAuthProvider,
+      });
+
+      await transport.start();
+
+      const message: JSONRPCMessage = {
+        jsonrpc: "2.0",
+        id: "1",
+        method: "test",
+        params: {},
+      };
+
+      await transport.send(message);
+
+      expect(lastServerRequest.headers.authorization).toBe("Bearer test-token");
+      expect(mockAuthProvider.tokens).toHaveBeenCalled();
+    });
+
+    it("attempts auth flow on 401 during SSE connection", async () => {
+      // Create server that returns 401s
+      server.close();
+      await new Promise(resolve => server.on("close", resolve));
+
+      server = createServer((req, res) => {
+        lastServerRequest = req;
+        if (req.url !== "/") {
+          res.writeHead(404).end();
+        } else {
+          res.writeHead(401).end();
+        }
+      });
+
+      await new Promise<void>(resolve => {
+        server.listen(0, "127.0.0.1", () => {
+          const addr = server.address() as AddressInfo;
+          baseUrl = new URL(`http://127.0.0.1:${addr.port}`);
+          resolve();
+        });
+      });
+
+      transport = new SSEClientTransport(baseUrl, {
+        authProvider: mockAuthProvider,
+      });
+
+      await expect(() => transport.start()).rejects.toThrow("Unauthorized");
+      expect(mockAuthProvider.redirectToAuthorization.mock.calls).toHaveLength(1);
+    });
+
+    it("attempts auth flow on 401 during POST request", async () => {
+      // Create server that accepts SSE but returns 401 on POST
+      server.close();
+      await new Promise(resolve => server.on("close", resolve));
+
+      server = createServer((req, res) => {
+        lastServerRequest = req;
+
+        switch (req.method) {
+          case "GET":
+            if (req.url !== "/") {
+              res.writeHead(404).end();
+              return;
+            }
+
+            res.writeHead(200, {
+              "Content-Type": "text/event-stream",
+              "Cache-Control": "no-cache",
+              Connection: "keep-alive",
+            });
+            res.write("event: endpoint\n");
+            res.write(`data: ${baseUrl.href}\n\n`);
+            break;
+
+          case "POST":
+            res.writeHead(401);
+            res.end();
+            break;
+        }
+      });
+
+      await new Promise<void>(resolve => {
+        server.listen(0, "127.0.0.1", () => {
+          const addr = server.address() as AddressInfo;
+          baseUrl = new URL(`http://127.0.0.1:${addr.port}`);
+          resolve();
+        });
+      });
+
+      transport = new SSEClientTransport(baseUrl, {
+        authProvider: mockAuthProvider,
+      });
+
+      await transport.start();
+
+      const message: JSONRPCMessage = {
+        jsonrpc: "2.0",
+        id: "1",
+        method: "test",
+        params: {},
+      };
+
+      await expect(() => transport.send(message)).rejects.toThrow("Unauthorized");
+      expect(mockAuthProvider.redirectToAuthorization.mock.calls).toHaveLength(1);
+    });
+
+    it("respects custom headers when using auth provider", async () => {
+      mockAuthProvider.tokens.mockResolvedValue({
+        access_token: "test-token",
+        token_type: "Bearer"
+      });
+
+      const customHeaders = {
+        "X-Custom-Header": "custom-value",
+      };
+
+      transport = new SSEClientTransport(baseUrl, {
+        authProvider: mockAuthProvider,
+        requestInit: {
+          headers: customHeaders,
+        },
+      });
+
+      await transport.start();
+
+      const message: JSONRPCMessage = {
+        jsonrpc: "2.0",
+        id: "1",
+        method: "test",
+        params: {},
+      };
+
+      await transport.send(message);
+
+      expect(lastServerRequest.headers.authorization).toBe("Bearer test-token");
+      expect(lastServerRequest.headers["x-custom-header"]).toBe("custom-value");
     });
   });
 });
