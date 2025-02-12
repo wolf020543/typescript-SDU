@@ -2,7 +2,7 @@ import { createServer, type IncomingMessage, type Server } from "http";
 import { AddressInfo } from "net";
 import { JSONRPCMessage } from "../types.js";
 import { SSEClientTransport } from "./sse.js";
-import { auth, OAuthClientProvider } from "./auth.js";
+import { OAuthClientProvider, OAuthTokens } from "./auth.js";
 
 describe("SSEClientTransport", () => {
   let server: Server;
@@ -301,7 +301,7 @@ describe("SSEClientTransport", () => {
       mockAuthProvider = {
         get redirectUrl() { return "http://localhost/callback"; },
         get clientMetadata() { return { redirect_uris: ["http://localhost/callback"] }; },
-        clientInformation: jest.fn(() => ({ client_id: "test-client-id" })),
+        clientInformation: jest.fn(() => ({ client_id: "test-client-id", client_secret: "test-client-secret" })),
         tokens: jest.fn(),
         saveTokens: jest.fn(),
         redirectToAuthorization: jest.fn(),
@@ -465,6 +465,258 @@ describe("SSEClientTransport", () => {
 
       expect(lastServerRequest.headers.authorization).toBe("Bearer test-token");
       expect(lastServerRequest.headers["x-custom-header"]).toBe("custom-value");
+    });
+
+    it("refreshes expired token during SSE connection", async () => {
+      // Mock tokens() to return expired token until saveTokens is called
+      let currentTokens: OAuthTokens = {
+        access_token: "expired-token",
+        token_type: "Bearer",
+        refresh_token: "refresh-token"
+      };
+      mockAuthProvider.tokens.mockImplementation(() => currentTokens);
+      mockAuthProvider.saveTokens.mockImplementation((tokens) => {
+        currentTokens = tokens;
+      });
+
+      // Create server that returns 401 for expired token, then accepts new token
+      await server.close();
+
+      let connectionAttempts = 0;
+      server = createServer((req, res) => {
+        lastServerRequest = req;
+        
+        if (req.url === "/token" && req.method === "POST") {
+          // Handle token refresh request
+          let body = "";
+          req.on("data", chunk => { body += chunk; });
+          req.on("end", () => {
+            const params = new URLSearchParams(body);
+            if (params.get("grant_type") === "refresh_token" && 
+                params.get("refresh_token") === "refresh-token" &&
+                params.get("client_id") === "test-client-id" &&
+                params.get("client_secret") === "test-client-secret") {
+              res.writeHead(200, { "Content-Type": "application/json" });
+              res.end(JSON.stringify({
+                access_token: "new-token",
+                token_type: "Bearer",
+                refresh_token: "new-refresh-token"
+              }));
+            } else {
+              res.writeHead(400).end();
+            }
+          });
+          return;
+        }
+
+        if (req.url !== "/") {
+          res.writeHead(404).end();
+          return;
+        }
+
+        const auth = req.headers.authorization;
+        if (auth === "Bearer expired-token") {
+          res.writeHead(401).end();
+          return;
+        }
+
+        if (auth === "Bearer new-token") {
+          res.writeHead(200, {
+            "Content-Type": "text/event-stream",
+            "Cache-Control": "no-cache",
+            Connection: "keep-alive",
+          });
+          res.write("event: endpoint\n");
+          res.write(`data: ${baseUrl.href}\n\n`);
+          connectionAttempts++;
+          return;
+        }
+
+        res.writeHead(401).end();
+      });
+
+      await new Promise<void>(resolve => {
+        server.listen(0, "127.0.0.1", () => {
+          const addr = server.address() as AddressInfo;
+          baseUrl = new URL(`http://127.0.0.1:${addr.port}`);
+          resolve();
+        });
+      });
+
+      transport = new SSEClientTransport(baseUrl, {
+        authProvider: mockAuthProvider,
+      });
+
+      await transport.start();
+
+      expect(mockAuthProvider.saveTokens).toHaveBeenCalledWith({
+        access_token: "new-token",
+        token_type: "Bearer",
+        refresh_token: "new-refresh-token"
+      });
+      expect(connectionAttempts).toBe(1);
+      expect(lastServerRequest.headers.authorization).toBe("Bearer new-token");
+    });
+
+    it("refreshes expired token during POST request", async () => {
+      // Mock tokens() to return expired token until saveTokens is called
+      let currentTokens: OAuthTokens = {
+        access_token: "expired-token",
+        token_type: "Bearer",
+        refresh_token: "refresh-token"
+      };
+      mockAuthProvider.tokens.mockImplementation(() => currentTokens);
+      mockAuthProvider.saveTokens.mockImplementation((tokens) => {
+        currentTokens = tokens;
+      });
+
+      // Create server that accepts SSE but returns 401 on POST with expired token
+      await server.close();
+
+      let postAttempts = 0;
+      server = createServer((req, res) => {
+        lastServerRequest = req;
+
+        if (req.url === "/token" && req.method === "POST") {
+          // Handle token refresh request
+          let body = "";
+          req.on("data", chunk => { body += chunk; });
+          req.on("end", () => {
+            const params = new URLSearchParams(body);
+            if (params.get("grant_type") === "refresh_token" && 
+                params.get("refresh_token") === "refresh-token" &&
+                params.get("client_id") === "test-client-id" &&
+                params.get("client_secret") === "test-client-secret") {
+              res.writeHead(200, { "Content-Type": "application/json" });
+              res.end(JSON.stringify({
+                access_token: "new-token",
+                token_type: "Bearer",
+                refresh_token: "new-refresh-token"
+              }));
+            } else {
+              res.writeHead(400).end();
+            }
+          });
+          return;
+        }
+
+        switch (req.method) {
+          case "GET":
+            if (req.url !== "/") {
+              res.writeHead(404).end();
+              return;
+            }
+
+            res.writeHead(200, {
+              "Content-Type": "text/event-stream",
+              "Cache-Control": "no-cache",
+              Connection: "keep-alive",
+            });
+            res.write("event: endpoint\n");
+            res.write(`data: ${baseUrl.href}\n\n`);
+            break;
+
+          case "POST": {
+            if (req.url !== "/") {
+              res.writeHead(404).end();
+              return;
+            }
+
+            const auth = req.headers.authorization;
+            if (auth === "Bearer expired-token") {
+              res.writeHead(401).end();
+              return;
+            }
+
+            if (auth === "Bearer new-token") {
+              res.writeHead(200).end();
+              postAttempts++;
+              return;
+            }
+
+            res.writeHead(401).end();
+            break;
+          }
+        }
+      });
+
+      await new Promise<void>(resolve => {
+        server.listen(0, "127.0.0.1", () => {
+          const addr = server.address() as AddressInfo;
+          baseUrl = new URL(`http://127.0.0.1:${addr.port}`);
+          resolve();
+        });
+      });
+
+      transport = new SSEClientTransport(baseUrl, {
+        authProvider: mockAuthProvider,
+      });
+
+      await transport.start();
+
+      const message: JSONRPCMessage = {
+        jsonrpc: "2.0",
+        id: "1",
+        method: "test",
+        params: {},
+      };
+
+      await transport.send(message);
+
+      expect(mockAuthProvider.saveTokens).toHaveBeenCalledWith({
+        access_token: "new-token",
+        token_type: "Bearer",
+        refresh_token: "new-refresh-token"
+      });
+      expect(postAttempts).toBe(1);
+      expect(lastServerRequest.headers.authorization).toBe("Bearer new-token");
+    });
+
+    it("redirects to authorization if refresh token flow fails", async () => {
+      // Mock tokens() to return expired token until saveTokens is called
+      let currentTokens: OAuthTokens = {
+        access_token: "expired-token",
+        token_type: "Bearer",
+        refresh_token: "refresh-token"
+      };
+      mockAuthProvider.tokens.mockImplementation(() => currentTokens);
+      mockAuthProvider.saveTokens.mockImplementation((tokens) => {
+        currentTokens = tokens;
+      });
+
+      // Create server that returns 401 for all tokens
+      await server.close();
+
+      server = createServer((req, res) => {
+        lastServerRequest = req;
+
+        if (req.url === "/token" && req.method === "POST") {
+          // Handle token refresh request - always fail
+          res.writeHead(400).end();
+          return;
+        }
+
+        if (req.url !== "/") {
+          res.writeHead(404).end();
+          return;
+        }
+        res.writeHead(401).end();
+      });
+
+      await new Promise<void>(resolve => {
+        server.listen(0, "127.0.0.1", () => {
+          const addr = server.address() as AddressInfo;
+          baseUrl = new URL(`http://127.0.0.1:${addr.port}`);
+          resolve();
+        });
+      });
+
+      transport = new SSEClientTransport(baseUrl, {
+        authProvider: mockAuthProvider,
+      });
+
+      await expect(transport.start()).rejects.toThrow("Unauthorized");
+      expect(mockAuthProvider.redirectToAuthorization).toHaveBeenCalled();
     });
   });
 });
