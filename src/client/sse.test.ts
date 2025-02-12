@@ -60,6 +60,8 @@ describe("SSEClientTransport", () => {
   afterEach(async () => {
     await transport.close();
     await server.close();
+
+    jest.clearAllMocks();
   });
 
   describe("connection handling", () => {
@@ -73,8 +75,7 @@ describe("SSEClientTransport", () => {
 
     it("rejects if server returns non-200 status", async () => {
       // Create a server that returns 403
-      server.close();
-      await new Promise((resolve) => server.on("close", resolve));
+      await server.close();
 
       server = createServer((req, res) => {
         res.writeHead(403);
@@ -252,37 +253,45 @@ describe("SSEClientTransport", () => {
 
       await transport.start();
 
-      // Mock fetch for the message sending test
-      global.fetch = jest.fn().mockResolvedValue({
-        ok: true,
-      });
+      // Store original fetch
+      const originalFetch = global.fetch;
 
-      const message: JSONRPCMessage = {
-        jsonrpc: "2.0",
-        id: "1",
-        method: "test",
-        params: {},
-      };
+      try {
+        // Mock fetch for the message sending test
+        global.fetch = jest.fn().mockResolvedValue({
+          ok: true,
+        });
 
-      await transport.send(message);
+        const message: JSONRPCMessage = {
+          jsonrpc: "2.0",
+          id: "1",
+          method: "test",
+          params: {},
+        };
 
-      // Verify fetch was called with correct headers
-      expect(global.fetch).toHaveBeenCalledWith(
-        expect.any(URL),
-        expect.objectContaining({
-          headers: expect.any(Headers),
-        }),
-      );
+        await transport.send(message);
 
-      const calledHeaders = (global.fetch as jest.Mock).mock.calls[0][1]
-        .headers;
-      expect(calledHeaders.get("Authorization")).toBe(
-        customHeaders.Authorization,
-      );
-      expect(calledHeaders.get("X-Custom-Header")).toBe(
-        customHeaders["X-Custom-Header"],
-      );
-      expect(calledHeaders.get("content-type")).toBe("application/json");
+        // Verify fetch was called with correct headers
+        expect(global.fetch).toHaveBeenCalledWith(
+          expect.any(URL),
+          expect.objectContaining({
+            headers: expect.any(Headers),
+          }),
+        );
+
+        const calledHeaders = (global.fetch as jest.Mock).mock.calls[0][1]
+          .headers;
+        expect(calledHeaders.get("Authorization")).toBe(
+          customHeaders.Authorization,
+        );
+        expect(calledHeaders.get("X-Custom-Header")).toBe(
+          customHeaders["X-Custom-Header"],
+        );
+        expect(calledHeaders.get("content-type")).toBe("application/json");
+      } finally {
+        // Restore original fetch
+        global.fetch = originalFetch;
+      }
     });
   });
 
@@ -345,8 +354,7 @@ describe("SSEClientTransport", () => {
 
     it("attempts auth flow on 401 during SSE connection", async () => {
       // Create server that returns 401s
-      server.close();
-      await new Promise(resolve => server.on("close", resolve));
+      await server.close();
 
       server = createServer((req, res) => {
         lastServerRequest = req;
@@ -375,8 +383,7 @@ describe("SSEClientTransport", () => {
 
     it("attempts auth flow on 401 during POST request", async () => {
       // Create server that accepts SSE but returns 401 on POST
-      server.close();
-      await new Promise(resolve => server.on("close", resolve));
+      await server.close();
 
       server = createServer((req, res) => {
         lastServerRequest = req;
