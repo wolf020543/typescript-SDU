@@ -176,8 +176,7 @@ describe("SSEClientTransport", () => {
 
     it("handles POST request failures", async () => {
       // Create a server that returns 500 for POST
-      server.close();
-      await new Promise((resolve) => server.on("close", resolve));
+      await server.close();
 
       server = createServer((req, res) => {
         if (req.method === "GET") {
