@@ -2,7 +2,8 @@ import { createServer, type IncomingMessage, type Server } from "http";
 import { AddressInfo } from "net";
 import { JSONRPCMessage } from "../types.js";
 import { SSEClientTransport } from "./sse.js";
-import { OAuthClientProvider, OAuthTokens, UnauthorizedError } from "./auth.js";
+import { OAuthClientProvider, UnauthorizedError } from "./auth.js";
+import { OAuthTokens } from "../shared/auth.js";
 
 describe("SSEClientTransport", () => {
   let server: Server;
