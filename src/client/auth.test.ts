@@ -84,8 +84,8 @@ describe("OAuth Authorization", () => {
   describe("startAuthorization", () => {
     const validMetadata = {
       issuer: "https://auth.example.com",
-      authorization_endpoint: "https://auth.example.com/authorize",
-      token_endpoint: "https://auth.example.com/token",
+      authorization_endpoint: "https://auth.example.com/auth",
+      token_endpoint: "https://auth.example.com/tkn",
       response_types_supported: ["code"],
       code_challenge_methods_supported: ["S256"],
     };
@@ -131,7 +131,7 @@ describe("OAuth Authorization", () => {
       );
 
       expect(authorizationUrl.toString()).toMatch(
-        /^https:\/\/auth\.example\.com\/authorize\?/
+        /^https:\/\/auth\.example\.com\/auth\?/
       );
     });
 

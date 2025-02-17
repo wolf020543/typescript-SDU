@@ -432,13 +432,6 @@ export async function refreshAuthorization(
 
 /**
  * Performs OAuth 2.0 Dynamic Client Registration according to RFC 7591.
- * 
- * @param serverUrl - The base URL of the authorization server
- * @param options - Registration options
- * @param options.metadata - OAuth server metadata containing the registration endpoint
- * @param options.clientMetadata - Client metadata for registration
- * @returns The registered client information
- * @throws Error if the server doesn't support dynamic registration or if registration fails
  */
 export async function registerClient(
   serverUrl: string | URL,
