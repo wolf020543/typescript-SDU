@@ -79,14 +79,19 @@ export const OAuthClientMetadataSchema = z.object({
 }).passthrough();
 
 /**
- * RFC 7591 OAuth 2.0 Dynamic Client Registration response
+ * RFC 7591 OAuth 2.0 Dynamic Client Registration client information
  */
-export const OAuthClientInformationSchema = OAuthClientMetadataSchema.extend({
+export const OAuthClientInformationSchema = z.object({
   client_id: z.string(),
   client_secret: z.string().optional(),
   client_id_issued_at: z.number().optional(),
   client_secret_expires_at: z.number().optional(),
 }).passthrough();
+
+/**
+ * RFC 7591 OAuth 2.0 Dynamic Client Registration full response (client information plus metadata)
+ */
+export const OAuthClientInformationFullSchema = OAuthClientMetadataSchema.merge(OAuthClientInformationSchema);
 
 /**
  * RFC 7591 OAuth 2.0 Dynamic Client Registration error response
@@ -101,4 +106,5 @@ export type OAuthTokens = z.infer<typeof OAuthTokensSchema>;
 export type OAuthError = z.infer<typeof OAuthErrorSchema>;
 export type OAuthClientMetadata = z.infer<typeof OAuthClientMetadataSchema>;
 export type OAuthClientInformation = z.infer<typeof OAuthClientInformationSchema>;
+export type OAuthClientInformationFull = z.infer<typeof OAuthClientInformationFullSchema>;
 export type OAuthClientRegistrationError = z.infer<typeof OAuthClientRegistrationErrorSchema>;

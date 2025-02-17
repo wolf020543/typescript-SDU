@@ -1,7 +1,7 @@
 import pkceChallenge from "pkce-challenge";
 import { LATEST_PROTOCOL_VERSION } from "../types.js";
-import type { OAuthClientMetadata, OAuthClientInformation, OAuthTokens, OAuthMetadata } from "../shared/auth.js";
-import { OAuthClientInformationSchema, OAuthMetadataSchema, OAuthTokensSchema } from "../shared/auth.js";
+import type { OAuthClientMetadata, OAuthClientInformation, OAuthTokens, OAuthMetadata, OAuthClientInformationFull } from "../shared/auth.js";
+import { OAuthClientInformationFullSchema, OAuthMetadataSchema, OAuthTokensSchema } from "../shared/auth.js";
 
 /**
  * Implements an end-to-end OAuth client to be used with one MCP server.
@@ -36,7 +36,7 @@ export interface OAuthClientProvider {
    * This method is not required to be implemented if client information is
    * statically known (e.g., pre-registered).
    */
-  saveClientInformation?(clientInformation: OAuthClientInformation): void | Promise<void>;
+  saveClientInformation?(clientInformation: OAuthClientInformationFull): void | Promise<void>;
 
   /**
    * Loads any existing OAuth tokens for the current session, or returns
@@ -98,12 +98,13 @@ export async function auth(
       throw new Error("OAuth client information must be saveable for dynamic registration");
     }
 
-    clientInformation = await registerClient(serverUrl, {
+    const fullInformation = await registerClient(serverUrl, {
       metadata,
       clientMetadata: provider.clientMetadata,
     });
 
-    await provider.saveClientInformation(clientInformation);
+    await provider.saveClientInformation(fullInformation);
+    clientInformation = fullInformation;
   }
 
   // Exchange authorization code for tokens
@@ -371,7 +372,7 @@ export async function registerClient(
     metadata?: OAuthMetadata;
     clientMetadata: OAuthClientMetadata;
   },
-): Promise<OAuthClientInformation> {
+): Promise<OAuthClientInformationFull> {
   let registrationUrl: URL;
 
   if (metadata) {
@@ -396,5 +397,5 @@ export async function registerClient(
     throw new Error(`Dynamic client registration failed: HTTP ${response.status}`);
   }
 
-  return OAuthClientInformationSchema.parse(await response.json());
+  return OAuthClientInformationFullSchema.parse(await response.json());
 }
