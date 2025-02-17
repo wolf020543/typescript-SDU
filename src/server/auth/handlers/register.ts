@@ -25,7 +25,7 @@ export function clientRegistrationHandler({ store, clientSecretExpirySeconds = D
     throw new Error("Client registration store does not support registering clients");
   }
 
-  // Nested router so we can configure middleware
+  // Nested router so we can configure middleware and restrict HTTP method
   const router = express.Router();
   router.use(express.json());
 
