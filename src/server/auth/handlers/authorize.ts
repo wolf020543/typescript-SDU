@@ -1,6 +1,7 @@
 import { RequestHandler } from "express";
 import { z } from "zod";
 import { OAuthRegisteredClientsStore } from "../clients.js";
+import { isValidUrl } from "../validation.js";
 
 export type AuthorizationHandlerOptions = {
   /**
@@ -11,7 +12,7 @@ export type AuthorizationHandlerOptions = {
 
 const ClientAuthorizationParamsSchema = z.object({
   client_id: z.string(),
-  redirect_uri: z.string().optional(),
+  redirect_uri: z.string().optional().refine((value) => value === undefined || isValidUrl(value), { message: "redirect_uri must be a valid URL" }),
 });
 
 const RequestAuthorizationParamsSchema = z.object({
@@ -45,7 +46,7 @@ export function authorizationHandler({ store }: AuthorizationHandlerOptions): Re
 
     if (redirect_uri !== undefined) {
       if (!client.redirect_uris.includes(redirect_uri)) {
-        res.status(400).end("Bad Request: invalid redirect_uri");
+        res.status(400).end("Bad Request: unregistered redirect_uri");
         return;
       }
     } else if (client.redirect_uris.length === 1) {
