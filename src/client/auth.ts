@@ -147,6 +147,12 @@ export interface OAuthClientProvider {
 
 export type AuthResult = "AUTHORIZED" | "REDIRECT";
 
+export class UnauthorizedError extends Error {
+  constructor(message?: string) {
+    super(message ?? "Unauthorized");
+  }
+}
+
 /**
  * Orchestrates the full auth flow with a server.
  * 

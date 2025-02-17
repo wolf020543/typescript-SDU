@@ -1,7 +1,7 @@
 import { EventSource, type ErrorEvent, type EventSourceInit } from "eventsource";
 import { Transport } from "../shared/transport.js";
 import { JSONRPCMessage, JSONRPCMessageSchema } from "../types.js";
-import { auth, AuthResult, OAuthClientProvider } from "./auth.js";
+import { auth, AuthResult, OAuthClientProvider, UnauthorizedError } from "./auth.js";
 
 export class SseError extends Error {
   constructor(
@@ -20,8 +20,16 @@ export type SSEClientTransportOptions = {
   /**
    * An OAuth client provider to use for authentication.
    * 
-   * If given, the transport will automatically attach an `Authorization` header
-   * if an access token is available, or begin the authorization flow if not.
+   * When an `authProvider` is specified and the SSE connection is started:
+   * 1. The connection is attempted with any existing access token from the `authProvider`.
+   * 2. If the access token has expired, the `authProvider` is used to refresh the token.
+   * 3. If token refresh fails or no access token exists, and auth is required, `OAuthClientProvider.redirectToAuthorization` is called, and an `UnauthorizedError` will be thrown from `connect`/`start`.
+   * 
+   * After the user has finished authorizing via their user agent, and is redirected back to the MCP client application, call `SSEClientTransport.finishAuth` with the authorization code before retrying the connection.
+   * 
+   * If an `authProvider` is not provided, and auth is required, an `UnauthorizedError` will be thrown.
+   * 
+   * `UnauthorizedError` might also be thrown when sending any message over the SSE transport, indicating that the session has expired, and needs to be re-authed and reconnected.
    */
   authProvider?: OAuthClientProvider;
 
@@ -70,7 +78,7 @@ export class SSEClientTransport implements Transport {
 
   private async _authThenStart(): Promise<void> {
     if (!this._authProvider) {
-      throw new Error("No auth provider");
+      throw new UnauthorizedError("No auth provider");
     }
 
     let result: AuthResult;
@@ -82,7 +90,7 @@ export class SSEClientTransport implements Transport {
     }
 
     if (result !== "AUTHORIZED") {
-      throw new Error("Unauthorized");
+      throw new UnauthorizedError();
     }
 
     return await this._startOrAuth();
@@ -177,6 +185,20 @@ export class SSEClientTransport implements Transport {
     return await this._startOrAuth();
   }
 
+  /**
+   * Call this method after the user has finished authorizing via their user agent and is redirected back to the MCP client application. This will exchange the authorization code for an access token, enabling the next connection attempt to successfully auth.
+   */
+  async finishAuth(authorizationCode: string): Promise<void> {
+    if (!this._authProvider) {
+      throw new UnauthorizedError("No auth provider");
+    }
+
+    const result = await auth(this._authProvider, { serverUrl: this._url, authorizationCode });
+    if (result !== "AUTHORIZED") {
+      throw new UnauthorizedError("Failed to authorize");
+    }
+  }
+
   async close(): Promise<void> {
     this._abortController?.abort();
     this._eventSource?.close();
@@ -205,7 +227,7 @@ export class SSEClientTransport implements Transport {
         if (response.status === 401 && this._authProvider) {
           const result = await auth(this._authProvider, { serverUrl: this._url });
           if (result !== "AUTHORIZED") {
-            throw new Error("Unauthorized");
+            throw new UnauthorizedError();
           }
 
           // Purposely _not_ awaited, so we don't call onerror twice
