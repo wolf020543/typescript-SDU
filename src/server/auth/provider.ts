@@ -29,4 +29,9 @@ export interface OAuthServerProvider {
    * - In the error case, the redirect MUST include the `error` query parameter, and MAY include an optional `error_description` query parameter.
    */
   authorize(params: AuthorizationParams, res: Response): Promise<void>;
+
+  /**
+   * Returns the `codeChallenge` that was used when the indicated authorization began.
+   */
+  challengeForAuthorizationCode(authorizationCode: string): Promise<string>;
 }
