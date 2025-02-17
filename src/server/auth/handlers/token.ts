@@ -1,9 +1,8 @@
 import { z } from "zod";
-import express, { RequestHandler, Response } from "express";
+import express, { RequestHandler } from "express";
 import { OAuthServerProvider } from "../provider.js";
 import cors from "cors";
-import { AuthorizationHandlerOptions } from "./authorize.js";
-import { OAuthClientInformationFull } from "../../../shared/auth.js";
+import { verifyChallenge } from "pkce-challenge";
 
 export type TokenHandlerOptions = {
   provider: OAuthServerProvider;
@@ -33,16 +32,6 @@ export function tokenHandler({ provider }: TokenHandlerOptions): RequestHandler 
   // Configure CORS to allow any origin, to make accessible to web-based MCP clients
   router.use(cors());
 
-  async function authorizationCodeGrant(client: OAuthClientInformationFull, grant: z.infer<typeof AuthorizationCodeGrantSchema>, res: Response) {
-    const codeChallenge = await provider.challengeForAuthorizationCode(grant.code);
-    // TODO
-  }
-
-  async function refreshTokenGrant(client: OAuthClientInformationFull, grant: z.infer<typeof RefreshTokenGrantSchema>, res: Response) {
-    // TODO
-  }
-
-  // Actual request handler
   router.post("/", async (req, res) => {
     let client_id, client_secret, grant_type;
     try {
@@ -86,7 +75,18 @@ export function tokenHandler({ provider }: TokenHandlerOptions): RequestHandler 
           return;
         }
 
-        await authorizationCodeGrant(client, grant, res);
+        const codeChallenge = await provider.challengeForAuthorizationCode(grant.code);
+        if (!(await verifyChallenge(grant.code_verifier, codeChallenge))) {
+          res.status(400).json({
+            error: "invalid_request",
+            error_description: "code_verifier does not match the challenge",
+          });
+
+          return;
+        }
+
+        const tokens = await provider.exchangeAuthorizationCode(grant.code);
+        res.status(200).json(tokens);
         break;
       }
 
@@ -102,7 +102,9 @@ export function tokenHandler({ provider }: TokenHandlerOptions): RequestHandler 
           return;
         }
 
-        await refreshTokenGrant(client, grant, res);
+        const scopes = grant.scope ? grant.scope.split(" ") : undefined;
+        const tokens = await provider.exchangeRefreshToken(grant.refresh_token, scopes);
+        res.status(200).json(tokens);
         break;
       }
 

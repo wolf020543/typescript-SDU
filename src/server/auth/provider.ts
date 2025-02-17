@@ -1,6 +1,6 @@
 import { Response } from "express";
 import { OAuthRegisteredClientsStore } from "./clients.js";
-import { OAuthClientInformationFull } from "../../shared/auth.js";
+import { OAuthClientInformationFull, OAuthTokens } from "../../shared/auth.js";
 
 export type AuthorizationParams = {
   client: OAuthClientInformationFull;
@@ -34,4 +34,14 @@ export interface OAuthServerProvider {
    * Returns the `codeChallenge` that was used when the indicated authorization began.
    */
   challengeForAuthorizationCode(authorizationCode: string): Promise<string>;
+
+  /**
+   * Exchanges an authorization code for an access token.
+   */
+  exchangeAuthorizationCode(authorizationCode: string): Promise<OAuthTokens>;
+
+  /**
+   * Exchanges a refresh token for an access token.
+   */
+  exchangeRefreshToken(refreshToken: string, scopes?: string[]): Promise<OAuthTokens>;
 }
