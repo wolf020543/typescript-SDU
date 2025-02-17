@@ -48,6 +48,7 @@
   "dependencies": {
     "content-type": "^1.0.5",
     "eventsource": "^3.0.2",
+    "pkce-challenge": "^4.1.0",
     "raw-body": "^3.0.0",
     "zod": "^3.23.8",
     "zod-to-json-schema": "^3.24.1"
