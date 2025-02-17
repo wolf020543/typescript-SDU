@@ -1,7 +1,7 @@
-import { Request, Response } from "express";
+import express, { RequestHandler } from "express";
 import { OAuthClientInformationFull, OAuthClientMetadataSchema, OAuthClientRegistrationError } from "../../../shared/auth.js";
 import crypto from 'node:crypto';
-import bodyParser from 'body-parser';
+import cors from 'cors';
 import { OAuthRegisteredClientsStore } from "../clients.js";
 
 export type ClientRegistrationHandlerOptions = {
@@ -20,10 +20,17 @@ export type ClientRegistrationHandlerOptions = {
 
 const DEFAULT_CLIENT_SECRET_EXPIRY_SECONDS = 30 * 24 * 60 * 60; // 30 days
 
-export function clientRegistrationHandler({ store, clientSecretExpirySeconds = DEFAULT_CLIENT_SECRET_EXPIRY_SECONDS }: ClientRegistrationHandlerOptions) {
+export function clientRegistrationHandler({ store, clientSecretExpirySeconds = DEFAULT_CLIENT_SECRET_EXPIRY_SECONDS }: ClientRegistrationHandlerOptions): RequestHandler {
   if (!store.registerClient) {
     throw new Error("Client registration store does not support registering clients");
   }
+
+  // Nested router so we can configure middleware
+  const router = express.Router();
+  router.use(express.json());
+
+  // Configure CORS to allow any origin, to make accessible to web-based MCP clients
+  router.use(cors());
 
   async function register(requestBody: unknown): Promise<OAuthClientInformationFull | OAuthClientRegistrationError> {
     let clientMetadata;
@@ -53,18 +60,18 @@ export function clientRegistrationHandler({ store, clientSecretExpirySeconds = D
   }
 
   // Actual request handler
-  return (req: Request, res: Response) => bodyParser.json()(req, res, (err) => {
-    if (err === undefined) {
-      register(req.body).then((result) => {
-        if ("error" in result) {
-          res.status(400).json(result);
-        } else {
-          res.status(201).json(result);
-        }
-      }, (error) => {
-        console.error("Uncaught error in client registration handler:", error);
-        res.status(500).end("Internal Server Error");
-      });
-    }
+  router.post("/", (req, res) => {
+    register(req.body).then((result) => {
+      if ("error" in result) {
+        res.status(400).json(result);
+      } else {
+        res.status(201).json(result);
+      }
+    }, (error) => {
+      console.error("Uncaught error in client registration handler:", error);
+      res.status(500).end("Internal Server Error");
+    });
   });
+
+  return router;
 }
