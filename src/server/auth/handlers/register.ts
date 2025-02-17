@@ -8,7 +8,7 @@ export type ClientRegistrationHandlerOptions = {
   /**
    * A store used to save information about dynamically registered OAuth clients.
    */
-  store: OAuthRegisteredClientsStore;
+  clientsStore: OAuthRegisteredClientsStore;
 
   /**
    * The number of seconds after which to expire issued client secrets, or 0 to prevent expiration of client secrets (not recommended).
@@ -20,8 +20,8 @@ export type ClientRegistrationHandlerOptions = {
 
 const DEFAULT_CLIENT_SECRET_EXPIRY_SECONDS = 30 * 24 * 60 * 60; // 30 days
 
-export function clientRegistrationHandler({ store, clientSecretExpirySeconds = DEFAULT_CLIENT_SECRET_EXPIRY_SECONDS }: ClientRegistrationHandlerOptions): RequestHandler {
-  if (!store.registerClient) {
+export function clientRegistrationHandler({ clientsStore, clientSecretExpirySeconds = DEFAULT_CLIENT_SECRET_EXPIRY_SECONDS }: ClientRegistrationHandlerOptions): RequestHandler {
+  if (!clientsStore.registerClient) {
     throw new Error("Client registration store does not support registering clients");
   }
 
@@ -55,7 +55,7 @@ export function clientRegistrationHandler({ store, clientSecretExpirySeconds = D
       client_secret_expires_at: clientSecretExpirySeconds > 0 ? clientIdIssuedAt + clientSecretExpirySeconds : 0
     };
 
-    clientInfo = await store.registerClient!(clientInfo);
+    clientInfo = await clientsStore.registerClient!(clientInfo);
     return clientInfo;
   }
 

@@ -1,20 +1,19 @@
 import { RequestHandler } from "express";
 import { z } from "zod";
-import { OAuthRegisteredClientsStore } from "../clients.js";
 import { isValidUrl } from "../validation.js";
+import { OAuthServerProvider } from "../provider.js";
 
 export type AuthorizationHandlerOptions = {
-  /**
-   * A store used to read information about registered OAuth clients.
-   */
-  store: OAuthRegisteredClientsStore;
+  provider: OAuthServerProvider;
 };
 
+// Parameters that must be validated in order to issue redirects.
 const ClientAuthorizationParamsSchema = z.object({
   client_id: z.string(),
   redirect_uri: z.string().optional().refine((value) => value === undefined || isValidUrl(value), { message: "redirect_uri must be a valid URL" }),
 });
 
+// Parameters that must be validated for a successful authorization request. Failure can be reported to the redirect URI.
 const RequestAuthorizationParamsSchema = z.object({
   response_type: z.literal("code"),
   code_challenge: z.string(),
@@ -23,7 +22,7 @@ const RequestAuthorizationParamsSchema = z.object({
   state: z.string().optional(),
 });
 
-export function authorizationHandler({ store }: AuthorizationHandlerOptions): RequestHandler {
+export function authorizationHandler({ provider }: AuthorizationHandlerOptions): RequestHandler {
   return async (req, res) => {
     if (req.method !== "GET" && req.method !== "POST") {
       res.status(405).end("Method Not Allowed");
@@ -38,7 +37,7 @@ export function authorizationHandler({ store }: AuthorizationHandlerOptions): Re
       return;
     }
 
-    const client = await store.getClient(client_id);
+    const client = await provider.clientsStore.getClient(client_id);
     if (!client) {
       res.status(400).end("Bad Request: invalid client_id");
       return;
@@ -67,8 +66,9 @@ export function authorizationHandler({ store }: AuthorizationHandlerOptions): Re
       return;
     }
 
+    let requestedScopes: string[] = [];
     if (params.scope !== undefined && client.scope !== undefined) {
-      const requestedScopes = params.scope.split(" ");
+      requestedScopes = params.scope.split(" ");
       const allowedScopes = new Set(client.scope.split(" "));
 
       // If any requested scope is not in the client's registered scopes, error out
@@ -83,8 +83,12 @@ export function authorizationHandler({ store }: AuthorizationHandlerOptions): Re
       }
     }
 
-    // TODO: Store code challenge
-    // TODO: Generate authorization code
-    // TODO: Redirect to redirect_uri (handle in calling code)
+    await provider.authorize({
+      client,
+      state: params.state,
+      scopes: requestedScopes,
+      redirectUri: redirect_uri,
+      codeChallenge: params.code_challenge,
+    }, res);
   };
 }
