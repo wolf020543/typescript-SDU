@@ -1,9 +1,16 @@
 import { RequestHandler } from "express";
 import { z } from "zod";
+import express from "express";
 import { OAuthServerProvider } from "../provider.js";
+import { rateLimit, Options as RateLimitOptions } from "express-rate-limit";
 
 export type AuthorizationHandlerOptions = {
   provider: OAuthServerProvider;
+  /**
+   * Rate limiting configuration for the authorization endpoint.
+   * Set to false to disable rate limiting for this endpoint.
+   */
+  rateLimit?: Partial<RateLimitOptions> | false;
 };
 
 // Parameters that must be validated in order to issue redirects.
@@ -21,8 +28,27 @@ const RequestAuthorizationParamsSchema = z.object({
   state: z.string().optional(),
 });
 
-export function authorizationHandler({ provider }: AuthorizationHandlerOptions): RequestHandler {
-  return async (req, res) => {
+export function authorizationHandler({ provider, rateLimit: rateLimitConfig }: AuthorizationHandlerOptions): RequestHandler {
+  // Create a router to apply middleware
+  const router = express.Router();
+  
+  // Apply rate limiting unless explicitly disabled
+  if (rateLimitConfig !== false) {
+    router.use(rateLimit({
+      windowMs: 15 * 60 * 1000, // 15 minutes
+      max: 100, // 100 requests per windowMs
+      standardHeaders: true,
+      legacyHeaders: false,
+      message: {
+        error: 'too_many_requests',
+        error_description: 'You have exceeded the rate limit for authorization requests'
+      },
+      ...rateLimitConfig
+    }));
+  }
+  
+  // Define the handler
+  router.all("/", async (req, res) => {
     if (req.method !== "GET" && req.method !== "POST") {
       res.status(405).end("Method Not Allowed");
       return;
@@ -88,5 +114,7 @@ export function authorizationHandler({ provider }: AuthorizationHandlerOptions):
       redirectUri: redirect_uri,
       codeChallenge: params.code_challenge,
     }, res);
-  };
+  });
+  
+  return router;
 }

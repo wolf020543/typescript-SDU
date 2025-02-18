@@ -3,6 +3,7 @@ import { OAuthClientInformationFull, OAuthClientMetadataSchema } from "../../../
 import crypto from 'node:crypto';
 import cors from 'cors';
 import { OAuthRegisteredClientsStore } from "../clients.js";
+import { rateLimit, Options as RateLimitOptions } from "express-rate-limit";
 
 export type ClientRegistrationHandlerOptions = {
   /**
@@ -16,11 +17,22 @@ export type ClientRegistrationHandlerOptions = {
    * If not set, defaults to 30 days.
    */
   clientSecretExpirySeconds?: number;
+  
+  /**
+   * Rate limiting configuration for the client registration endpoint.
+   * Set to false to disable rate limiting for this endpoint.
+   * Registration endpoints are particularly sensitive to abuse and should be rate limited.
+   */
+  rateLimit?: Partial<RateLimitOptions> | false;
 };
 
 const DEFAULT_CLIENT_SECRET_EXPIRY_SECONDS = 30 * 24 * 60 * 60; // 30 days
 
-export function clientRegistrationHandler({ clientsStore, clientSecretExpirySeconds = DEFAULT_CLIENT_SECRET_EXPIRY_SECONDS }: ClientRegistrationHandlerOptions): RequestHandler {
+export function clientRegistrationHandler({ 
+  clientsStore, 
+  clientSecretExpirySeconds = DEFAULT_CLIENT_SECRET_EXPIRY_SECONDS, 
+  rateLimit: rateLimitConfig 
+}: ClientRegistrationHandlerOptions): RequestHandler {
   if (!clientsStore.registerClient) {
     throw new Error("Client registration store does not support registering clients");
   }
@@ -31,6 +43,21 @@ export function clientRegistrationHandler({ clientsStore, clientSecretExpirySeco
 
   // Configure CORS to allow any origin, to make accessible to web-based MCP clients
   router.use(cors());
+  
+  // Apply rate limiting unless explicitly disabled - stricter limits for registration
+  if (rateLimitConfig !== false) {
+    router.use(rateLimit({
+      windowMs: 60 * 60 * 1000, // 1 hour
+      max: 20, // 20 requests per hour - stricter as registration is sensitive
+      standardHeaders: true,
+      legacyHeaders: false,
+      message: {
+        error: 'too_many_requests',
+        error_description: 'You have exceeded the rate limit for client registration requests'
+      },
+      ...rateLimitConfig
+    }));
+  }
 
   router.post("/", async (req, res) => {
     let clientMetadata;

@@ -4,9 +4,15 @@ import { OAuthServerProvider } from "../provider.js";
 import cors from "cors";
 import { verifyChallenge } from "pkce-challenge";
 import { authenticateClient } from "../middleware/clientAuth.js";
+import { rateLimit, Options as RateLimitOptions } from "express-rate-limit";
 
 export type TokenHandlerOptions = {
   provider: OAuthServerProvider;
+  /**
+   * Rate limiting configuration for the token endpoint.
+   * Set to false to disable rate limiting for this endpoint.
+   */
+  rateLimit?: Partial<RateLimitOptions> | false;
 };
 
 const TokenRequestSchema = z.object({
@@ -23,13 +29,28 @@ const RefreshTokenGrantSchema = z.object({
   scope: z.string().optional(),
 });
 
-export function tokenHandler({ provider }: TokenHandlerOptions): RequestHandler {
+export function tokenHandler({ provider, rateLimit: rateLimitConfig }: TokenHandlerOptions): RequestHandler {
   // Nested router so we can configure middleware and restrict HTTP method
   const router = express.Router();
   router.use(express.urlencoded({ extended: false }));
 
   // Configure CORS to allow any origin, to make accessible to web-based MCP clients
   router.use(cors());
+  
+  // Apply rate limiting unless explicitly disabled
+  if (rateLimitConfig !== false) {
+    router.use(rateLimit({
+      windowMs: 15 * 60 * 1000, // 15 minutes
+      max: 50, // 50 requests per windowMs 
+      standardHeaders: true,
+      legacyHeaders: false,
+      message: {
+        error: 'too_many_requests',
+        error_description: 'You have exceeded the rate limit for token requests'
+      },
+      ...rateLimitConfig
+    }));
+  }
 
   // Authenticate and extract client details
   router.use(authenticateClient({ clientsStore: provider.clientsStore }));

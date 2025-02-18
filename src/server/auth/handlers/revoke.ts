@@ -3,12 +3,18 @@ import express, { RequestHandler } from "express";
 import cors from "cors";
 import { authenticateClient } from "../middleware/clientAuth.js";
 import { OAuthTokenRevocationRequestSchema } from "../../../shared/auth.js";
+import { rateLimit, Options as RateLimitOptions } from "express-rate-limit";
 
 export type RevocationHandlerOptions = {
   provider: OAuthServerProvider;
+  /**
+   * Rate limiting configuration for the token revocation endpoint.
+   * Set to false to disable rate limiting for this endpoint.
+   */
+  rateLimit?: Partial<RateLimitOptions> | false;
 };
 
-export function revocationHandler({ provider }: RevocationHandlerOptions): RequestHandler {
+export function revocationHandler({ provider, rateLimit: rateLimitConfig }: RevocationHandlerOptions): RequestHandler {
   if (!provider.revokeToken) {
     throw new Error("Auth provider does not support revoking tokens");
   }
@@ -19,6 +25,21 @@ export function revocationHandler({ provider }: RevocationHandlerOptions): Reque
 
   // Configure CORS to allow any origin, to make accessible to web-based MCP clients
   router.use(cors());
+  
+  // Apply rate limiting unless explicitly disabled
+  if (rateLimitConfig !== false) {
+    router.use(rateLimit({
+      windowMs: 15 * 60 * 1000, // 15 minutes
+      max: 50, // 50 requests per windowMs
+      standardHeaders: true,
+      legacyHeaders: false,
+      message: {
+        error: 'too_many_requests',
+        error_description: 'You have exceeded the rate limit for token revocation requests'
+      },
+      ...rateLimitConfig
+    }));
+  }
 
   // Authenticate and extract client details
   router.use(authenticateClient({ clientsStore: provider.clientsStore }));

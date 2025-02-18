@@ -84,8 +84,8 @@ describe('Authorization Handler', () => {
   beforeEach(() => {
     app = express();
     options = { provider: mockProvider };
-    app.get('/authorize', authorizationHandler(options));
-    app.post('/authorize', authorizationHandler(options));
+    const handler = authorizationHandler(options);
+    app.use('/authorize', handler);
   });
 
   describe('HTTP method validation', () => {
@@ -94,7 +94,7 @@ describe('Authorization Handler', () => {
         .put('/authorize')
         .query({ client_id: 'valid-client' });
 
-      expect(response.status).toBe(404); // Express filtering before reaching handler
+      expect(response.status).toBe(405); // Method not allowed response from handler
     });
   });
 
