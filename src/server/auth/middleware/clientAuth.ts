@@ -2,6 +2,7 @@ import { z } from "zod";
 import { RequestHandler } from "express";
 import { OAuthRegisteredClientsStore } from "../clients.js";
 import { OAuthClientInformationFull } from "../../../shared/auth.js";
+import { InvalidRequestError, InvalidClientError } from "../errors.js";
 
 export type ClientAuthenticationMiddlewareOptions = {
   /**
@@ -26,38 +27,34 @@ declare module "express-serve-static-core" {
 
 export function authenticateClient({ clientsStore }: ClientAuthenticationMiddlewareOptions): RequestHandler {
   return async (req, res, next) => {
-    let client_id, client_secret;
     try {
-      const result = ClientAuthenticatedRequestSchema.parse(req.body);
-      client_id = result.client_id;
-      client_secret = result.client_secret;
+      let client_id, client_secret;
+      try {
+        const result = ClientAuthenticatedRequestSchema.parse(req.body);
+        client_id = result.client_id;
+        client_secret = result.client_secret;
+      } catch (error) {
+        throw new InvalidRequestError(String(error));
+      }
+
+      const client = await clientsStore.getClient(client_id);
+      if (!client) {
+        throw new InvalidClientError("Invalid client_id");
+      }
+
+      if (client.client_secret !== client_secret) {
+        throw new InvalidClientError("Invalid client_secret");
+      }
+
+      req.client = client;
+      next();
     } catch (error) {
-      res.status(400).json({
-        error: "invalid_request",
-        error_description: String(error),
-      });
-      return;
+      if (error instanceof InvalidRequestError || error instanceof InvalidClientError) {
+        res.status(400).json(error.toResponseObject());
+      } else {
+        console.error("Unexpected error authenticating client:", error);
+        res.status(500).end("Internal Server Error");
+      }
     }
-
-    const client = await clientsStore.getClient(client_id);
-    if (!client) {
-      // TODO: Return 401 with WWW-Authenticate if Authorization header was used
-      res.status(400).json({
-        error: "invalid_client",
-        error_description: "Invalid client_id",
-      });
-      return;
-    }
-
-    if (client.client_secret !== client_secret) {
-      res.status(400).json({
-        error: "invalid_client",
-        error_description: "Invalid client_secret",
-      });
-      return;
-    }
-
-    req.client = client;
-    next();
   }
 }

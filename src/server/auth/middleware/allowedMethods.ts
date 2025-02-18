@@ -1,4 +1,5 @@
 import { RequestHandler } from "express";
+import { MethodNotAllowedError } from "../errors.js";
 
 /**
  * Middleware to handle unsupported HTTP methods with a 405 Method Not Allowed response.
@@ -13,11 +14,9 @@ export function allowedMethods(allowedMethods: string[]): RequestHandler {
       return;
     }
 
+    const error = new MethodNotAllowedError(`The method ${req.method} is not allowed for this endpoint`);
     res.status(405)
       .set('Allow', allowedMethods.join(', '))
-      .json({
-        error: "method_not_allowed",
-        error_description: `The method ${req.method} is not allowed for this endpoint`
-      });
+      .json(error.toResponseObject());
   };
 }
