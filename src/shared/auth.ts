@@ -102,6 +102,14 @@ export const OAuthClientRegistrationErrorSchema = z.object({
   error_description: z.string().optional(),
 }).strip();
 
+/**
+ * RFC 7009 OAuth 2.0 Token Revocation request
+ */
+export const OAuthTokenRevocationRequestSchema = z.object({
+  token: z.string(),
+  token_type_hint: z.string().optional(),
+}).strip();
+
 export type OAuthMetadata = z.infer<typeof OAuthMetadataSchema>;
 export type OAuthTokens = z.infer<typeof OAuthTokensSchema>;
 export type OAuthError = z.infer<typeof OAuthErrorSchema>;
@@ -109,3 +117,4 @@ export type OAuthClientMetadata = z.infer<typeof OAuthClientMetadataSchema>;
 export type OAuthClientInformation = z.infer<typeof OAuthClientInformationSchema>;
 export type OAuthClientInformationFull = z.infer<typeof OAuthClientInformationFullSchema>;
 export type OAuthClientRegistrationError = z.infer<typeof OAuthClientRegistrationErrorSchema>;
+export type OAuthTokenRevocationRequest = z.infer<typeof OAuthTokenRevocationRequestSchema>;
