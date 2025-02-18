@@ -89,12 +89,18 @@ export function authorizationHandler({ provider, rateLimit: rateLimitConfig }: A
       }
     } catch (error) {
       // Pre-redirect errors - return direct response
+      //
+      // These don't need to be JSON encoded, as they'll be displayed in a user
+      // agent, but OTOH they all represent exceptional situations (arguably,
+      // "programmer error"), so presenting a nice HTML page doesn't help the
+      // user anyway.
       if (error instanceof OAuthError) {
         const status = error instanceof ServerError ? 500 : 400;
-        res.status(status).end(error.message);
+        res.status(status).json(error.toResponseObject());
       } else {
         console.error("Unexpected error looking up client:", error);
-        res.status(500).end("Internal Server Error");
+        const serverError = new ServerError("Internal Server Error");
+        res.status(500).json(serverError.toResponseObject());
       }
 
       return;
