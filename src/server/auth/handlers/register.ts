@@ -40,7 +40,6 @@ export function clientRegistrationHandler({ clientsStore, clientSecretExpirySeco
       return { error: "invalid_client_metadata", error_description: String(error) };
     }
 
-    // Implement RFC 7591 dynamic client registration
     const clientId = crypto.randomUUID();
     const clientSecret = clientMetadata.token_endpoint_auth_method !== 'none'
       ? crypto.randomBytes(32).toString('hex')
