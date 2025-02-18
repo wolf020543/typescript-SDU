@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { isValidUrl } from "../server/auth/validation.js";
 
 /**
  * RFC 8414 OAuth 2.0 Authorization Server Metadata
@@ -62,7 +61,7 @@ export const OAuthErrorSchema = z
  * RFC 7591 OAuth 2.0 Dynamic Client Registration metadata
  */
 export const OAuthClientMetadataSchema = z.object({
-  redirect_uris: z.array(z.string()).refine((uris) => uris.every(isValidUrl), { message: "redirect_uris must contain valid URLs" }),
+  redirect_uris: z.array(z.string()).refine((uris) => uris.every((uri) => URL.canParse(uri)), { message: "redirect_uris must contain valid URLs" }),
   token_endpoint_auth_method: z.string().optional(),
   grant_types: z.array(z.string()).optional(),
   response_types: z.array(z.string()).optional(),

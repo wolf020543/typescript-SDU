@@ -1,6 +1,5 @@
 import { RequestHandler } from "express";
 import { z } from "zod";
-import { isValidUrl } from "../validation.js";
 import { OAuthServerProvider } from "../provider.js";
 
 export type AuthorizationHandlerOptions = {
@@ -10,7 +9,7 @@ export type AuthorizationHandlerOptions = {
 // Parameters that must be validated in order to issue redirects.
 const ClientAuthorizationParamsSchema = z.object({
   client_id: z.string(),
-  redirect_uri: z.string().optional().refine((value) => value === undefined || isValidUrl(value), { message: "redirect_uri must be a valid URL" }),
+  redirect_uri: z.string().optional().refine((value) => value === undefined || URL.canParse(value), { message: "redirect_uri must be a valid URL" }),
 });
 
 // Parameters that must be validated for a successful authorization request. Failure can be reported to the redirect URI.
