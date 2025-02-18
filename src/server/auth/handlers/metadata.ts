@@ -1,0 +1,17 @@
+import express, { RequestHandler } from "express";
+import { OAuthMetadata } from "../../../shared/auth.js";
+import cors from 'cors';
+
+export function metadataHandler(metadata: OAuthMetadata): RequestHandler {
+  // Nested router so we can configure middleware and restrict HTTP method
+  const router = express.Router();
+
+  // Configure CORS to allow any origin, to make accessible to web-based MCP clients
+  router.use(cors());
+
+  router.get("/", (req, res) => {
+    res.status(200).json(metadata);
+  });
+
+  return router;
+}
