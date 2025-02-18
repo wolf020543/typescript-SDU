@@ -3,14 +3,13 @@ import express, { RequestHandler } from "express";
 import { OAuthServerProvider } from "../provider.js";
 import cors from "cors";
 import { verifyChallenge } from "pkce-challenge";
+import { authenticateClient } from "../middleware/clientAuth.js";
 
 export type TokenHandlerOptions = {
   provider: OAuthServerProvider;
 };
 
 const TokenRequestSchema = z.object({
-  client_id: z.string(),
-  client_secret: z.string().optional(),
   grant_type: z.string(),
 });
 
@@ -32,32 +31,17 @@ export function tokenHandler({ provider }: TokenHandlerOptions): RequestHandler 
   // Configure CORS to allow any origin, to make accessible to web-based MCP clients
   router.use(cors());
 
+  // Authenticate and extract client details
+  router.use(authenticateClient({ clientsStore: provider.clientsStore }));
+
   router.post("/", async (req, res) => {
-    let client_id, client_secret, grant_type;
+    let grant_type;
     try {
-      ({ client_id, client_secret, grant_type } = TokenRequestSchema.parse(req.body));
+      ({ grant_type } = TokenRequestSchema.parse(req.body));
     } catch (error) {
       res.status(400).json({
         error: "invalid_request",
         error_description: String(error),
-      });
-      return;
-    }
-
-    const client = await provider.clientsStore.getClient(client_id);
-    if (!client) {
-      // TODO: Return 401 with WWW-Authenticate if Authorization header was used
-      res.status(400).json({
-        error: "invalid_client",
-        error_description: "Invalid client_id",
-      });
-      return;
-    }
-
-    if (client.client_secret !== client_secret) {
-      res.status(400).json({
-        error: "invalid_client",
-        error_description: "Invalid client_secret",
       });
       return;
     }

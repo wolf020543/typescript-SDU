@@ -33,6 +33,7 @@ export interface OAuthServerProvider {
   /**
    * Returns the `codeChallenge` that was used when the indicated authorization began.
    */
+  // TODO: Add `client` to this and below methods
   challengeForAuthorizationCode(authorizationCode: string): Promise<string>;
 
   /**
