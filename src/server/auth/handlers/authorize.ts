@@ -4,6 +4,14 @@ import express from "express";
 import { OAuthServerProvider } from "../provider.js";
 import { rateLimit, Options as RateLimitOptions } from "express-rate-limit";
 import { allowedMethods } from "../middleware/allowedMethods.js";
+import {
+  InvalidRequestError,
+  InvalidClientError,
+  InvalidScopeError,
+  ServerError,
+  TooManyRequestsError,
+  OAuthError
+} from "../errors.js";
 
 export type AuthorizationHandlerOptions = {
   provider: OAuthServerProvider;
@@ -42,81 +50,116 @@ export function authorizationHandler({ provider, rateLimit: rateLimitConfig }: A
       max: 100, // 100 requests per windowMs
       standardHeaders: true,
       legacyHeaders: false,
-      message: {
-        error: 'too_many_requests',
-        error_description: 'You have exceeded the rate limit for authorization requests'
-      },
+      message: new TooManyRequestsError('You have exceeded the rate limit for authorization requests').toResponseObject(),
       ...rateLimitConfig
     }));
   }
 
-  // Define the handler
   router.all("/", async (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
 
-    let client_id, redirect_uri;
+    // In the authorization flow, errors are split into two categories:
+    // 1. Pre-redirect errors (direct response with 400)
+    // 2. Post-redirect errors (redirect with error parameters)
+
+    // Phase 1: Validate client_id and redirect_uri. Any errors here must be direct responses.
+    let client_id, redirect_uri, client;
     try {
-      const data = req.method === 'POST' ? req.body : req.query;
-      ({ client_id, redirect_uri } = ClientAuthorizationParamsSchema.parse(data));
-    } catch (error) {
-      res.status(400).end(`Bad Request: ${error}`);
-      return;
-    }
-
-    const client = await provider.clientsStore.getClient(client_id);
-    if (!client) {
-      res.status(400).end("Bad Request: invalid client_id");
-      return;
-    }
-
-    if (redirect_uri !== undefined) {
-      if (!client.redirect_uris.includes(redirect_uri)) {
-        res.status(400).end("Bad Request: unregistered redirect_uri");
-        return;
+      const result = ClientAuthorizationParamsSchema.safeParse(req.method === 'POST' ? req.body : req.query);
+      if (!result.success) {
+        throw new InvalidRequestError(result.error.message);
       }
-    } else if (client.redirect_uris.length === 1) {
-      redirect_uri = client.redirect_uris[0];
-    } else {
-      res.status(400).end("Bad Request: missing redirect_uri");
-      return;
-    }
 
-    let params;
-    try {
-      const authData = req.method === 'POST' ? req.body : req.query;
-      params = RequestAuthorizationParamsSchema.parse(authData);
+      client_id = result.data.client_id;
+      redirect_uri = result.data.redirect_uri;
+
+      client = await provider.clientsStore.getClient(client_id);
+      if (!client) {
+        throw new InvalidClientError("Invalid client_id");
+      }
+
+      if (redirect_uri !== undefined) {
+        if (!client.redirect_uris.includes(redirect_uri)) {
+          throw new InvalidRequestError("Unregistered redirect_uri");
+        }
+      } else if (client.redirect_uris.length === 1) {
+        redirect_uri = client.redirect_uris[0];
+      } else {
+        throw new InvalidRequestError("redirect_uri must be specified when client has multiple registered URIs");
+      }
     } catch (error) {
-      const errorUrl = new URL(redirect_uri);
-      errorUrl.searchParams.set("error", "invalid_request");
-      errorUrl.searchParams.set("error_description", String(error));
-      res.redirect(302, errorUrl.href);
+      // Pre-redirect errors - return direct response
+      if (error instanceof OAuthError) {
+        const status = error instanceof ServerError ? 500 : 400;
+        res.status(status).end(error.message);
+      } else {
+        console.error("Unexpected error looking up client:", error);
+        res.status(500).end("Internal Server Error");
+      }
+
       return;
     }
 
-    let requestedScopes: string[] = [];
-    if (params.scope !== undefined && client.scope !== undefined) {
-      requestedScopes = params.scope.split(" ");
-      const allowedScopes = new Set(client.scope.split(" "));
+    // Phase 2: Validate other parameters. Any errors here should go into redirect responses.
+    let state;
+    try {
+      // Parse and validate authorization parameters
+      const parseResult = RequestAuthorizationParamsSchema.safeParse(req.method === 'POST' ? req.body : req.query);
+      if (!parseResult.success) {
+        throw new InvalidRequestError(parseResult.error.message);
+      }
 
-      // If any requested scope is not in the client's registered scopes, error out
-      for (const scope of requestedScopes) {
-        if (!allowedScopes.has(scope)) {
-          const errorUrl = new URL(redirect_uri);
-          errorUrl.searchParams.set("error", "invalid_scope");
-          errorUrl.searchParams.set("error_description", `Client was not registered with scope ${scope}`);
-          res.redirect(302, errorUrl.href);
-          return;
+      const { scope, code_challenge } = parseResult.data;
+      state = parseResult.data.state;
+
+      // Validate scopes
+      let requestedScopes: string[] = [];
+      if (scope !== undefined && client.scope !== undefined) {
+        requestedScopes = scope.split(" ");
+        const allowedScopes = new Set(client.scope.split(" "));
+
+        // Check each requested scope against allowed scopes
+        for (const scope of requestedScopes) {
+          if (!allowedScopes.has(scope)) {
+            throw new InvalidScopeError(`Client was not registered with scope ${scope}`);
+          }
         }
       }
-    }
 
-    await provider.authorize(client, {
-      state: params.state,
-      scopes: requestedScopes,
-      redirectUri: redirect_uri,
-      codeChallenge: params.code_challenge,
-    }, res);
+      // All validation passed, proceed with authorization
+      await provider.authorize(client, {
+        state,
+        scopes: requestedScopes,
+        redirectUri: redirect_uri,
+        codeChallenge: code_challenge,
+      }, res);
+    } catch (error) {
+      // Post-redirect errors - redirect with error parameters
+      if (error instanceof OAuthError) {
+        res.redirect(302, createErrorRedirect(redirect_uri, error, state));
+      } else {
+        console.error("Unexpected error during authorization:", error);
+        const serverError = new ServerError("Internal Server Error");
+        res.redirect(302, createErrorRedirect(redirect_uri, serverError, state));
+      }
+    }
   });
 
   return router;
+}
+
+/**
+ * Helper function to create redirect URL with error parameters
+ */
+function createErrorRedirect(redirectUri: string, error: OAuthError, state?: string): string {
+  const errorUrl = new URL(redirectUri);
+  errorUrl.searchParams.set("error", error.errorCode);
+  errorUrl.searchParams.set("error_description", error.message);
+  if (error.errorUri) {
+    errorUrl.searchParams.set("error_uri", error.errorUri);
+  }
+  if (state) {
+    errorUrl.searchParams.set("state", state);
+  }
+  return errorUrl.href;
 }

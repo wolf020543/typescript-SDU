@@ -170,3 +170,13 @@ export class TooManyRequestsError extends OAuthError {
     super("too_many_requests", message, errorUri);
   }
 }
+
+/**
+ * Invalid client metadata error - The client metadata is invalid.
+ * (Custom error for dynamic client registration - RFC 7591)
+ */
+export class InvalidClientMetadataError extends OAuthError {
+  constructor(message: string, errorUri?: string) {
+    super("invalid_client_metadata", message, errorUri);
+  }
+}

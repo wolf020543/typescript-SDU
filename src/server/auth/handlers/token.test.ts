@@ -5,10 +5,13 @@ import { OAuthClientInformationFull, OAuthTokenRevocationRequest, OAuthTokens } 
 import express, { Response } from 'express';
 import supertest from 'supertest';
 import * as pkceChallenge from 'pkce-challenge';
+import { InvalidGrantError } from '../errors.js';
 
 // Mock pkce-challenge
 jest.mock('pkce-challenge', () => ({
-  verifyChallenge: jest.fn()
+  verifyChallenge: jest.fn().mockImplementation(async (verifier, challenge) => {
+    return verifier === 'valid_verifier' && challenge === 'mock_challenge';
+  })
 }));
 
 describe('Token Handler', () => {
@@ -46,9 +49,9 @@ describe('Token Handler', () => {
         if (authorizationCode === 'valid_code') {
           return 'mock_challenge';
         } else if (authorizationCode === 'expired_code') {
-          throw new Error('invalid_grant');
+          throw new InvalidGrantError('The authorization code has expired');
         }
-        throw new Error('invalid_grant');
+        throw new InvalidGrantError('The authorization code is invalid');
       },
 
       async exchangeAuthorizationCode(client: OAuthClientInformationFull, authorizationCode: string): Promise<OAuthTokens> {
@@ -60,7 +63,7 @@ describe('Token Handler', () => {
             refresh_token: 'mock_refresh_token'
           };
         }
-        throw new Error('invalid_grant');
+        throw new InvalidGrantError('The authorization code is invalid or has expired');
       },
 
       async exchangeRefreshToken(client: OAuthClientInformationFull, refreshToken: string, scopes?: string[]): Promise<OAuthTokens> {
@@ -78,7 +81,7 @@ describe('Token Handler', () => {
 
           return response;
         }
-        throw new Error('invalid_grant');
+        throw new InvalidGrantError('The refresh token is invalid or has expired');
       },
 
       async revokeToken(_client: OAuthClientInformationFull, _request: OAuthTokenRevocationRequest): Promise<void> {
@@ -88,7 +91,7 @@ describe('Token Handler', () => {
 
     // Mock PKCE verification
     (pkceChallenge.verifyChallenge as jest.Mock).mockImplementation(
-      (verifier: string, challenge: string) => {
+      async (verifier: string, challenge: string) => {
         return verifier === 'valid_verifier' && challenge === 'mock_challenge';
       }
     );
@@ -212,7 +215,7 @@ describe('Token Handler', () => {
 
     it('verifies code_verifier against challenge', async () => {
       // Setup invalid verifier
-      (pkceChallenge.verifyChallenge as jest.Mock).mockReturnValueOnce(false);
+      (pkceChallenge.verifyChallenge as jest.Mock).mockResolvedValueOnce(false);
 
       const response = await supertest(app)
         .post('/token')
@@ -226,7 +229,7 @@ describe('Token Handler', () => {
         });
 
       expect(response.status).toBe(400);
-      expect(response.body.error).toBe('invalid_request');
+      expect(response.body.error).toBe('invalid_grant');
       expect(response.body.error_description).toContain('code_verifier');
     });
 
@@ -242,7 +245,8 @@ describe('Token Handler', () => {
           code_verifier: 'valid_verifier'
         });
 
-      expect(response.status).toBe(500); // Implementation currently doesn't handle exceptions properly
+      expect(response.status).toBe(400);
+      expect(response.body.error).toBe('invalid_grant');
     });
 
     it('returns tokens for valid code exchange', async () => {
@@ -292,7 +296,8 @@ describe('Token Handler', () => {
           refresh_token: 'invalid_refresh_token'
         });
 
-      expect(response.status).toBe(500); // Implementation currently doesn't handle exceptions properly
+      expect(response.status).toBe(400);
+      expect(response.body.error).toBe('invalid_grant');
     });
 
     it('returns new tokens for valid refresh token', async () => {

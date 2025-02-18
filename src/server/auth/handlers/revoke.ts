@@ -5,6 +5,12 @@ import { authenticateClient } from "../middleware/clientAuth.js";
 import { OAuthTokenRevocationRequestSchema } from "../../../shared/auth.js";
 import { rateLimit, Options as RateLimitOptions } from "express-rate-limit";
 import { allowedMethods } from "../middleware/allowedMethods.js";
+import {
+  InvalidRequestError,
+  ServerError,
+  TooManyRequestsError,
+  OAuthError
+} from "../errors.js";
 
 export type RevocationHandlerOptions = {
   provider: OAuthServerProvider;
@@ -36,10 +42,7 @@ export function revocationHandler({ provider, rateLimit: rateLimitConfig }: Revo
       max: 50, // 50 requests per windowMs
       standardHeaders: true,
       legacyHeaders: false,
-      message: {
-        error: 'too_many_requests',
-        error_description: 'You have exceeded the rate limit for token revocation requests'
-      },
+      message: new TooManyRequestsError('You have exceeded the rate limit for token revocation requests').toResponseObject(),
       ...rateLimitConfig
     }));
   }
@@ -50,27 +53,31 @@ export function revocationHandler({ provider, rateLimit: rateLimitConfig }: Revo
   router.post("/", async (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
 
-    let revocationRequest;
     try {
-      revocationRequest = OAuthTokenRevocationRequestSchema.parse(req.body);
+      const parseResult = OAuthTokenRevocationRequestSchema.safeParse(req.body);
+      if (!parseResult.success) {
+        throw new InvalidRequestError(parseResult.error.message);
+      }
+
+      const client = req.client;
+      if (!client) {
+        // This should never happen
+        console.error("Missing client information after authentication");
+        throw new ServerError("Internal Server Error");
+      }
+
+      await provider.revokeToken!(client, parseResult.data);
+      res.status(200).json({});
     } catch (error) {
-      res.status(400).json({
-        error: "invalid_request",
-        error_description: String(error),
-      });
-      return;
+      if (error instanceof OAuthError) {
+        const status = error instanceof ServerError ? 500 : 400;
+        res.status(status).json(error.toResponseObject());
+      } else {
+        console.error("Unexpected error revoking token:", error);
+        const serverError = new ServerError("Internal Server Error");
+        res.status(500).json(serverError.toResponseObject());
+      }
     }
-
-    const client = req.client;
-    if (!client) {
-      console.error("Missing client information after authentication");
-      res.status(500).end("Internal Server Error");
-      return;
-    }
-
-    await provider.revokeToken!(client, revocationRequest);
-    // Return empty response on success (per OAuth 2.0 spec)
-    res.status(200).json({});
   });
 
   return router;

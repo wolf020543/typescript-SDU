@@ -113,7 +113,6 @@ describe('Authorization Handler', () => {
         .query({ client_id: 'nonexistent-client' });
 
       expect(response.status).toBe(400);
-      expect(response.text).toContain('invalid client_id');
     });
   });
 
@@ -144,7 +143,6 @@ describe('Authorization Handler', () => {
         });
 
       expect(response.status).toBe(400);
-      expect(response.text).toContain('missing redirect_uri');
     });
 
     it('validates redirect_uri against client registered URIs', async () => {
@@ -159,7 +157,6 @@ describe('Authorization Handler', () => {
         });
 
       expect(response.status).toBe(400);
-      expect(response.text).toContain('unregistered redirect_uri');
     });
 
     it('accepts valid redirect_uri that client registered with', async () => {

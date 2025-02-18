@@ -6,6 +6,14 @@ import { verifyChallenge } from "pkce-challenge";
 import { authenticateClient } from "../middleware/clientAuth.js";
 import { rateLimit, Options as RateLimitOptions } from "express-rate-limit";
 import { allowedMethods } from "../middleware/allowedMethods.js";
+import {
+  InvalidRequestError,
+  InvalidGrantError,
+  UnsupportedGrantTypeError,
+  ServerError,
+  TooManyRequestsError,
+  OAuthError
+} from "../errors.js";
 
 export type TokenHandlerOptions = {
   provider: OAuthServerProvider;
@@ -47,10 +55,7 @@ export function tokenHandler({ provider, rateLimit: rateLimitConfig }: TokenHand
       max: 50, // 50 requests per windowMs 
       standardHeaders: true,
       legacyHeaders: false,
-      message: {
-        error: 'too_many_requests',
-        error_description: 'You have exceeded the rate limit for token requests'
-      },
+      message: new TooManyRequestsError('You have exceeded the rate limit for token requests').toResponseObject(),
       ...rateLimitConfig
     }));
   }
@@ -61,79 +66,72 @@ export function tokenHandler({ provider, rateLimit: rateLimitConfig }: TokenHand
   router.post("/", async (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
 
-    let grant_type;
     try {
-      ({ grant_type } = TokenRequestSchema.parse(req.body));
+      const parseResult = TokenRequestSchema.safeParse(req.body);
+      if (!parseResult.success) {
+        throw new InvalidRequestError(parseResult.error.message);
+      }
+
+      const { grant_type } = parseResult.data;
+
+      const client = req.client;
+      if (!client) {
+        // This should never happen
+        console.error("Missing client information after authentication");
+        throw new ServerError("Internal Server Error");
+      }
+
+      switch (grant_type) {
+        case "authorization_code": {
+          const parseResult = AuthorizationCodeGrantSchema.safeParse(req.body);
+          if (!parseResult.success) {
+            throw new InvalidRequestError(parseResult.error.message);
+          }
+
+          const { code, code_verifier } = parseResult.data;
+
+          // Verify PKCE challenge
+          const codeChallenge = await provider.challengeForAuthorizationCode(client, code);
+          if (!(await verifyChallenge(code_verifier, codeChallenge))) {
+            throw new InvalidGrantError("code_verifier does not match the challenge");
+          }
+
+          const tokens = await provider.exchangeAuthorizationCode(client, code);
+          res.status(200).json(tokens);
+          break;
+        }
+
+        case "refresh_token": {
+          const parseResult = RefreshTokenGrantSchema.safeParse(req.body);
+          if (!parseResult.success) {
+            throw new InvalidRequestError(parseResult.error.message);
+          }
+
+          const { refresh_token, scope } = parseResult.data;
+
+          const scopes = scope?.split(" ");
+          const tokens = await provider.exchangeRefreshToken(client, refresh_token, scopes);
+          res.status(200).json(tokens);
+          break;
+        }
+
+        // Not supported right now
+        //case "client_credentials":
+
+        default:
+          throw new UnsupportedGrantTypeError(
+            "The grant type is not supported by this authorization server."
+          );
+      }
     } catch (error) {
-      res.status(400).json({
-        error: "invalid_request",
-        error_description: String(error),
-      });
-      return;
-    }
-
-    const client = req.client;
-    if (!client) {
-      console.error("Missing client information after authentication");
-      res.status(500).end("Internal Server Error");
-      return;
-    }
-
-    switch (grant_type) {
-      case "authorization_code": {
-        let grant;
-        try {
-          grant = AuthorizationCodeGrantSchema.parse(req.body);
-        } catch (error) {
-          res.status(400).json({
-            error: "invalid_request",
-            error_description: String(error),
-          });
-          return;
-        }
-
-        const codeChallenge = await provider.challengeForAuthorizationCode(client, grant.code);
-        if (!(await verifyChallenge(grant.code_verifier, codeChallenge))) {
-          res.status(400).json({
-            error: "invalid_request",
-            error_description: "code_verifier does not match the challenge",
-          });
-
-          return;
-        }
-
-        const tokens = await provider.exchangeAuthorizationCode(client, grant.code);
-        res.status(200).json(tokens);
-        break;
+      if (error instanceof OAuthError) {
+        const status = error instanceof ServerError ? 500 : 400;
+        res.status(status).json(error.toResponseObject());
+      } else {
+        console.error("Unexpected error exchanging token:", error);
+        const serverError = new ServerError("Internal Server Error");
+        res.status(500).json(serverError.toResponseObject());
       }
-
-      case "refresh_token": {
-        let grant;
-        try {
-          grant = RefreshTokenGrantSchema.parse(req.body);
-        } catch (error) {
-          res.status(400).json({
-            error: "invalid_request",
-            error_description: String(error),
-          });
-          return;
-        }
-
-        const scopes = grant.scope ? grant.scope.split(" ") : undefined;
-        const tokens = await provider.exchangeRefreshToken(client, grant.refresh_token, scopes);
-        res.status(200).json(tokens);
-        break;
-      }
-
-      // Not supported right now
-      //case "client_credentials":
-
-      default:
-        res.status(400).json({
-          error: "unsupported_grant_type",
-          error_description: "The grant type is not supported by this authorization server.",
-        });
-        return;
     }
   });
 

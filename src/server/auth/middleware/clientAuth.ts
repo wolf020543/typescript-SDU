@@ -2,7 +2,7 @@ import { z } from "zod";
 import { RequestHandler } from "express";
 import { OAuthRegisteredClientsStore } from "../clients.js";
 import { OAuthClientInformationFull } from "../../../shared/auth.js";
-import { InvalidRequestError, InvalidClientError } from "../errors.js";
+import { InvalidRequestError, InvalidClientError, ServerError, OAuthError } from "../errors.js";
 
 export type ClientAuthenticationMiddlewareOptions = {
   /**
@@ -28,15 +28,12 @@ declare module "express-serve-static-core" {
 export function authenticateClient({ clientsStore }: ClientAuthenticationMiddlewareOptions): RequestHandler {
   return async (req, res, next) => {
     try {
-      let client_id, client_secret;
-      try {
-        const result = ClientAuthenticatedRequestSchema.parse(req.body);
-        client_id = result.client_id;
-        client_secret = result.client_secret;
-      } catch (error) {
-        throw new InvalidRequestError(String(error));
+      const result = ClientAuthenticatedRequestSchema.safeParse(req.body);
+      if (!result.success) {
+        throw new InvalidRequestError(String(result.error));
       }
 
+      const { client_id, client_secret } = result.data;
       const client = await clientsStore.getClient(client_id);
       if (!client) {
         throw new InvalidClientError("Invalid client_id");
@@ -49,11 +46,13 @@ export function authenticateClient({ clientsStore }: ClientAuthenticationMiddlew
       req.client = client;
       next();
     } catch (error) {
-      if (error instanceof InvalidRequestError || error instanceof InvalidClientError) {
-        res.status(400).json(error.toResponseObject());
+      if (error instanceof OAuthError) {
+        const status = error instanceof ServerError ? 500 : 400;
+        res.status(status).json(error.toResponseObject());
       } else {
         console.error("Unexpected error authenticating client:", error);
-        res.status(500).end("Internal Server Error");
+        const serverError = new ServerError("Internal Server Error");
+        res.status(500).json(serverError.toResponseObject());
       }
     }
   }

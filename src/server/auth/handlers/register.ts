@@ -5,6 +5,12 @@ import cors from 'cors';
 import { OAuthRegisteredClientsStore } from "../clients.js";
 import { rateLimit, Options as RateLimitOptions } from "express-rate-limit";
 import { allowedMethods } from "../middleware/allowedMethods.js";
+import {
+  InvalidClientMetadataError,
+  ServerError,
+  TooManyRequestsError,
+  OAuthError
+} from "../errors.js";
 
 export type ClientRegistrationHandlerOptions = {
   /**
@@ -54,10 +60,7 @@ export function clientRegistrationHandler({
       max: 20, // 20 requests per hour - stricter as registration is sensitive
       standardHeaders: true,
       legacyHeaders: false,
-      message: {
-        error: 'too_many_requests',
-        error_description: 'You have exceeded the rate limit for client registration requests'
-      },
+      message: new TooManyRequestsError('You have exceeded the rate limit for client registration requests').toResponseObject(),
       ...rateLimitConfig
     }));
   }
@@ -65,33 +68,41 @@ export function clientRegistrationHandler({
   router.post("/", async (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
 
-    let clientMetadata;
     try {
-      clientMetadata = OAuthClientMetadataSchema.parse(req.body);
+      const parseResult = OAuthClientMetadataSchema.safeParse(req.body);
+      if (!parseResult.success) {
+        throw new InvalidClientMetadataError(parseResult.error.message);
+      }
+
+      const clientMetadata = parseResult.data;
+
+      // Generate client credentials
+      const clientId = crypto.randomUUID();
+      const clientSecret = clientMetadata.token_endpoint_auth_method !== 'none'
+        ? crypto.randomBytes(32).toString('hex')
+        : undefined;
+      const clientIdIssuedAt = Math.floor(Date.now() / 1000);
+
+      let clientInfo: OAuthClientInformationFull = {
+        ...clientMetadata,
+        client_id: clientId,
+        client_secret: clientSecret,
+        client_id_issued_at: clientIdIssuedAt,
+        client_secret_expires_at: clientSecretExpirySeconds > 0 ? clientIdIssuedAt + clientSecretExpirySeconds : 0
+      };
+
+      clientInfo = await clientsStore.registerClient!(clientInfo);
+      res.status(201).json(clientInfo);
     } catch (error) {
-      res.status(400).json({
-        error: "invalid_client_metadata",
-        error_description: String(error),
-      });
-      return;
+      if (error instanceof OAuthError) {
+        const status = error instanceof ServerError ? 500 : 400;
+        res.status(status).json(error.toResponseObject());
+      } else {
+        console.error("Unexpected error registering client:", error);
+        const serverError = new ServerError("Internal Server Error");
+        res.status(500).json(serverError.toResponseObject());
+      }
     }
-
-    const clientId = crypto.randomUUID();
-    const clientSecret = clientMetadata.token_endpoint_auth_method !== 'none'
-      ? crypto.randomBytes(32).toString('hex')
-      : undefined;
-    const clientIdIssuedAt = Math.floor(Date.now() / 1000);
-
-    let clientInfo: OAuthClientInformationFull = {
-      ...clientMetadata,
-      client_id: clientId,
-      client_secret: clientSecret,
-      client_id_issued_at: clientIdIssuedAt,
-      client_secret_expires_at: clientSecretExpirySeconds > 0 ? clientIdIssuedAt + clientSecretExpirySeconds : 0
-    };
-
-    clientInfo = await clientsStore.registerClient!(clientInfo);
-    res.status(201).json(clientInfo);
   });
 
   return router;
