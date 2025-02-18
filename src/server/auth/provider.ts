@@ -21,8 +21,6 @@ export interface OAuthServerProvider {
   /**
    * Begins the authorization flow, which can either be implemented by this server itself or via redirection to a separate authorization server. 
    * 
-   * An authorization code can be generated using the `generateToken` function.
-   * 
    * This server must eventually issue a redirect with an authorization response or an error response to the given redirect URI. Per OAuth 2.1:
    * - In the successful case, the redirect MUST include the `code` and `state` (if present) query parameters.
    * - In the error case, the redirect MUST include the `error` query parameter, and MAY include an optional `error_description` query parameter.
