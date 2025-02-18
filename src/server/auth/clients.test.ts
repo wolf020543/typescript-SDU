@@ -17,7 +17,8 @@ describe('OAuthRegisteredClientsStore', () => {
         client.client_secret_expires_at &&
         client.client_secret_expires_at < Math.floor(Date.now() / 1000)) {
         // If expired, retain client but remove the secret
-        const { client_secret: _unused, ...clientWithoutSecret } = client;
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { client_secret, ...clientWithoutSecret } = client;
         return clientWithoutSecret as OAuthClientInformationFull;
       }
 
