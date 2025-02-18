@@ -50,7 +50,7 @@ export const OAuthTokensSchema = z
 /**
  * OAuth 2.1 error response
  */
-export const OAuthErrorSchema = z
+export const OAuthErrorResponseSchema = z
   .object({
     error: z.string(),
     error_description: z.string().optional(),
@@ -111,7 +111,7 @@ export const OAuthTokenRevocationRequestSchema = z.object({
 
 export type OAuthMetadata = z.infer<typeof OAuthMetadataSchema>;
 export type OAuthTokens = z.infer<typeof OAuthTokensSchema>;
-export type OAuthError = z.infer<typeof OAuthErrorSchema>;
+export type OAuthErrorResponse = z.infer<typeof OAuthErrorResponseSchema>;
 export type OAuthClientMetadata = z.infer<typeof OAuthClientMetadataSchema>;
 export type OAuthClientInformation = z.infer<typeof OAuthClientInformationSchema>;
 export type OAuthClientInformationFull = z.infer<typeof OAuthClientInformationFullSchema>;
