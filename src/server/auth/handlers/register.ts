@@ -32,12 +32,16 @@ export function clientRegistrationHandler({ clientsStore, clientSecretExpirySeco
   // Configure CORS to allow any origin, to make accessible to web-based MCP clients
   router.use(cors());
 
-  async function register(requestBody: unknown): Promise<OAuthClientInformationFull | OAuthClientRegistrationError> {
+  router.post("/", async (req, res) => {
     let clientMetadata;
     try {
-      clientMetadata = OAuthClientMetadataSchema.parse(requestBody);
+      clientMetadata = OAuthClientMetadataSchema.parse(req.body);
     } catch (error) {
-      return { error: "invalid_client_metadata", error_description: String(error) };
+      res.status(400).json({
+        error: "invalid_client_metadata",
+        error_description: String(error),
+      });
+      return;
     }
 
     const clientId = crypto.randomUUID();
@@ -55,21 +59,7 @@ export function clientRegistrationHandler({ clientsStore, clientSecretExpirySeco
     };
 
     clientInfo = await clientsStore.registerClient!(clientInfo);
-    return clientInfo;
-  }
-
-  // Actual request handler
-  router.post("/", (req, res) => {
-    register(req.body).then((result) => {
-      if ("error" in result) {
-        res.status(400).json(result);
-      } else {
-        res.status(201).json(result);
-      }
-    }, (error) => {
-      console.error("Uncaught error in client registration handler:", error);
-      res.status(500).end("Internal Server Error");
-    });
+    res.status(201).json(clientInfo);
   });
 
   return router;
