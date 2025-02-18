@@ -13,16 +13,14 @@ export type ClientAuthenticationMiddlewareOptions = {
 const ClientAuthenticatedRequestSchema = z.object({
   client_id: z.string(),
   client_secret: z.string().optional(),
-})
+});
 
-declare global {
-  namespace Express {
-    interface Request {
-      /**
-       * The authenticated client for this request, if the `authenticateClient` middleware was used.
-       */
-      client?: OAuthClientInformationFull;
-    }
+declare module "express-serve-static-core" {
+  interface Request {
+    /**
+     * The authenticated client for this request, if the `authenticateClient` middleware was used.
+     */
+    client?: OAuthClientInformationFull;
   }
 }
 
