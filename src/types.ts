@@ -1113,6 +1113,7 @@ export class McpError extends Error {
     public readonly data?: unknown,
   ) {
     super(`MCP error ${code}: ${message}`);
+    this.name = "McpError";
   }
 }
 
