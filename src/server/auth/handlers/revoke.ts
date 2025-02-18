@@ -43,6 +43,8 @@ export function revocationHandler({ provider }: RevocationHandlerOptions): Reque
     }
 
     await provider.revokeToken!(client, revocationRequest);
+    // Return empty response on success (per OAuth 2.0 spec)
+    res.status(200).json({});
   });
 
   return router;

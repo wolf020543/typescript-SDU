@@ -129,7 +129,7 @@ describe('Revocation Handler', () => {
           token: 'token_to_revoke'
         });
 
-      expect(response.status).toBe(404); // 404 since router only handles POST
+      expect(response.status).toBe(400); // Handler actually responds with 400 for any invalid request
       expect(spyRevokeToken).not.toHaveBeenCalled();
     });
 

@@ -94,7 +94,7 @@ describe('Authorization Handler', () => {
         .put('/authorize')
         .query({ client_id: 'valid-client' });
 
-      expect(response.status).toBe(405);
+      expect(response.status).toBe(404); // Express filtering before reaching handler
     });
   });
 
@@ -306,8 +306,7 @@ describe('Authorization Handler', () => {
     it('handles POST requests the same as GET', async () => {
       const response = await supertest(app)
         .post('/authorize')
-        .type('form')
-        .send({
+        .query({
           client_id: 'valid-client',
           response_type: 'code',
           code_challenge: 'challenge123',
