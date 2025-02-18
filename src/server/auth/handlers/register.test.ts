@@ -10,7 +10,7 @@ describe('Client Registration Handler', () => {
     async getClient(_clientId: string): Promise<OAuthClientInformationFull | undefined> {
       return undefined;
     },
-    
+
     async registerClient(client: OAuthClientInformationFull): Promise<OAuthClientInformationFull> {
       // Return the client info as-is in the mock
       return client;
@@ -30,7 +30,7 @@ describe('Client Registration Handler', () => {
       const options: ClientRegistrationHandlerOptions = {
         clientsStore: mockClientStoreWithoutRegistration
       };
-      
+
       expect(() => clientRegistrationHandler(options)).toThrow('does not support registering clients');
     });
 
@@ -38,7 +38,7 @@ describe('Client Registration Handler', () => {
       const options: ClientRegistrationHandlerOptions = {
         clientsStore: mockClientStoreWithRegistration
       };
-      
+
       expect(() => clientRegistrationHandler(options)).not.toThrow();
     });
   });
@@ -54,7 +54,7 @@ describe('Client Registration Handler', () => {
         clientsStore: mockClientStoreWithRegistration,
         clientSecretExpirySeconds: 86400 // 1 day for testing
       };
-      
+
       app.use('/register', clientRegistrationHandler(options));
 
       // Spy on the registerClient method
@@ -72,7 +72,12 @@ describe('Client Registration Handler', () => {
           redirect_uris: ['https://example.com/callback']
         });
 
-      expect(response.status).toBe(404); // 404 since router only handles POST
+      expect(response.status).toBe(405);
+      expect(response.headers.allow).toBe('POST');
+      expect(response.body).toEqual({
+        error: "method_not_allowed",
+        error_description: "The method GET is not allowed for this endpoint"
+      });
       expect(spyRegisterClient).not.toHaveBeenCalled();
     });
 
@@ -112,14 +117,14 @@ describe('Client Registration Handler', () => {
         .send(clientMetadata);
 
       expect(response.status).toBe(201);
-      
+
       // Verify the generated client information
       expect(response.body.client_id).toBeDefined();
       expect(response.body.client_secret).toBeDefined();
       expect(response.body.client_id_issued_at).toBeDefined();
       expect(response.body.client_secret_expires_at).toBeDefined();
       expect(response.body.redirect_uris).toEqual(['https://example.com/callback']);
-      
+
       // Verify client was registered
       expect(spyRegisterClient).toHaveBeenCalledTimes(1);
     });
@@ -145,7 +150,7 @@ describe('Client Registration Handler', () => {
         clientsStore: mockClientStoreWithRegistration,
         clientSecretExpirySeconds: 3600 // 1 hour
       };
-      
+
       customApp.use('/register', clientRegistrationHandler(options));
 
       const response = await supertest(customApp)
@@ -155,7 +160,7 @@ describe('Client Registration Handler', () => {
         });
 
       expect(response.status).toBe(201);
-      
+
       // Verify the expiration time (~1 hour from now)
       const issuedAt = response.body.client_id_issued_at;
       const expiresAt = response.body.client_secret_expires_at;
@@ -169,7 +174,7 @@ describe('Client Registration Handler', () => {
         clientsStore: mockClientStoreWithRegistration,
         clientSecretExpirySeconds: 0 // No expiry
       };
-      
+
       customApp.use('/register', clientRegistrationHandler(options));
 
       const response = await supertest(customApp)
@@ -205,7 +210,7 @@ describe('Client Registration Handler', () => {
         .send(fullClientMetadata);
 
       expect(response.status).toBe(201);
-      
+
       // Verify all metadata was preserved
       Object.entries(fullClientMetadata).forEach(([key, value]) => {
         expect(response.body[key]).toEqual(value);

@@ -129,7 +129,12 @@ describe('Revocation Handler', () => {
           token: 'token_to_revoke'
         });
 
-      expect(response.status).toBe(400); // Handler actually responds with 400 for any invalid request
+      expect(response.status).toBe(405);
+      expect(response.headers.allow).toBe('POST');
+      expect(response.body).toEqual({
+        error: "method_not_allowed",
+        error_description: "The method GET is not allowed for this endpoint"
+      });
       expect(spyRevokeToken).not.toHaveBeenCalled();
     });
 

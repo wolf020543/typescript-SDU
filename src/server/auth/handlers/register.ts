@@ -4,6 +4,7 @@ import crypto from 'node:crypto';
 import cors from 'cors';
 import { OAuthRegisteredClientsStore } from "../clients.js";
 import { rateLimit, Options as RateLimitOptions } from "express-rate-limit";
+import { allowedMethods } from "../middleware/allowedMethods.js";
 
 export type ClientRegistrationHandlerOptions = {
   /**
@@ -17,7 +18,7 @@ export type ClientRegistrationHandlerOptions = {
    * If not set, defaults to 30 days.
    */
   clientSecretExpirySeconds?: number;
-  
+
   /**
    * Rate limiting configuration for the client registration endpoint.
    * Set to false to disable rate limiting for this endpoint.
@@ -28,10 +29,10 @@ export type ClientRegistrationHandlerOptions = {
 
 const DEFAULT_CLIENT_SECRET_EXPIRY_SECONDS = 30 * 24 * 60 * 60; // 30 days
 
-export function clientRegistrationHandler({ 
-  clientsStore, 
-  clientSecretExpirySeconds = DEFAULT_CLIENT_SECRET_EXPIRY_SECONDS, 
-  rateLimit: rateLimitConfig 
+export function clientRegistrationHandler({
+  clientsStore,
+  clientSecretExpirySeconds = DEFAULT_CLIENT_SECRET_EXPIRY_SECONDS,
+  rateLimit: rateLimitConfig
 }: ClientRegistrationHandlerOptions): RequestHandler {
   if (!clientsStore.registerClient) {
     throw new Error("Client registration store does not support registering clients");
@@ -39,11 +40,13 @@ export function clientRegistrationHandler({
 
   // Nested router so we can configure middleware and restrict HTTP method
   const router = express.Router();
-  router.use(express.json());
 
   // Configure CORS to allow any origin, to make accessible to web-based MCP clients
   router.use(cors());
-  
+
+  router.use(allowedMethods(["POST"]));
+  router.use(express.json());
+
   // Apply rate limiting unless explicitly disabled - stricter limits for registration
   if (rateLimitConfig !== false) {
     router.use(rateLimit({

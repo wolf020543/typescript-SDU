@@ -5,6 +5,7 @@ import cors from "cors";
 import { verifyChallenge } from "pkce-challenge";
 import { authenticateClient } from "../middleware/clientAuth.js";
 import { rateLimit, Options as RateLimitOptions } from "express-rate-limit";
+import { allowedMethods } from "../middleware/allowedMethods.js";
 
 export type TokenHandlerOptions = {
   provider: OAuthServerProvider;
@@ -32,11 +33,13 @@ const RefreshTokenGrantSchema = z.object({
 export function tokenHandler({ provider, rateLimit: rateLimitConfig }: TokenHandlerOptions): RequestHandler {
   // Nested router so we can configure middleware and restrict HTTP method
   const router = express.Router();
-  router.use(express.urlencoded({ extended: false }));
 
   // Configure CORS to allow any origin, to make accessible to web-based MCP clients
   router.use(cors());
-  
+
+  router.use(allowedMethods(["POST"]));
+  router.use(express.urlencoded({ extended: false }));
+
   // Apply rate limiting unless explicitly disabled
   if (rateLimitConfig !== false) {
     router.use(rateLimit({

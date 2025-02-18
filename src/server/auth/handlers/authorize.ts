@@ -3,6 +3,7 @@ import { z } from "zod";
 import express from "express";
 import { OAuthServerProvider } from "../provider.js";
 import { rateLimit, Options as RateLimitOptions } from "express-rate-limit";
+import { allowedMethods } from "../middleware/allowedMethods.js";
 
 export type AuthorizationHandlerOptions = {
   provider: OAuthServerProvider;
@@ -31,7 +32,8 @@ const RequestAuthorizationParamsSchema = z.object({
 export function authorizationHandler({ provider, rateLimit: rateLimitConfig }: AuthorizationHandlerOptions): RequestHandler {
   // Create a router to apply middleware
   const router = express.Router();
-  
+  router.use(allowedMethods(["GET", "POST"]));
+
   // Apply rate limiting unless explicitly disabled
   if (rateLimitConfig !== false) {
     router.use(rateLimit({
@@ -46,14 +48,9 @@ export function authorizationHandler({ provider, rateLimit: rateLimitConfig }: A
       ...rateLimitConfig
     }));
   }
-  
+
   // Define the handler
   router.all("/", async (req, res) => {
-    if (req.method !== "GET" && req.method !== "POST") {
-      res.status(405).end("Method Not Allowed");
-      return;
-    }
-
     let client_id, redirect_uri;
     try {
       ({ client_id, redirect_uri } = ClientAuthorizationParamsSchema.parse(req.query));
@@ -115,6 +112,6 @@ export function authorizationHandler({ provider, rateLimit: rateLimitConfig }: A
       codeChallenge: params.code_challenge,
     }, res);
   });
-  
+
   return router;
 }

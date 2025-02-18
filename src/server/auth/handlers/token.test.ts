@@ -71,11 +71,11 @@ describe('Token Handler', () => {
             expires_in: 3600,
             refresh_token: 'new_mock_refresh_token'
           };
-          
+
           if (scopes) {
             response.scope = scopes.join(' ');
           }
-          
+
           return response;
         }
         throw new Error('invalid_grant');
@@ -109,7 +109,12 @@ describe('Token Handler', () => {
           grant_type: 'authorization_code'
         });
 
-      expect(response.status).toBe(400); // Handler responds with 400 for invalid requests
+      expect(response.status).toBe(405);
+      expect(response.headers.allow).toBe('POST');
+      expect(response.body).toEqual({
+        error: "method_not_allowed",
+        error_description: "The method GET is not allowed for this endpoint"
+      });
     });
 
     it('requires grant_type parameter', async () => {
@@ -208,7 +213,7 @@ describe('Token Handler', () => {
     it('verifies code_verifier against challenge', async () => {
       // Setup invalid verifier
       (pkceChallenge.verifyChallenge as jest.Mock).mockReturnValueOnce(false);
-      
+
       const response = await supertest(app)
         .post('/token')
         .type('form')
