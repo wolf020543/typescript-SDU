@@ -48,6 +48,8 @@ export function revocationHandler({ provider, rateLimit: rateLimitConfig }: Revo
   router.use(authenticateClient({ clientsStore: provider.clientsStore }));
 
   router.post("/", async (req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+
     let revocationRequest;
     try {
       revocationRequest = OAuthTokenRevocationRequestSchema.parse(req.body);

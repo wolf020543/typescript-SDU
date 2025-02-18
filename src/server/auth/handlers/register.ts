@@ -63,6 +63,8 @@ export function clientRegistrationHandler({
   }
 
   router.post("/", async (req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+
     let clientMetadata;
     try {
       clientMetadata = OAuthClientMetadataSchema.parse(req.body);

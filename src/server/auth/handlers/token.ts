@@ -59,6 +59,8 @@ export function tokenHandler({ provider, rateLimit: rateLimitConfig }: TokenHand
   router.use(authenticateClient({ clientsStore: provider.clientsStore }));
 
   router.post("/", async (req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+
     let grant_type;
     try {
       ({ grant_type } = TokenRequestSchema.parse(req.body));

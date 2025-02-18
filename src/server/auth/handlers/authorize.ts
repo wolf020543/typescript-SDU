@@ -52,6 +52,8 @@ export function authorizationHandler({ provider, rateLimit: rateLimitConfig }: A
 
   // Define the handler
   router.all("/", async (req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+
     let client_id, redirect_uri;
     try {
       const data = req.method === 'POST' ? req.body : req.query;
