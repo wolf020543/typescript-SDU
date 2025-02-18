@@ -5,7 +5,8 @@ import { OAuthClientInformationFull, OAuthTokenRevocationRequest, OAuthTokens } 
 import express, { Response } from 'express';
 import supertest from 'supertest';
 import * as pkceChallenge from 'pkce-challenge';
-import { InvalidGrantError } from '../errors.js';
+import { InvalidGrantError, InvalidTokenError } from '../errors.js';
+import { AuthInfo } from '../types.js';
 
 // Mock pkce-challenge
 jest.mock('pkce-challenge', () => ({
@@ -82,6 +83,18 @@ describe('Token Handler', () => {
           return response;
         }
         throw new InvalidGrantError('The refresh token is invalid or has expired');
+      },
+
+      async verifyAccessToken(token: string): Promise<AuthInfo> {
+        if (token === 'valid_token') {
+          return {
+            token,
+            clientId: 'valid-client',
+            scopes: ['read', 'write'],
+            expiresAt: Date.now() / 1000 + 3600
+          };
+        }
+        throw new InvalidTokenError('Token is invalid or expired');
       },
 
       async revokeToken(_client: OAuthClientInformationFull, _request: OAuthTokenRevocationRequest): Promise<void> {

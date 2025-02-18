@@ -4,6 +4,8 @@ import { OAuthRegisteredClientsStore } from '../clients.js';
 import { OAuthClientInformationFull, OAuthTokenRevocationRequest, OAuthTokens } from '../../../shared/auth.js';
 import express, { Response } from 'express';
 import supertest from 'supertest';
+import { AuthInfo } from '../types.js';
+import { InvalidTokenError } from '../errors.js';
 
 describe('Revocation Handler', () => {
   // Mock client data
@@ -53,6 +55,18 @@ describe('Revocation Handler', () => {
       };
     },
 
+    async verifyAccessToken(token: string): Promise<AuthInfo> {
+      if (token === 'valid_token') {
+        return {
+          token,
+          clientId: 'valid-client',
+          scopes: ['read', 'write'],
+          expiresAt: Date.now() / 1000 + 3600
+        };
+      }
+      throw new InvalidTokenError('Token is invalid or expired');
+    },
+
     async revokeToken(_client: OAuthClientInformationFull, _request: OAuthTokenRevocationRequest): Promise<void> {
       // Success - do nothing in mock
     }
@@ -86,6 +100,18 @@ describe('Revocation Handler', () => {
         expires_in: 3600,
         refresh_token: 'new_mock_refresh_token'
       };
+    },
+
+    async verifyAccessToken(token: string): Promise<AuthInfo> {
+      if (token === 'valid_token') {
+        return {
+          token,
+          clientId: 'valid-client',
+          scopes: ['read', 'write'],
+          expiresAt: Date.now() / 1000 + 3600
+        };
+      }
+      throw new InvalidTokenError('Token is invalid or expired');
     }
     // No revokeToken method
   };

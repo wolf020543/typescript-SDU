@@ -180,3 +180,12 @@ export class InvalidClientMetadataError extends OAuthError {
     super("invalid_client_metadata", message, errorUri);
   }
 }
+
+/**
+ * Insufficient scope error - The request requires higher privileges than provided by the access token.
+ */
+export class InsufficientScopeError extends OAuthError {
+  constructor(message: string, errorUri?: string) {
+    super("insufficient_scope", message, errorUri);
+  }
+}

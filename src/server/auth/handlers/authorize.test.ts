@@ -4,6 +4,8 @@ import { OAuthRegisteredClientsStore } from '../clients.js';
 import { OAuthClientInformationFull, OAuthTokens } from '../../../shared/auth.js';
 import express, { Response } from 'express';
 import supertest from 'supertest';
+import { AuthInfo } from '../types.js';
+import { InvalidTokenError } from '../errors.js';
 
 describe('Authorization Handler', () => {
   // Mock client data
@@ -70,6 +72,18 @@ describe('Authorization Handler', () => {
         expires_in: 3600,
         refresh_token: 'new_mock_refresh_token'
       };
+    },
+
+    async verifyAccessToken(token: string): Promise<AuthInfo> {
+      if (token === 'valid_token') {
+        return {
+          token,
+          clientId: 'valid-client',
+          scopes: ['read', 'write'],
+          expiresAt: Date.now() / 1000 + 3600
+        };
+      }
+      throw new InvalidTokenError('Token is invalid or expired');
     },
 
     async revokeToken(): Promise<void> {
