@@ -1,6 +1,6 @@
 import { Response } from "express";
 import { OAuthRegisteredClientsStore } from "./clients.js";
-import { OAuthClientInformationFull, OAuthTokens } from "../../shared/auth.js";
+import { OAuthClientInformationFull, OAuthTokenRevocationRequest, OAuthTokens } from "../../shared/auth.js";
 
 export type AuthorizationParams = {
   client: OAuthClientInformationFull;
@@ -45,4 +45,11 @@ export interface OAuthServerProvider {
    * Exchanges a refresh token for an access token.
    */
   exchangeRefreshToken(refreshToken: string, scopes?: string[]): Promise<OAuthTokens>;
+
+  /**
+   * Revokes an access or refresh token. If unimplemented, token revocation is not supported (not recommended).
+   * 
+   * If the given token is invalid or already revoked, this method should do nothing.
+   */
+  revokeToken?(request: OAuthTokenRevocationRequest): Promise<void>;
 }
