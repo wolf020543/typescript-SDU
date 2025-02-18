@@ -33,6 +33,7 @@ export function authorizationHandler({ provider, rateLimit: rateLimitConfig }: A
   // Create a router to apply middleware
   const router = express.Router();
   router.use(allowedMethods(["GET", "POST"]));
+  router.use(express.urlencoded({ extended: false }));
 
   // Apply rate limiting unless explicitly disabled
   if (rateLimitConfig !== false) {
@@ -53,7 +54,8 @@ export function authorizationHandler({ provider, rateLimit: rateLimitConfig }: A
   router.all("/", async (req, res) => {
     let client_id, redirect_uri;
     try {
-      ({ client_id, redirect_uri } = ClientAuthorizationParamsSchema.parse(req.query));
+      const data = req.method === 'POST' ? req.body : req.query;
+      ({ client_id, redirect_uri } = ClientAuthorizationParamsSchema.parse(data));
     } catch (error) {
       res.status(400).end(`Bad Request: ${error}`);
       return;
@@ -79,7 +81,8 @@ export function authorizationHandler({ provider, rateLimit: rateLimitConfig }: A
 
     let params;
     try {
-      params = RequestAuthorizationParamsSchema.parse(req.query);
+      const authData = req.method === 'POST' ? req.body : req.query;
+      params = RequestAuthorizationParamsSchema.parse(authData);
     } catch (error) {
       const errorUrl = new URL(redirect_uri);
       errorUrl.searchParams.set("error", "invalid_request");

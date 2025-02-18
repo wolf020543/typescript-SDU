@@ -306,7 +306,8 @@ describe('Authorization Handler', () => {
     it('handles POST requests the same as GET', async () => {
       const response = await supertest(app)
         .post('/authorize')
-        .query({
+        .type('form')
+        .send({
           client_id: 'valid-client',
           response_type: 'code',
           code_challenge: 'challenge123',
