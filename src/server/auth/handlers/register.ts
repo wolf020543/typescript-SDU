@@ -1,5 +1,5 @@
 import express, { RequestHandler } from "express";
-import { OAuthClientInformationFull, OAuthClientMetadataSchema, OAuthClientRegistrationError } from "../../../shared/auth.js";
+import { OAuthClientInformationFull, OAuthClientMetadataSchema } from "../../../shared/auth.js";
 import crypto from 'node:crypto';
 import cors from 'cors';
 import { OAuthRegisteredClientsStore } from "../clients.js";
