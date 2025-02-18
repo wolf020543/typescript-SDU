@@ -83,8 +83,7 @@ export function authorizationHandler({ provider }: AuthorizationHandlerOptions):
       }
     }
 
-    await provider.authorize({
-      client,
+    await provider.authorize(client, {
       state: params.state,
       scopes: requestedScopes,
       redirectUri: redirect_uri,

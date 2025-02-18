@@ -3,7 +3,6 @@ import { OAuthRegisteredClientsStore } from "./clients.js";
 import { OAuthClientInformationFull, OAuthTokenRevocationRequest, OAuthTokens } from "../../shared/auth.js";
 
 export type AuthorizationParams = {
-  client: OAuthClientInformationFull;
   state?: string;
   scopes?: string[];
   codeChallenge: string;
@@ -28,28 +27,27 @@ export interface OAuthServerProvider {
    * - In the successful case, the redirect MUST include the `code` and `state` (if present) query parameters.
    * - In the error case, the redirect MUST include the `error` query parameter, and MAY include an optional `error_description` query parameter.
    */
-  authorize(params: AuthorizationParams, res: Response): Promise<void>;
+  authorize(client: OAuthClientInformationFull, params: AuthorizationParams, res: Response): Promise<void>;
 
   /**
    * Returns the `codeChallenge` that was used when the indicated authorization began.
    */
-  // TODO: Add `client` to this and below methods
-  challengeForAuthorizationCode(authorizationCode: string): Promise<string>;
+  challengeForAuthorizationCode(client: OAuthClientInformationFull, authorizationCode: string): Promise<string>;
 
   /**
    * Exchanges an authorization code for an access token.
    */
-  exchangeAuthorizationCode(authorizationCode: string): Promise<OAuthTokens>;
+  exchangeAuthorizationCode(client: OAuthClientInformationFull, authorizationCode: string): Promise<OAuthTokens>;
 
   /**
    * Exchanges a refresh token for an access token.
    */
-  exchangeRefreshToken(refreshToken: string, scopes?: string[]): Promise<OAuthTokens>;
+  exchangeRefreshToken(client: OAuthClientInformationFull, refreshToken: string, scopes?: string[]): Promise<OAuthTokens>;
 
   /**
    * Revokes an access or refresh token. If unimplemented, token revocation is not supported (not recommended).
    * 
    * If the given token is invalid or already revoked, this method should do nothing.
    */
-  revokeToken?(request: OAuthTokenRevocationRequest): Promise<void>;
+  revokeToken?(client: OAuthClientInformationFull, request: OAuthTokenRevocationRequest): Promise<void>;
 }

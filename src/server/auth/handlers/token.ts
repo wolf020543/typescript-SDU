@@ -46,6 +46,13 @@ export function tokenHandler({ provider }: TokenHandlerOptions): RequestHandler 
       return;
     }
 
+    const client = req.client;
+    if (!client) {
+      console.error("Missing client information after authentication");
+      res.status(500).end("Internal Server Error");
+      return;
+    }
+
     switch (grant_type) {
       case "authorization_code": {
         let grant;
@@ -59,7 +66,7 @@ export function tokenHandler({ provider }: TokenHandlerOptions): RequestHandler 
           return;
         }
 
-        const codeChallenge = await provider.challengeForAuthorizationCode(grant.code);
+        const codeChallenge = await provider.challengeForAuthorizationCode(client, grant.code);
         if (!(await verifyChallenge(grant.code_verifier, codeChallenge))) {
           res.status(400).json({
             error: "invalid_request",
@@ -69,7 +76,7 @@ export function tokenHandler({ provider }: TokenHandlerOptions): RequestHandler 
           return;
         }
 
-        const tokens = await provider.exchangeAuthorizationCode(grant.code);
+        const tokens = await provider.exchangeAuthorizationCode(client, grant.code);
         res.status(200).json(tokens);
         break;
       }
@@ -87,7 +94,7 @@ export function tokenHandler({ provider }: TokenHandlerOptions): RequestHandler 
         }
 
         const scopes = grant.scope ? grant.scope.split(" ") : undefined;
-        const tokens = await provider.exchangeRefreshToken(grant.refresh_token, scopes);
+        const tokens = await provider.exchangeRefreshToken(client, grant.refresh_token, scopes);
         res.status(200).json(tokens);
         break;
       }

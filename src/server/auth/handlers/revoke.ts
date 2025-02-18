@@ -35,7 +35,14 @@ export function revocationHandler({ provider }: RevocationHandlerOptions): Reque
       return;
     }
 
-    await provider.revokeToken!(revocationRequest);
+    const client = req.client;
+    if (!client) {
+      console.error("Missing client information after authentication");
+      res.status(500).end("Internal Server Error");
+      return;
+    }
+
+    await provider.revokeToken!(client, revocationRequest);
   });
 
   return router;
