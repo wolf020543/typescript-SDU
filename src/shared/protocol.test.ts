@@ -63,180 +63,160 @@ describe("protocol tests", () => {
     expect(oncloseMock).toHaveBeenCalled();
   });
 
-  test("should reset timeout when progress notification is received", async () => {
-    jest.useFakeTimers();
-    
-    await protocol.connect(transport);
-    const request = { method: "example", params: {} };
-    const mockSchema: ZodType<{ result: string }> = z.object({
-      result: z.string(),
+  describe("progress notification timeout behavior", () => {
+    beforeEach(() => {
+      jest.useFakeTimers();
+    });
+    afterEach(() => {
+      jest.useRealTimers();
     });
 
-    const onProgressMock = jest.fn();
-    const requestPromise = protocol.request(request, mockSchema, {
-      timeout: 1000,  // Increased timeout for more reliable testing
-      resetTimeoutOnProgress: true,
-      onprogress: onProgressMock,
-    });
-
-    // Advance time close to timeout
-    jest.advanceTimersByTime(800);
-
-    // Send progress notification
-    if (transport.onmessage) {
-      transport.onmessage({
-        jsonrpc: "2.0",
-        method: "notifications/progress",
-        params: {
-          progressToken: 0,
-          progress: 50,
-          total: 100,
-        },
+    test("should reset timeout when progress notification is received", async () => {
+      await protocol.connect(transport);
+      const request = { method: "example", params: {} };
+      const mockSchema: ZodType<{ result: string }> = z.object({
+        result: z.string(),
       });
-    }
-
-    // Run all pending promises to ensure progress handler is called
-    await Promise.resolve();
-
-    // Verify progress handler was called
-    expect(onProgressMock).toHaveBeenCalledWith({
-      progress: 50,
-      total: 100,
-    });
-
-    // Send success response
-    if (transport.onmessage) {
-      transport.onmessage({
-        jsonrpc: "2.0",
-        id: 0,
-        result: { result: "success" },
+      const onProgressMock = jest.fn();
+      const requestPromise = protocol.request(request, mockSchema, {
+        timeout: 1000,
+        resetTimeoutOnProgress: true,
+        onprogress: onProgressMock,
       });
-    }
-
-    // Run all pending promises
-    await Promise.resolve();
-
-    await expect(requestPromise).resolves.toEqual({ result: "success" });
-
-    jest.useRealTimers();
-  });
-
-  test("should respect maxTotalTimeout", async () => {
-    jest.useFakeTimers();
-    
-    await protocol.connect(transport);
-    const request = { method: "example", params: {} };
-    const mockSchema: ZodType<{ result: string }> = z.object({
-      result: z.string(),
-    });
-
-    const onProgressMock = jest.fn();
-    const requestPromise = protocol.request(request, mockSchema, {
-      timeout: 1000,
-      maxTotalTimeout: 100,
-      resetTimeoutOnProgress: true,
-      onprogress: onProgressMock,
-    });
-
-    // Advance time beyond maxTotalTimeout
-    jest.advanceTimersByTime(150);
-
-    // Send progress notification after maxTotalTimeout
-    if (transport.onmessage) {
-      transport.onmessage({
-        jsonrpc: "2.0",
-        method: "notifications/progress",
-        params: {
-          progressToken: 0,
-          progress: 50,
-          total: 100,
-        },
-      });
-    }
-
-    await expect(requestPromise).rejects.toThrow("Maximum total timeout exceeded");
-    expect(onProgressMock).not.toHaveBeenCalled();
-
-    jest.useRealTimers();
-  });
-
-  test("should timeout if no progress received within timeout period", async () => {
-    jest.useFakeTimers();
-    
-    await protocol.connect(transport);
-    const request = { method: "example", params: {} };
-    const mockSchema: ZodType<{ result: string }> = z.object({
-      result: z.string(),
-    });
-
-    const requestPromise = protocol.request(request, mockSchema, {
-      timeout: 100,
-      resetTimeoutOnProgress: true,
-    });
-
-    // Advance time beyond timeout
-    jest.advanceTimersByTime(101);
-
-    await expect(requestPromise).rejects.toThrow("Request timed out");
-
-    jest.useRealTimers();
-  });
-
-  test("should handle multiple progress notifications correctly", async () => {
-    jest.useFakeTimers();
-    
-    await protocol.connect(transport);
-    const request = { method: "example", params: {} };
-    const mockSchema: ZodType<{ result: string }> = z.object({
-      result: z.string(),
-    });
-
-    const onProgressMock = jest.fn();
-    const requestPromise = protocol.request(request, mockSchema, {
-      timeout: 1000,
-      resetTimeoutOnProgress: true,
-      onprogress: onProgressMock,
-    });
-
-    // Simulate multiple progress updates
-    for (let i = 1; i <= 3; i++) {
-      // Advance close to timeout
       jest.advanceTimersByTime(800);
-
-      // Send progress notification
       if (transport.onmessage) {
         transport.onmessage({
           jsonrpc: "2.0",
           method: "notifications/progress",
           params: {
             progressToken: 0,
-            progress: i * 25,
+            progress: 50,
             total: 100,
           },
         });
       }
-
-      // Verify progress handler was called
       await Promise.resolve();
-      expect(onProgressMock).toHaveBeenNthCalledWith(i, {
-        progress: i * 25,
+      expect(onProgressMock).toHaveBeenCalledWith({
+        progress: 50,
         total: 100,
       });
-    }
+      jest.advanceTimersByTime(800);
+      if (transport.onmessage) {
+        transport.onmessage({
+          jsonrpc: "2.0",
+          id: 0,
+          result: { result: "success" },
+        });
+      }
+      await Promise.resolve();
+      await expect(requestPromise).resolves.toEqual({ result: "success" });
+    });
 
-    // Send success response
-    if (transport.onmessage) {
-      transport.onmessage({
-        jsonrpc: "2.0",
-        id: 0,
-        result: { result: "success" },
+    test("should respect maxTotalTimeout", async () => {
+      await protocol.connect(transport);
+      const request = { method: "example", params: {} };
+      const mockSchema: ZodType<{ result: string }> = z.object({
+        result: z.string(),
       });
-    }
+      const onProgressMock = jest.fn();
+      const requestPromise = protocol.request(request, mockSchema, {
+        timeout: 1000,
+        maxTotalTimeout: 150,
+        resetTimeoutOnProgress: true,
+        onprogress: onProgressMock,
+      });
 
-    await Promise.resolve();
-    await expect(requestPromise).resolves.toEqual({ result: "success" });
+      // First progress notification should work
+      jest.advanceTimersByTime(80);
+      if (transport.onmessage) {
+        transport.onmessage({
+          jsonrpc: "2.0",
+          method: "notifications/progress",
+          params: {
+            progressToken: 0,
+            progress: 50,
+            total: 100,
+          },
+        });
+      }
+      await Promise.resolve();
+      expect(onProgressMock).toHaveBeenCalledWith({
+        progress: 50,
+        total: 100,
+      });
+      jest.advanceTimersByTime(80);
+      if (transport.onmessage) {
+        transport.onmessage({
+          jsonrpc: "2.0",
+          method: "notifications/progress",
+          params: {
+            progressToken: 0,
+            progress: 75,
+            total: 100,
+          },
+        });
+      }
+      await expect(requestPromise).rejects.toThrow("Maximum total timeout exceeded");
+      expect(onProgressMock).toHaveBeenCalledTimes(1);
+    });
 
-    jest.useRealTimers();
+    test("should timeout if no progress received within timeout period", async () => {
+      await protocol.connect(transport);
+      const request = { method: "example", params: {} };
+      const mockSchema: ZodType<{ result: string }> = z.object({
+        result: z.string(),
+      });
+      const requestPromise = protocol.request(request, mockSchema, {
+        timeout: 100,
+        resetTimeoutOnProgress: true,
+      });
+      jest.advanceTimersByTime(101);
+      await expect(requestPromise).rejects.toThrow("Request timed out");
+    });
+
+    test("should handle multiple progress notifications correctly", async () => {
+      await protocol.connect(transport);
+      const request = { method: "example", params: {} };
+      const mockSchema: ZodType<{ result: string }> = z.object({
+        result: z.string(),
+      });
+      const onProgressMock = jest.fn();
+      const requestPromise = protocol.request(request, mockSchema, {
+        timeout: 1000,
+        resetTimeoutOnProgress: true,
+        onprogress: onProgressMock,
+      });
+
+      // Simulate multiple progress updates
+      for (let i = 1; i <= 3; i++) {
+        jest.advanceTimersByTime(800);
+        if (transport.onmessage) {
+          transport.onmessage({
+            jsonrpc: "2.0",
+            method: "notifications/progress",
+            params: {
+              progressToken: 0,
+              progress: i * 25,
+              total: 100,
+            },
+          });
+        }
+        await Promise.resolve();
+        expect(onProgressMock).toHaveBeenNthCalledWith(i, {
+          progress: i * 25,
+          total: 100,
+        });
+      }
+      if (transport.onmessage) {
+        transport.onmessage({
+          jsonrpc: "2.0",
+          id: 0,
+          result: { result: "success" },
+        });
+      }
+      await Promise.resolve();
+      await expect(requestPromise).resolves.toEqual({ result: "success" });
+    });
   });
 });
 

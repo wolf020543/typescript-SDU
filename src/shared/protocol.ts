@@ -73,8 +73,8 @@ export type RequestOptions = {
   resetTimeoutOnProgress?: boolean;
 
   /**
-   * Maximum total time (in milliseconds) to wait for a response, even if progress notifications are received.
-   * Only used when resetTimeoutOnProgress is true.
+   * Maximum total time (in milliseconds) to wait for a response.
+   * If exceeded, an McpError with code `RequestTimeout` will be raised, regardless of progress notifications.
    * If not specified, there is no maximum total timeout.
    */
   maxTotalTimeout?: number;
@@ -190,19 +190,18 @@ export abstract class Protocol<
     });
   }
 
-  private _resetTimeout(messageId: number, cancel: (reason: unknown) => void): boolean {
+  private _resetTimeout(messageId: number): boolean {
     const info = this._timeoutInfo.get(messageId);
     if (!info) return false;
 
     const totalElapsed = Date.now() - info.startTime;
     if (info.maxTotalTimeout && totalElapsed >= info.maxTotalTimeout) {
       this._timeoutInfo.delete(messageId);
-      cancel(new McpError(
+      throw new McpError(
         ErrorCode.RequestTimeout,
         "Maximum total timeout exceeded",
         { maxTotalTimeout: info.maxTotalTimeout, totalElapsed }
-      ));
-      return false;
+      );
     }
 
     clearTimeout(info.timeoutId);
@@ -360,7 +359,12 @@ export abstract class Protocol<
 
     const responseHandler = this._responseHandlers.get(messageId);
     if (this._timeoutInfo.has(messageId) && responseHandler) {
-      if (!this._resetTimeout(messageId, (reason) => responseHandler(reason as Error))) {
+      try {
+        if (!this._resetTimeout(messageId)) {
+          return;
+        }
+      } catch (error) {
+        responseHandler(error as Error);
         return;
       }
     }
@@ -518,11 +522,7 @@ export abstract class Protocol<
         { timeout }
       ));
 
-      if (options?.resetTimeoutOnProgress) {
-        this._setupTimeout(messageId, timeout, options.maxTotalTimeout, timeoutHandler);
-      } else {
-        this._setupTimeout(messageId, timeout, undefined, timeoutHandler);
-      }
+      this._setupTimeout(messageId, timeout, options?.maxTotalTimeout, timeoutHandler);
 
       this._transport.send(jsonrpcRequest).catch((error) => {
         this._cleanupTimeout(messageId);
