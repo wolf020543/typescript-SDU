@@ -360,9 +360,7 @@ export abstract class Protocol<
     const responseHandler = this._responseHandlers.get(messageId);
     if (this._timeoutInfo.has(messageId) && responseHandler) {
       try {
-        if (!this._resetTimeout(messageId)) {
-          return;
-        }
+        this._resetTimeout(messageId);
       } catch (error) {
         responseHandler(error as Error);
         return;
