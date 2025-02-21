@@ -15,11 +15,18 @@ describe('clientAuth middleware', () => {
           redirect_uris: ['https://example.com/callback']
         };
       } else if (clientId === 'expired-client') {
-        // Client with expired secret
+        // Client with no secret
         return {
           client_id: 'expired-client',
           redirect_uris: ['https://example.com/callback']
-          // No client_secret due to expiration
+        };
+      } else if (clientId === 'client-with-expired-secret') {
+        // Client with an expired secret
+        return {
+          client_id: 'client-with-expired-secret',
+          client_secret: 'expired-secret',
+          client_secret_expires_at: Math.floor(Date.now() / 1000) - 3600, // Expired 1 hour ago
+          redirect_uris: ['https://example.com/callback']
         };
       }
       return undefined;
@@ -101,8 +108,21 @@ describe('clientAuth middleware', () => {
         client_id: 'expired-client'
       });
 
-    // Since the expired client has no secret, this should pass without providing one
+    // Since the client has no secret, this should pass without providing one
     expect(response.status).toBe(200);
+  });
+  
+  it('rejects request when client secret has expired', async () => {
+    const response = await supertest(app)
+      .post('/protected')
+      .send({
+        client_id: 'client-with-expired-secret',
+        client_secret: 'expired-secret'
+      });
+
+    expect(response.status).toBe(400);
+    expect(response.body.error).toBe('invalid_client');
+    expect(response.body.error_description).toBe('Client secret has expired');
   });
 
   it('handles malformed request body', async () => {
