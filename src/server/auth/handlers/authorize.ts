@@ -120,9 +120,9 @@ export function authorizationHandler({ provider, rateLimit: rateLimitConfig }: A
 
       // Validate scopes
       let requestedScopes: string[] = [];
-      if (scope !== undefined && client.scope !== undefined) {
+      if (scope !== undefined) {
         requestedScopes = scope.split(" ");
-        const allowedScopes = new Set(client.scope.split(" "));
+        const allowedScopes = new Set(client.scope?.split(" "));
 
         // Check each requested scope against allowed scopes
         for (const scope of requestedScopes) {
