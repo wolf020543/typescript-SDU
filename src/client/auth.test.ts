@@ -6,7 +6,6 @@ import {
   registerClient,
 } from "./auth.js";
 
-
 // Mock fetch globally
 const mockFetch = jest.fn();
 global.fetch = mockFetch;
