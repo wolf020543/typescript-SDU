@@ -43,6 +43,36 @@ describe("OAuth Authorization", () => {
       });
     });
 
+    it("returns metadata when first fetch fails but second without MCP header succeeds", async () => {
+      // First request with MCP header fails
+      mockFetch.mockRejectedValueOnce(new Error("Network error"));
+      
+      // Second request without header succeeds
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => validMetadata,
+      });
+
+      const metadata = await discoverOAuthMetadata("https://auth.example.com");
+      expect(metadata).toEqual(validMetadata);
+      
+      // Verify second call was made without header
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+      const secondCallOptions = mockFetch.mock.calls[1][1];
+      expect(secondCallOptions).toBeUndefined(); // No options means no headers
+    });
+
+    it("returns undefined when all fetch attempts fail", async () => {
+      // Both requests fail
+      mockFetch.mockRejectedValueOnce(new Error("Network error"));
+      mockFetch.mockRejectedValueOnce(new Error("Network error"));
+
+      const metadata = await discoverOAuthMetadata("https://auth.example.com");
+      expect(metadata).toBeUndefined();
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+    });
+
     it("returns undefined when discovery endpoint returns 404", async () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,
