@@ -136,6 +136,8 @@ export class SSEServerTransport implements Transport {
 
   /**
    * Returns the session ID for this transport.
+   *
+   * This can be used to route incoming POST requests.
    */
   get sessionId(): string {
     return this._sessionId;
