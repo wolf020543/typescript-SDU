@@ -75,13 +75,13 @@ export function clientRegistrationHandler({
       }
 
       const clientMetadata = parseResult.data;
-      const isPublicClient = clientMetadata.token_endpoint_auth_method !== 'none'
+      const isPublicClient = clientMetadata.token_endpoint_auth_method === 'none'
 
       // Generate client credentials
       const clientId = crypto.randomUUID();
       const clientSecret = isPublicClient
-        ? crypto.randomBytes(32).toString('hex')
-        : undefined;
+        ? undefined
+        : crypto.randomBytes(32).toString('hex');
       const clientIdIssuedAt = Math.floor(Date.now() / 1000);
 
       // Calculate client secret expiry time

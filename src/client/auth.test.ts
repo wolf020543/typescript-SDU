@@ -60,16 +60,18 @@ describe("OAuth Authorization", () => {
       // Verify second call was made without header
       expect(mockFetch).toHaveBeenCalledTimes(2);
       const secondCallOptions = mockFetch.mock.calls[1][1];
-      expect(secondCallOptions).toBeUndefined(); // No options means no headers
+      // The second call still has options but doesn't include MCP-Protocol-Version header
+      expect(secondCallOptions).toBeDefined();
+      expect(secondCallOptions?.headers).toBeUndefined();
     });
 
-    it("returns undefined when all fetch attempts fail", async () => {
+    it("throws an error when all fetch attempts fail", async () => {
       // Both requests fail
       mockFetch.mockRejectedValueOnce(new Error("Network error"));
       mockFetch.mockRejectedValueOnce(new Error("Network error"));
 
-      const metadata = await discoverOAuthMetadata("https://auth.example.com");
-      expect(metadata).toBeUndefined();
+      await expect(discoverOAuthMetadata("https://auth.example.com"))
+        .rejects.toThrow("Network error");
       expect(mockFetch).toHaveBeenCalledTimes(2);
     });
 
