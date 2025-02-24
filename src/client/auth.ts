@@ -170,11 +170,12 @@ export async function discoverOAuthMetadata(
         "MCP-Protocol-Version": opts?.protocolVersion ?? LATEST_PROTOCOL_VERSION
       }
     });
-  } catch {
-    try {
+  } catch (error) {
+    // CORS errors come back as TypeError
+    if (error instanceof TypeError) {
       response = await fetch(url);
-    } catch {
-      return undefined;
+    } else {
+      throw error;
     }
   }
 
