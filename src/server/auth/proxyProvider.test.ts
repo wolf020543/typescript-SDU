@@ -64,6 +64,16 @@ describe("Proxy OAuth Server Provider", () => {
     });
   });
 
+  // Add helper function for failed responses
+  const mockFailedResponse = () => {
+    (global.fetch as jest.Mock).mockImplementation(() => 
+      Promise.resolve({
+        ok: false,
+        status: 400,
+      })
+    );
+  };
+
   afterEach(() => {
     global.fetch = originalFetch;
     jest.clearAllMocks();
@@ -178,13 +188,7 @@ describe("Proxy OAuth Server Provider", () => {
     });
 
     it("handles token exchange failure", async () => {
-      (global.fetch as jest.Mock).mockImplementation(() => 
-        Promise.resolve({
-          ok: false,
-          status: 400,
-        })
-      );
-
+      mockFailedResponse();
       await expect(
         provider.exchangeAuthorizationCode(validClient, "invalid-code")
       ).rejects.toThrow(ServerError);
@@ -221,13 +225,7 @@ describe("Proxy OAuth Server Provider", () => {
     });
 
     it("handles registration failure", async () => {
-      (global.fetch as jest.Mock).mockImplementation(() => 
-        Promise.resolve({
-          ok: false,
-          status: 400,
-        })
-      );
-
+      mockFailedResponse();
       const newClient: OAuthClientInformationFull = {
         client_id: "new-client",
         redirect_uris: ["https://new-client.com/callback"],
@@ -265,13 +263,7 @@ describe("Proxy OAuth Server Provider", () => {
     });
 
     it("handles revocation failure", async () => {
-      (global.fetch as jest.Mock).mockImplementation(() => 
-        Promise.resolve({
-          ok: false,
-          status: 400,
-        })
-      );
-
+      mockFailedResponse();
       await expect(
         provider.revokeToken!(validClient, {
           token: "invalid-token",

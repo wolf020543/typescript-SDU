@@ -2,6 +2,7 @@ import { Response } from "express";
 import { OAuthRegisteredClientsStore } from "./clients.js";
 import { 
   OAuthClientInformationFull, 
+  OAuthClientInformationFullSchema, 
   OAuthTokenRevocationRequest, 
   OAuthTokens,
   OAuthTokensSchema,
@@ -106,7 +107,8 @@ export class ProxyOAuthServerProvider implements OAuthServerProvider {
             throw new ServerError(`Client registration failed: ${response.status}`);
           }
 
-          return response.json();
+          const data = await response.json();
+          return OAuthClientInformationFullSchema.parse(data);
         }
       })
     }
