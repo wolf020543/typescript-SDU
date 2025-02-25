@@ -42,5 +42,8 @@ export interface Transport {
    */
   onmessage?: (message: JSONRPCMessage) => void;
 
+  /**
+   * The session ID generated for this connection.
+   */
   sessionId?: string;
 }
