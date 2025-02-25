@@ -282,7 +282,7 @@ describe('Token Handler', () => {
       expect(response.body.refresh_token).toBe('mock_refresh_token');
     });
 
-    it('passes through PKCE verification for proxy providers', async () => {
+    it('passes through code verifier when using proxy provider', async () => {
       const originalFetch = global.fetch;
 
       try {
