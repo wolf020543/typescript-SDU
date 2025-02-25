@@ -78,7 +78,7 @@ export class ProxyOAuthServerProvider implements OAuthServerProvider {
           headers: {
             "Content-Type": "application/x-www-form-urlencoded",
           },
-          body: params,
+          body: params.toString(),
         });
     
         if (!response.ok) {
@@ -222,7 +222,7 @@ export class ProxyOAuthServerProvider implements OAuthServerProvider {
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
       },
-      body: params,
+      body: params.toString(),
     });
 
     if (!response.ok) {
