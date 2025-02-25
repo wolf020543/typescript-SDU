@@ -14,6 +14,7 @@ import {
   TooManyRequestsError,
   OAuthError
 } from "../errors.js";
+import { ProxyOAuthServerProvider } from "../proxyProvider.js";
 
 export type TokenHandlerOptions = {
   provider: OAuthServerProvider;
@@ -90,13 +91,16 @@ export function tokenHandler({ provider, rateLimit: rateLimitConfig }: TokenHand
 
           const { code, code_verifier } = parseResult.data;
 
-          // Verify PKCE challenge
-          const codeChallenge = await provider.challengeForAuthorizationCode(client, code);
-          if (!(await verifyChallenge(code_verifier, codeChallenge))) {
-            throw new InvalidGrantError("code_verifier does not match the challenge");
+          // Skip local PKCE verification for proxy providers since the code_challenge is stored on the upstream server.
+          // The code_verifier will be passed to the upstream server during token exchange.
+          if (!(provider instanceof ProxyOAuthServerProvider)) {
+            const codeChallenge = await provider.challengeForAuthorizationCode(client, code);
+            if (!(await verifyChallenge(code_verifier, codeChallenge))) {
+              throw new InvalidGrantError("code_verifier does not match the challenge");
+            }
           }
 
-          const tokens = await provider.exchangeAuthorizationCode(client, code);
+          const tokens = await provider.exchangeAuthorizationCode(client, code, code_verifier);
           res.status(200).json(tokens);
           break;
         }
