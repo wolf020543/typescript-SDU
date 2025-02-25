@@ -26,7 +26,7 @@ export type ProxyOptions = {
    /**
    * Function to verify access tokens and return auth info
    */
-   verifyToken: (token: string) => Promise<AuthInfo>;
+   verifyAccessToken: (token: string) => Promise<AuthInfo>;
 
    /**
    * Function to fetch client information from the upstream server
@@ -40,7 +40,7 @@ export type ProxyOptions = {
  */
 export class ProxyOAuthServerProvider implements OAuthServerProvider {
   private readonly _endpoints: ProxyEndpoints;
-  private readonly _verifyToken: (token: string) => Promise<AuthInfo>;
+  private readonly _verifyAccessToken: (token: string) => Promise<AuthInfo>;
   private readonly _getClient: (clientId: string) => Promise<OAuthClientInformationFull | undefined>;
 
   public revokeToken?: (
@@ -50,7 +50,7 @@ export class ProxyOAuthServerProvider implements OAuthServerProvider {
 
   constructor(options: ProxyOptions) {
     this._endpoints = options.endpoints;
-    this._verifyToken = options.verifyToken;
+    this._verifyAccessToken = options.verifyAccessToken;
     this._getClient = options.getClient;
     if (options.endpoints?.revocationUrl) {
       this.revokeToken = async (
@@ -234,6 +234,6 @@ export class ProxyOAuthServerProvider implements OAuthServerProvider {
   }
 
   async verifyAccessToken(token: string): Promise<AuthInfo> {
-    return this._verifyToken(token);
+    return this._verifyAccessToken(token);
   }  
 } 

@@ -3,6 +3,8 @@ import { ProxyOAuthServerProvider, ProxyOptions } from "./proxyProvider.js";
 import { AuthInfo } from "./types.js";
 import { OAuthClientInformationFull, OAuthTokens } from "../../shared/auth.js";
 import { ServerError } from "./errors.js";
+import { InvalidTokenError } from "./errors.js";
+import { InsufficientScopeError } from "./errors.js";
 
 describe("Proxy OAuth Server Provider", () => {
   // Mock client data
@@ -17,6 +19,10 @@ describe("Proxy OAuth Server Provider", () => {
     redirect: jest.fn(),
   } as unknown as Response;
 
+  // Mock provider functions
+  const mockVerifyToken = jest.fn();
+  const mockGetClient = jest.fn();
+  
   // Base provider options
   const baseOptions: ProxyOptions = {
     endpoints: {
@@ -25,23 +31,8 @@ describe("Proxy OAuth Server Provider", () => {
       revocationUrl: "https://auth.example.com/revoke",
       registrationUrl: "https://auth.example.com/register",
     },
-    verifyToken: jest.fn().mockImplementation(async (token: string) => {
-      if (token === "valid-token") {
-        return {
-          token,
-          clientId: "test-client",
-          scopes: ["read", "write"],
-          expiresAt: Date.now() / 1000 + 3600,
-        } as AuthInfo;
-      }
-      throw new Error("Invalid token");
-    }),
-    getClient: jest.fn().mockImplementation(async (clientId: string) => {
-      if (clientId === "test-client") {
-        return validClient;
-      }
-      return undefined;
-    }),
+    verifyAccessToken: mockVerifyToken,
+    getClient: mockGetClient,
   };
 
   let provider: ProxyOAuthServerProvider;
@@ -51,6 +42,26 @@ describe("Proxy OAuth Server Provider", () => {
     provider = new ProxyOAuthServerProvider(baseOptions);
     originalFetch = global.fetch;
     global.fetch = jest.fn();
+
+    // Setup mock implementations
+    mockVerifyToken.mockImplementation(async (token: string) => {
+      if (token === "valid-token") {
+        return {
+          token,
+          clientId: "test-client",
+          scopes: ["read", "write"],
+          expiresAt: Date.now() / 1000 + 3600,
+        } as AuthInfo;
+      }
+      throw new InvalidTokenError("Invalid token");
+    });
+
+    mockGetClient.mockImplementation(async (clientId: string) => {
+      if (clientId === "test-client") {
+        return validClient;
+      }
+      return undefined;
+    });
   });
 
   afterEach(() => {
@@ -271,15 +282,44 @@ describe("Proxy OAuth Server Provider", () => {
 
   describe("token verification", () => {
     it("verifies valid token", async () => {
+      const validAuthInfo: AuthInfo = {
+        token: "valid-token",
+        clientId: "test-client",
+        scopes: ["read", "write"],
+        expiresAt: Date.now() / 1000 + 3600,
+      };
+      mockVerifyToken.mockResolvedValue(validAuthInfo);
+
       const authInfo = await provider.verifyAccessToken("valid-token");
-      expect(authInfo.token).toBe("valid-token");
-      expect(baseOptions.verifyToken).toHaveBeenCalledWith("valid-token");
+      expect(authInfo).toEqual(validAuthInfo);
+      expect(mockVerifyToken).toHaveBeenCalledWith("valid-token");
     });
 
-    it("rejects invalid token", async () => {
-      await expect(
-        provider.verifyAccessToken("invalid-token")
-      ).rejects.toThrow("Invalid token");
+    it("passes through InvalidTokenError", async () => {
+      const error = new InvalidTokenError("Token expired");
+      mockVerifyToken.mockRejectedValue(error);
+
+      await expect(provider.verifyAccessToken("invalid-token"))
+        .rejects.toBe(error);
+      expect(mockVerifyToken).toHaveBeenCalledWith("invalid-token");
+    });
+
+    it("passes through InsufficientScopeError", async () => {
+      const error = new InsufficientScopeError("Required scopes: read, write");
+      mockVerifyToken.mockRejectedValue(error);
+
+      await expect(provider.verifyAccessToken("token-with-insufficient-scope"))
+        .rejects.toBe(error);
+      expect(mockVerifyToken).toHaveBeenCalledWith("token-with-insufficient-scope");
+    });
+
+    it("passes through unexpected errors", async () => {
+      const error = new Error("Unexpected error");
+      mockVerifyToken.mockRejectedValue(error);
+
+      await expect(provider.verifyAccessToken("valid-token"))
+        .rejects.toBe(error);
+      expect(mockVerifyToken).toHaveBeenCalledWith("valid-token");
     });
   });
 }); 

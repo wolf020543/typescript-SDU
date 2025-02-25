@@ -300,7 +300,7 @@ describe('Token Handler', () => {
           endpoints: {
             tokenUrl: 'https://example.com/token'
           },
-          verifyToken: async (token) => ({
+          verifyAccessToken: async (token) => ({
             token,
             clientId: 'valid-client',
             scopes: ['read', 'write'],
