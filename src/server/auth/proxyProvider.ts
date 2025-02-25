@@ -66,7 +66,9 @@ export class ProxyOAuthServerProvider implements OAuthServerProvider {
         const params = new URLSearchParams();
         params.set("token", request.token);
         params.set("client_id", client.client_id);
-        params.set("client_secret", client.client_secret || "");
+        if (client.client_secret) {
+          params.set("client_secret", client.client_secret);
+        }
         if (request.token_type_hint) {
           params.set("token_type_hint", request.token_type_hint);
         }
@@ -158,19 +160,29 @@ export class ProxyOAuthServerProvider implements OAuthServerProvider {
     if (!tokenUrl) {
       throw new Error("No token endpoint configured");
     }
+
+    const params = new URLSearchParams({
+      grant_type: "authorization_code",
+      client_id: client.client_id,
+      code: authorizationCode,
+    });
+
+    if (client.client_secret) {
+      params.append("client_secret", client.client_secret);
+    }
+
+    if (codeVerifier) {
+      params.append("code_verifier", codeVerifier);
+    }
+
     const response = await fetch(tokenUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
       },
-      body: new URLSearchParams({
-        grant_type: "authorization_code",
-        client_id: client.client_id,
-        client_secret: client.client_secret || "",
-        code: authorizationCode,
-        code_verifier: codeVerifier || "",
-      }),
+      body: params.toString(),
     });
+
 
     if (!response.ok) {
       throw new ServerError(`Token exchange failed: ${response.status}`);
@@ -194,9 +206,12 @@ export class ProxyOAuthServerProvider implements OAuthServerProvider {
     const params = new URLSearchParams({
       grant_type: "refresh_token",
       client_id: client.client_id,
-      client_secret: client.client_secret || "",
       refresh_token: refreshToken,
     });
+
+    if (client.client_secret) {
+      params.set("client_secret", client.client_secret);
+    }
 
     if (scopes?.length) {
       params.set("scope", scopes.join(" "));
