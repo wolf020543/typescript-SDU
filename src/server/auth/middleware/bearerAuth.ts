@@ -55,6 +55,11 @@ export function requireBearerAuth({ provider, requiredScopes = [] }: BearerAuthM
         }
       }
 
+      // Check if the token is expired
+      if (!!authInfo.expiresAt && authInfo.expiresAt < Date.now() / 1000) {
+        throw new InvalidTokenError("Token has expired");
+      }
+
       req.auth = authInfo;
       next();
     } catch (error) {
