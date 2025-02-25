@@ -40,11 +40,11 @@ export type ProxyOptions = {
  * Implements an OAuth server that proxies requests to another OAuth server.
  */
 export class ProxyOAuthServerProvider implements OAuthServerProvider {
-  private readonly _endpoints: ProxyEndpoints;
-  private readonly _verifyAccessToken: (token: string) => Promise<AuthInfo>;
-  private readonly _getClient: (clientId: string) => Promise<OAuthClientInformationFull | undefined>;
+  protected readonly _endpoints: ProxyEndpoints;
+  protected readonly _verifyAccessToken: (token: string) => Promise<AuthInfo>;
+  protected readonly _getClient: (clientId: string) => Promise<OAuthClientInformationFull | undefined>;
 
-  public revokeToken?: (
+  revokeToken?: (
     client: OAuthClientInformationFull, 
     request: OAuthTokenRevocationRequest
   ) => Promise<void>;
