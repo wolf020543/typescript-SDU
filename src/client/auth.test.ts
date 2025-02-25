@@ -48,7 +48,7 @@ describe("OAuth Authorization", () => {
       let callCount = 0;
       
       // Mock implementation that changes behavior based on call count
-      mockFetch.mockImplementation((url, options) => {
+      mockFetch.mockImplementation((_url, _options) => {
         callCount++;
         
         if (callCount === 1) {
@@ -81,7 +81,7 @@ describe("OAuth Authorization", () => {
       let callCount = 0;
       
       // Mock implementation that changes behavior based on call count
-      mockFetch.mockImplementation((url, options) => {
+      mockFetch.mockImplementation((_url, _options) => {
         callCount++;
         
         if (callCount === 1) {
