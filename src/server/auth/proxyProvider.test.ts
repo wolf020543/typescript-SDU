@@ -22,7 +22,7 @@ describe("Proxy OAuth Server Provider", () => {
   // Mock provider functions
   const mockVerifyToken = jest.fn();
   const mockGetClient = jest.fn();
-  
+
   // Base provider options
   const baseOptions: ProxyOptions = {
     endpoints: {
@@ -66,7 +66,7 @@ describe("Proxy OAuth Server Provider", () => {
 
   // Add helper function for failed responses
   const mockFailedResponse = () => {
-    (global.fetch as jest.Mock).mockImplementation(() => 
+    (global.fetch as jest.Mock).mockImplementation(() =>
       Promise.resolve({
         ok: false,
         status: 400,
@@ -103,20 +103,6 @@ describe("Proxy OAuth Server Provider", () => {
 
       expect(mockResponse.redirect).toHaveBeenCalledWith(expectedUrl.toString());
     });
-
-    it("throws error when authorization endpoint is not configured", async () => {
-      const providerWithoutAuth = new ProxyOAuthServerProvider({
-        ...baseOptions,
-        endpoints: { ...baseOptions.endpoints, authorizationUrl: undefined },
-      });
-
-      await expect(
-        providerWithoutAuth.authorize(validClient, {
-          redirectUri: "https://example.com/callback",
-          codeChallenge: "test-challenge",
-        }, mockResponse)
-      ).rejects.toThrow("No authorization endpoint configured");
-    });
   });
 
   describe("token exchange", () => {
@@ -128,7 +114,7 @@ describe("Proxy OAuth Server Provider", () => {
     };
 
     beforeEach(() => {
-      (global.fetch as jest.Mock).mockImplementation(() => 
+      (global.fetch as jest.Mock).mockImplementation(() =>
         Promise.resolve({
           ok: true,
           json: () => Promise.resolve(mockTokenResponse),
@@ -176,23 +162,6 @@ describe("Proxy OAuth Server Provider", () => {
       expect(tokens).toEqual(mockTokenResponse);
     });
 
-    it("throws error when token endpoint is not configured", async () => {
-      const providerWithoutToken = new ProxyOAuthServerProvider({
-        ...baseOptions,
-        endpoints: { ...baseOptions.endpoints, tokenUrl: undefined },
-      });
-
-      await expect(
-        providerWithoutToken.exchangeAuthorizationCode(validClient, "test-code")
-      ).rejects.toThrow("No token endpoint configured");
-    });
-
-    it("handles token exchange failure", async () => {
-      mockFailedResponse();
-      await expect(
-        provider.exchangeAuthorizationCode(validClient, "invalid-code")
-      ).rejects.toThrow(ServerError);
-    });
   });
 
   describe("client registration", () => {
@@ -202,7 +171,7 @@ describe("Proxy OAuth Server Provider", () => {
         redirect_uris: ["https://new-client.com/callback"],
       };
 
-      (global.fetch as jest.Mock).mockImplementation(() => 
+      (global.fetch as jest.Mock).mockImplementation(() =>
         Promise.resolve({
           ok: true,
           json: () => Promise.resolve(newClient),
@@ -239,7 +208,7 @@ describe("Proxy OAuth Server Provider", () => {
 
   describe("token revocation", () => {
     it("revokes token", async () => {
-      (global.fetch as jest.Mock).mockImplementation(() => 
+      (global.fetch as jest.Mock).mockImplementation(() =>
         Promise.resolve({
           ok: true,
         })

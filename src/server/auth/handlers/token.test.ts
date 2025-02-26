@@ -298,6 +298,7 @@ describe('Token Handler', () => {
 
         const proxyProvider = new ProxyOAuthServerProvider({
           endpoints: {
+            authorizationUrl: 'https://example.com/authorize',
             tokenUrl: 'https://example.com/token'
           },
           verifyAccessToken: async (token) => ({
