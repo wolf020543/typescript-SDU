@@ -75,20 +75,26 @@ export function clientRegistrationHandler({
       }
 
       const clientMetadata = parseResult.data;
+      const isPublicClient = clientMetadata.token_endpoint_auth_method === 'none'
 
       // Generate client credentials
       const clientId = crypto.randomUUID();
-      const clientSecret = clientMetadata.token_endpoint_auth_method !== 'none'
-        ? crypto.randomBytes(32).toString('hex')
-        : undefined;
+      const clientSecret = isPublicClient
+        ? undefined
+        : crypto.randomBytes(32).toString('hex');
       const clientIdIssuedAt = Math.floor(Date.now() / 1000);
+
+      // Calculate client secret expiry time
+      const clientsDoExpire = clientSecretExpirySeconds > 0
+      const secretExpiryTime = clientsDoExpire ? clientIdIssuedAt + clientSecretExpirySeconds : 0
+      const clientSecretExpiresAt = isPublicClient ? undefined : secretExpiryTime
 
       let clientInfo: OAuthClientInformationFull = {
         ...clientMetadata,
         client_id: clientId,
         client_secret: clientSecret,
         client_id_issued_at: clientIdIssuedAt,
-        client_secret_expires_at: clientSecretExpirySeconds > 0 ? clientIdIssuedAt + clientSecretExpirySeconds : 0
+        client_secret_expires_at: clientSecretExpiresAt,
       };
 
       clientInfo = await clientsStore.registerClient!(clientInfo);
