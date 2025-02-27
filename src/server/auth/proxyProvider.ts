@@ -43,6 +43,16 @@ export class ProxyOAuthServerProvider implements OAuthServerProvider {
   protected readonly _endpoints: ProxyEndpoints;
   protected readonly _verifyAccessToken: (token: string) => Promise<AuthInfo>;
   protected readonly _getClient: (clientId: string) => Promise<OAuthClientInformationFull | undefined>;
+  
+  /**
+   * Always true for proxy providers since PKCE validation happens at the upstream server.
+   * Can consider adding to the base OAuthServerProvider interface if it becomes useful elsewhere.
+   * This ensures that:
+   * 1. We skip local PKCE validation (which would fail since we don't store challenges)
+   * 2. The code_verifier is still passed through to the upstream server
+   * 3. The upstream server performs the actual PKCE validation
+   */
+  readonly skipLocalPkceValidation = true;
 
   revokeToken?: (
     client: OAuthClientInformationFull,

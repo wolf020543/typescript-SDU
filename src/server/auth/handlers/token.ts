@@ -91,16 +91,18 @@ export function tokenHandler({ provider, rateLimit: rateLimitConfig }: TokenHand
 
           const { code, code_verifier } = parseResult.data;
 
-          // Skip local PKCE verification for proxy providers since the code_challenge is stored on the upstream server.
-          // The code_verifier will be passed to the upstream server during token exchange.
-          if (!(provider instanceof ProxyOAuthServerProvider)) {
+          const skipLocalPkceValidation = provider instanceof ProxyOAuthServerProvider ? provider.skipLocalPkceValidation : false;
+
+          // Perform local PKCE validation unless explicitly delegated (e.g. by proxy provider)
+          if (!skipLocalPkceValidation) {
             const codeChallenge = await provider.challengeForAuthorizationCode(client, code);
             if (!(await verifyChallenge(code_verifier, codeChallenge))) {
               throw new InvalidGrantError("code_verifier does not match the challenge");
             }
           }
 
-          const tokens = await provider.exchangeAuthorizationCode(client, code, code_verifier);
+          // Passes the code_verifier to the provider if PKCE validation didn't occur locally
+          const tokens = await provider.exchangeAuthorizationCode(client, code, skipLocalPkceValidation ? code_verifier : undefined);
           res.status(200).json(tokens);
           break;
         }
