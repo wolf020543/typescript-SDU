@@ -1,3 +1,4 @@
+import { AuthInfo } from "../server/auth/types.js";
 import { JSONRPCMessage } from "../types.js";
 
 /**
@@ -39,6 +40,9 @@ export interface Transport {
 
   /**
    * Callback for when a message (request or response) is received over the connection.
+   * 
+   * Includes the authInfo if the transport is authenticated.
+   * 
    */
-  onmessage?: (message: JSONRPCMessage) => void;
+  onmessage?: (message: JSONRPCMessage, authInfo?: AuthInfo) => void;
 }
