@@ -14,7 +14,6 @@ import {
   TooManyRequestsError,
   OAuthError
 } from "../errors.js";
-import { ProxyOAuthServerProvider } from "../proxyProvider.js";
 
 export type TokenHandlerOptions = {
   provider: OAuthServerProvider;
@@ -91,9 +90,10 @@ export function tokenHandler({ provider, rateLimit: rateLimitConfig }: TokenHand
 
           const { code, code_verifier } = parseResult.data;
 
-          const skipLocalPkceValidation = provider instanceof ProxyOAuthServerProvider ? provider.skipLocalPkceValidation : false;
+          const skipLocalPkceValidation = provider.skipLocalPkceValidation;
 
-          // Perform local PKCE validation unless explicitly delegated (e.g. by proxy provider)
+          // Perform local PKCE validation unless explicitly skipped 
+          // (e.g. to validate code_verifier in upstream server)
           if (!skipLocalPkceValidation) {
             const codeChallenge = await provider.challengeForAuthorizationCode(client, code);
             if (!(await verifyChallenge(code_verifier, codeChallenge))) {

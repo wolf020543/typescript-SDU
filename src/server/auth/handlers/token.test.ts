@@ -7,7 +7,7 @@ import supertest from 'supertest';
 import * as pkceChallenge from 'pkce-challenge';
 import { InvalidGrantError, InvalidTokenError } from '../errors.js';
 import { AuthInfo } from '../types.js';
-import { ProxyOAuthServerProvider } from '../proxyProvider.js';
+import { ProxyOAuthServerProvider } from '../providers/proxyProvider.js';
 
 // Mock pkce-challenge
 jest.mock('pkce-challenge', () => ({

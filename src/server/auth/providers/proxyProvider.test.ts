@@ -1,10 +1,10 @@
 import { Response } from "express";
 import { ProxyOAuthServerProvider, ProxyOptions } from "./proxyProvider.js";
-import { AuthInfo } from "./types.js";
-import { OAuthClientInformationFull, OAuthTokens } from "../../shared/auth.js";
-import { ServerError } from "./errors.js";
-import { InvalidTokenError } from "./errors.js";
-import { InsufficientScopeError } from "./errors.js";
+import { AuthInfo } from "../types.js";
+import { OAuthClientInformationFull, OAuthTokens } from "../../../shared/auth.js";
+import { ServerError } from "../errors.js";
+import { InvalidTokenError } from "../errors.js";
+import { InsufficientScopeError } from "../errors.js";
 
 describe("Proxy OAuth Server Provider", () => {
   // Mock client data

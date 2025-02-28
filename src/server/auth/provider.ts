@@ -54,4 +54,13 @@ export interface OAuthServerProvider {
    * If the given token is invalid or already revoked, this method should do nothing.
    */
   revokeToken?(client: OAuthClientInformationFull, request: OAuthTokenRevocationRequest): Promise<void>;
+
+  /**
+   * Whether to skip local PKCE validation.
+   * 
+   * If true, the server will not perform PKCE validation locally and will pass the code_verifier to the upstream server.
+   * 
+   * NOTE: This should only be true if the upstream server is performing the actual PKCE validation.
+   */
+  skipLocalPkceValidation?: boolean;
 }
