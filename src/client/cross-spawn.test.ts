@@ -1,5 +1,6 @@
 import { StdioClientTransport } from "./stdio.js";
 import spawn from "cross-spawn";
+import { JSONRPCMessage } from "../types.js";
 
 // mock cross-spawn
 jest.mock("cross-spawn");
@@ -9,8 +10,13 @@ describe("StdioClientTransport using cross-spawn", () => {
   beforeEach(() => {
     // mock cross-spawn's return value
     mockSpawn.mockImplementation(() => {
-      const mockProcess = {
-        on: jest.fn((event: string, callback: Function) => {
+      const mockProcess: {
+        on: jest.Mock;
+        stdin?: { on: jest.Mock; write: jest.Mock };
+        stdout?: { on: jest.Mock };
+        stderr?: null;
+      } = {
+        on: jest.fn((event: string, callback: () => void) => {
           if (event === "spawn") {
             callback();
           }
@@ -76,8 +82,19 @@ describe("StdioClientTransport using cross-spawn", () => {
     });
     
     // get the mock process object
-    const mockProcess = {
-      on: jest.fn((event, callback) => {
+    const mockProcess: {
+      on: jest.Mock;
+      stdin: {
+        on: jest.Mock;
+        write: jest.Mock;
+        once: jest.Mock;
+      };
+      stdout: {
+        on: jest.Mock;
+      };
+      stderr: null;
+    } = {
+      on: jest.fn((event: string, callback: () => void) => {
         if (event === "spawn") {
           callback();
         }
@@ -98,7 +115,8 @@ describe("StdioClientTransport using cross-spawn", () => {
     
     await transport.start();
     
-    const message = {
+    // 关键修复：确保 jsonrpc 是字面量 "2.0"
+    const message: JSONRPCMessage = {
       jsonrpc: "2.0",
       id: "test-id",
       method: "test-method"
