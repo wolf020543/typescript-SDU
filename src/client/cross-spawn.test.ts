@@ -1,6 +1,7 @@
 import { StdioClientTransport } from "./stdio.js";
 import spawn from "cross-spawn";
 import { JSONRPCMessage } from "../types.js";
+import { ChildProcess } from "node:child_process";
 
 // mock cross-spawn
 jest.mock("cross-spawn");
@@ -31,7 +32,7 @@ describe("StdioClientTransport using cross-spawn", () => {
         },
         stderr: null
       };
-      return mockProcess as any;
+      return mockProcess as unknown as ChildProcess;
     });
   });
 
@@ -44,9 +45,9 @@ describe("StdioClientTransport using cross-spawn", () => {
       command: "test-command",
       args: ["arg1", "arg2"]
     });
-    
+
     await transport.start();
-    
+
     // verify spawn is called correctly
     expect(mockSpawn).toHaveBeenCalledWith(
       "test-command",
@@ -63,9 +64,9 @@ describe("StdioClientTransport using cross-spawn", () => {
       command: "test-command",
       env: customEnv
     });
-    
+
     await transport.start();
-    
+
     // verify environment variables are passed correctly
     expect(mockSpawn).toHaveBeenCalledWith(
       "test-command",
@@ -80,7 +81,7 @@ describe("StdioClientTransport using cross-spawn", () => {
     const transport = new StdioClientTransport({
       command: "test-command"
     });
-    
+
     // get the mock process object
     const mockProcess: {
       on: jest.Mock;
@@ -110,20 +111,20 @@ describe("StdioClientTransport using cross-spawn", () => {
       },
       stderr: null
     };
-    
-    mockSpawn.mockReturnValue(mockProcess as any);
-    
+
+    mockSpawn.mockReturnValue(mockProcess as unknown as ChildProcess);
+
     await transport.start();
-    
+
     // 关键修复：确保 jsonrpc 是字面量 "2.0"
     const message: JSONRPCMessage = {
       jsonrpc: "2.0",
       id: "test-id",
       method: "test-method"
     };
-    
+
     await transport.send(message);
-    
+
     // verify message is sent correctly
     expect(mockProcess.stdin.write).toHaveBeenCalled();
   });
