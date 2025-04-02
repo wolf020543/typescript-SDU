@@ -115,6 +115,7 @@ export async function auth(
       clientInformation,
       authorizationCode,
       codeVerifier,
+      redirectUri: provider.redirectUrl,
     });
 
     await provider.saveTokens(tokens);
@@ -163,11 +164,21 @@ export async function discoverOAuthMetadata(
   opts?: { protocolVersion?: string },
 ): Promise<OAuthMetadata | undefined> {
   const url = new URL("/.well-known/oauth-authorization-server", serverUrl);
-  const response = await fetch(url, {
-    headers: {
-      "MCP-Protocol-Version": opts?.protocolVersion ?? LATEST_PROTOCOL_VERSION
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      headers: {
+        "MCP-Protocol-Version": opts?.protocolVersion ?? LATEST_PROTOCOL_VERSION
+      }
+    });
+  } catch (error) {
+    // CORS errors come back as TypeError
+    if (error instanceof TypeError) {
+      response = await fetch(url);
+    } else {
+      throw error;
     }
-  });
+  }
 
   if (response.status === 404) {
     return undefined;
@@ -249,11 +260,13 @@ export async function exchangeAuthorization(
     clientInformation,
     authorizationCode,
     codeVerifier,
+    redirectUri,
   }: {
     metadata?: OAuthMetadata;
     clientInformation: OAuthClientInformation;
     authorizationCode: string;
     codeVerifier: string;
+    redirectUri: string | URL;
   },
 ): Promise<OAuthTokens> {
   const grantType = "authorization_code";
@@ -280,6 +293,7 @@ export async function exchangeAuthorization(
     client_id: clientInformation.client_id,
     code: authorizationCode,
     code_verifier: codeVerifier,
+    redirect_uri: String(redirectUri),
   });
 
   if (clientInformation.client_secret) {

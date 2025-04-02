@@ -141,6 +141,37 @@ describe('Client Registration Handler', () => {
 
       expect(response.status).toBe(201);
       expect(response.body.client_secret).toBeUndefined();
+      expect(response.body.client_secret_expires_at).toBeUndefined();
+    });
+    
+    it('sets client_secret_expires_at for public clients only', async () => {
+      // Test for public client (token_endpoint_auth_method not 'none')
+      const publicClientMetadata: OAuthClientMetadata = {
+        redirect_uris: ['https://example.com/callback'],
+        token_endpoint_auth_method: 'client_secret_basic'
+      };
+
+      const publicResponse = await supertest(app)
+        .post('/register')
+        .send(publicClientMetadata);
+
+      expect(publicResponse.status).toBe(201);
+      expect(publicResponse.body.client_secret).toBeDefined();
+      expect(publicResponse.body.client_secret_expires_at).toBeDefined();
+      
+      // Test for non-public client (token_endpoint_auth_method is 'none')
+      const nonPublicClientMetadata: OAuthClientMetadata = {
+        redirect_uris: ['https://example.com/callback'],
+        token_endpoint_auth_method: 'none'
+      };
+
+      const nonPublicResponse = await supertest(app)
+        .post('/register')
+        .send(nonPublicClientMetadata);
+
+      expect(nonPublicResponse.status).toBe(201);
+      expect(nonPublicResponse.body.client_secret).toBeUndefined();
+      expect(nonPublicResponse.body.client_secret_expires_at).toBeUndefined();
     });
 
     it('sets expiry based on clientSecretExpirySeconds', async () => {
