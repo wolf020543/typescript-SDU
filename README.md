@@ -492,7 +492,7 @@ const result = await client.callTool({
 
 ### Proxy Authorization Requests Upstream
 
-You can proxy OAuth requests to an external OAuth provider while adding custom validation and client management:
+You can proxy OAuth requests to an external authorization provider:
 
 ```typescript
 import express from 'express';
