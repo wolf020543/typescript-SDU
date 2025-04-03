@@ -94,6 +94,11 @@ export type RequestHandlerExtra = {
    * Information about a validated access token, provided to request handlers.
    */
   authInfo?: AuthInfo;
+
+  /**
+   * The session ID from the transport, if available.
+   */
+  sessionId?: string;
 };
 
 /**
@@ -104,6 +109,7 @@ type TimeoutInfo = {
   startTime: number;
   timeout: number;
   maxTotalTimeout?: number;
+  resetTimeoutOnProgress: boolean;
   onTimeout: () => void;
 };
 
@@ -185,13 +191,15 @@ export abstract class Protocol<
     messageId: number,
     timeout: number,
     maxTotalTimeout: number | undefined,
-    onTimeout: () => void
+    onTimeout: () => void,
+    resetTimeoutOnProgress: boolean = false
   ) {
     this._timeoutInfo.set(messageId, {
       timeoutId: setTimeout(onTimeout, timeout),
       startTime: Date.now(),
       timeout,
       maxTotalTimeout,
+      resetTimeoutOnProgress,
       onTimeout
     });
   }
@@ -313,9 +321,16 @@ export abstract class Protocol<
     const abortController = new AbortController();
     this._requestHandlerAbortControllers.set(request.id, abortController);
 
+    // Create extra object with both abort signal and sessionId from transport
+    const extra: RequestHandlerExtra = {
+      signal: abortController.signal,
+      sessionId: this._transport?.sessionId,
+      authInfo,
+    };
+
     // Starting with Promise.resolve() puts any synchronous errors into the monad as well.
     Promise.resolve()
-      .then(() => handler(request, { signal: abortController.signal, authInfo }))
+      .then(() => handler(request, extra))
       .then(
         (result) => {
           if (abortController.signal.aborted) {
@@ -364,7 +379,9 @@ export abstract class Protocol<
     }
 
     const responseHandler = this._responseHandlers.get(messageId);
-    if (this._timeoutInfo.has(messageId) && responseHandler) {
+    const timeoutInfo = this._timeoutInfo.get(messageId);
+    
+    if (timeoutInfo && responseHandler && timeoutInfo.resetTimeoutOnProgress) {
       try {
         this._resetTimeout(messageId);
       } catch (error) {
@@ -526,7 +543,7 @@ export abstract class Protocol<
         { timeout }
       ));
 
-      this._setupTimeout(messageId, timeout, options?.maxTotalTimeout, timeoutHandler);
+      this._setupTimeout(messageId, timeout, options?.maxTotalTimeout, timeoutHandler, options?.resetTimeoutOnProgress ?? false);
 
       this._transport.send(jsonrpcRequest).catch((error) => {
         this._cleanupTimeout(messageId);
