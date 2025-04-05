@@ -85,6 +85,8 @@ describe("ResourceTemplate", () => {
     const abortController = new AbortController();
     const result = await template.listCallback?.({
       signal: abortController.signal,
+      sendRequest: () => { throw new Error("Not implemented") },
+      sendNotification: () => { throw new Error("Not implemented") }
     });
     expect(result?.resources).toHaveLength(1);
     expect(list).toHaveBeenCalled();
@@ -318,7 +320,7 @@ describe("tool()", () => {
 
     // This should succeed
     mcpServer.tool("tool1", () => ({ content: [] }));
-    
+
     // This should also succeed and not throw about request handlers
     mcpServer.tool("tool2", () => ({ content: [] }));
   });
@@ -815,7 +817,7 @@ describe("resource()", () => {
         },
       ],
     }));
-    
+
     // This should also succeed and not throw about request handlers
     mcpServer.resource("resource2", "test://resource2", async () => ({
       contents: [
@@ -1321,7 +1323,7 @@ describe("prompt()", () => {
         },
       ],
     }));
-    
+
     // This should also succeed and not throw about request handlers
     mcpServer.prompt("prompt2", async () => ({
       messages: [
