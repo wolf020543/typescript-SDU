@@ -1,5 +1,5 @@
 import { IncomingMessage, ServerResponse } from "node:http";
-import { StreamableHTTPServerTransport } from "./streamable-http.js";
+import { StreamableHTTPServerTransport } from "./streamableHttp.js";
 import { JSONRPCMessage } from "../types.js";
 import { Readable } from "node:stream";
 import { randomUUID } from "node:crypto";
