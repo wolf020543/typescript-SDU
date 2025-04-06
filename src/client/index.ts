@@ -237,9 +237,9 @@ export class Client<
         break;
 
       case "completion/complete":
-        if (!this._serverCapabilities?.prompts) {
+        if (!this._serverCapabilities?.completions) {
           throw new Error(
-            `Server does not support prompts (required for ${method})`,
+            `Server does not support completions (required for ${method})`,
           );
         }
         break;
