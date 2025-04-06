@@ -11,6 +11,7 @@ import {
   ListPromptsResultSchema,
   GetPromptResultSchema,
   CompleteResultSchema,
+  LoggingMessageNotificationSchema,
 } from "../types.js";
 import { ResourceTemplate } from "./mcp.js";
 import { completable } from "./completable.js";
@@ -376,6 +377,70 @@ describe("tool()", () => {
     );
 
     expect(receivedSessionId).toBe("test-session-123");
+  });
+
+  test("should provide sendNotification withing tool call", async () => {
+    const mcpServer = new McpServer(
+      {
+        name: "test server",
+        version: "1.0",
+      },
+      { capabilities: { logging: {} } },
+    );
+
+    const client = new Client(
+      {
+        name: "test client",
+        version: "1.0",
+      },
+      {
+        capabilities: {
+          tools: {},
+        },
+      },
+    );
+
+    let receivedLogMessage: string | undefined;
+
+    const loggingMessage = "hello here is log message 1"
+
+    client.setNotificationHandler(LoggingMessageNotificationSchema, (notification) => {
+      receivedLogMessage = notification.params.data as string;
+
+    });
+
+    mcpServer.tool("test-tool", async ({ sendNotification }) => {
+      await sendNotification({ method: "notifications/message", params: { level: "debug", data: loggingMessage } });
+      return {
+        content: [
+          {
+            type: "text",
+            text: "Test response",
+          },
+        ],
+      };
+    });
+
+    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+    // Set a test sessionId on the server transport
+    serverTransport.sessionId = "test-session-123";
+
+
+    await Promise.all([
+      client.connect(clientTransport),
+      mcpServer.server.connect(serverTransport),
+    ]);
+
+    await client.request(
+      {
+        method: "tools/call",
+        params: {
+          name: "test-tool",
+        },
+      },
+      CallToolResultSchema,
+    );
+    expect(receivedLogMessage).toBe(loggingMessage);
   });
 
   test("should allow client to call server tools", async () => {
