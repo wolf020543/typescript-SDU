@@ -23,11 +23,11 @@ interface StreamConnection {
  */
 export interface StreamableHTTPServerTransportOptions {
   /**
-   * Whether to enable session management through mcp-session-id headers
-   * When set to false, the transport operates in stateless mode without session validation
-   * @default true
+   * The session ID SHOULD be globally unique and cryptographically secure (e.g., a securely generated UUID, a JWT, or a cryptographic hash)
+   * 
+   * When sessionId is not set, the transport will be in stateless mode.
    */
-  enableSessionManagement?: boolean;
+  sessionId: string | undefined;
 
   /**
    * Custom headers to be included in all responses
@@ -38,17 +38,19 @@ export interface StreamableHTTPServerTransportOptions {
 
 /**
  * Server transport for Streamable HTTP: this implements the MCP Streamable HTTP transport specification.
- * It supports both SSE streaming and direct HTTP responses, with session management and message resumability.
+ * It supports both SSE streaming and direct HTTP responses.
  * 
  * Usage example:
  * 
  * ```typescript
- * // Stateful mode (default) - with session management
- * const statefulTransport = new StreamableHTTPServerTransport("/mcp");
+ * // Stateful mode - server sets the session ID
+ * const statefulTransport = new StreamableHTTPServerTransport({
+ *  sessionId: randomUUID(),
+ * });
  * 
- * // Stateless mode - without session management
- * const statelessTransport = new StreamableHTTPServerTransport("/mcp", {
- *   enableSessionManagement: false
+ * // Stateless mode - explisitly set session ID to undefined
+ * const statelessTransport = new StreamableHTTPServerTransport({
+ *    sessionId: undefined,
  * });
  * 
  * // Using with pre-parsed request body
@@ -70,23 +72,22 @@ export interface StreamableHTTPServerTransportOptions {
  */
 export class StreamableHTTPServerTransport implements Transport {
   private _connections: Map<string, StreamConnection> = new Map();
-  private _sessionId: string;
+  // when sessionID is not set, it means the transport is in stateless mode
+  private _sessionId: string | undefined;
   private _messageHistory: Map<string, {
     message: JSONRPCMessage;
     connectionId?: string; // record which connection the message should be sent to
   }> = new Map();
   private _started: boolean = false;
   private _requestConnections: Map<string, string> = new Map(); // request ID to connection ID mapping
-  private _enableSessionManagement: boolean;
   private _customHeaders: Record<string, string>;
 
   onclose?: () => void;
   onerror?: (error: Error) => void;
   onmessage?: (message: JSONRPCMessage) => void;
 
-  constructor(private _endpoint: string, options?: StreamableHTTPServerTransportOptions) {
-    this._sessionId = randomUUID();
-    this._enableSessionManagement = options?.enableSessionManagement !== false;
+  constructor(options: StreamableHTTPServerTransportOptions) {
+    this._sessionId = options?.sessionId;
     this._customHeaders = options?.customHeaders || {};
   }
 
@@ -106,13 +107,13 @@ export class StreamableHTTPServerTransport implements Transport {
    */
   async handleRequest(req: IncomingMessage, res: ServerResponse, parsedBody?: unknown): Promise<void> {
     // Only validate session ID for non-initialization requests when session management is enabled
-    if (this._enableSessionManagement) {
+    if (this._sessionId !== undefined) {
       const sessionId = req.headers["mcp-session-id"];
-      
+
       // Check if this might be an initialization request
-      const isInitializationRequest = req.method === "POST" && 
+      const isInitializationRequest = req.method === "POST" &&
         req.headers["content-type"]?.includes("application/json");
-      
+
       if (isInitializationRequest) {
         // For POST requests with JSON content, we need to check if it's an initialization request
         // This will be done in handlePostRequest, as we need to parse the body
@@ -189,9 +190,9 @@ export class StreamableHTTPServerTransport implements Transport {
       "Cache-Control": "no-cache",
       Connection: "keep-alive",
     };
-    
-    // Only include session ID header if session management is enabled
-    if (this._enableSessionManagement) {
+
+    // Only include session ID header if session management is enabled by assigning a value to _sessionId
+    if (this._sessionId !== undefined) {
       headers["mcp-session-id"] = this._sessionId;
     }
 
@@ -231,8 +232,8 @@ export class StreamableHTTPServerTransport implements Transport {
     try {
       // validate the Accept header
       const acceptHeader = req.headers.accept;
-      if (!acceptHeader || 
-         (!acceptHeader.includes("application/json") && !acceptHeader.includes("text/event-stream"))) {
+      if (!acceptHeader ||
+        (!acceptHeader.includes("application/json") && !acceptHeader.includes("text/event-stream"))) {
         res.writeHead(406).end(JSON.stringify({
           jsonrpc: "2.0",
           error: {
@@ -270,7 +271,7 @@ export class StreamableHTTPServerTransport implements Transport {
       }
 
       let messages: JSONRPCMessage[];
-      
+
       // handle batch and single messages
       if (Array.isArray(rawMessage)) {
         messages = rawMessage.map(msg => JSONRPCMessageSchema.parse(msg));
@@ -286,7 +287,7 @@ export class StreamableHTTPServerTransport implements Transport {
 
       // check if it contains requests
       const hasRequests = messages.some(msg => 'method' in msg && 'id' in msg);
-      const hasOnlyNotificationsOrResponses = messages.every(msg => 
+      const hasOnlyNotificationsOrResponses = messages.every(msg =>
         ('method' in msg && !('id' in msg)) || ('result' in msg || 'error' in msg));
 
       if (hasOnlyNotificationsOrResponses) {
@@ -300,7 +301,7 @@ export class StreamableHTTPServerTransport implements Transport {
       } else if (hasRequests) {
         // if it contains requests, you can choose to return an SSE stream or a JSON response
         const useSSE = acceptHeader.includes("text/event-stream");
-        
+
         if (useSSE) {
           const headers: Record<string, string> = {
             ...this._customHeaders,
@@ -308,10 +309,8 @@ export class StreamableHTTPServerTransport implements Transport {
             "Cache-Control": "no-cache",
             Connection: "keep-alive",
           };
-          
-          // Only include session ID header if session management is enabled
-          // Always include session ID for initialization requests
-          if (this._enableSessionManagement || isInitializationRequest) {
+
+          if (this._sessionId !== undefined) {
             headers["mcp-session-id"] = this._sessionId;
           }
 
@@ -351,20 +350,19 @@ export class StreamableHTTPServerTransport implements Transport {
             ...this._customHeaders,
             "Content-Type": "application/json",
           };
-          
-          // Only include session ID header if session management is enabled
-          // Always include session ID for initialization requests
-          if (this._enableSessionManagement || isInitializationRequest) {
+
+
+          if (this._sessionId !== undefined) {
             headers["mcp-session-id"] = this._sessionId;
           }
 
           res.writeHead(200, headers);
-          
+
           // handle each message
           for (const message of messages) {
             this.onmessage?.(message);
           }
-          
+
           res.end();
         }
       }
@@ -396,11 +394,11 @@ export class StreamableHTTPServerTransport implements Transport {
    */
   private replayMessages(connectionId: string, lastEventId: string): void {
     if (!lastEventId) return;
-    
+
     // only replay messages that should be sent on this connection
     const messages = Array.from(this._messageHistory.entries())
-      .filter(([id, { connectionId: msgConnId }]) => 
-        id > lastEventId && 
+      .filter(([id, { connectionId: msgConnId }]) =>
+        id > lastEventId &&
         (!msgConnId || msgConnId === connectionId)) // only replay messages that are not specified to a connection or specified to the current connection
       .sort(([a], [b]) => a.localeCompare(b));
 
@@ -430,11 +428,11 @@ export class StreamableHTTPServerTransport implements Transport {
     }
 
     let targetConnectionId = "";
-    
+
     // if it is a response, find the corresponding request connection
     if ('id' in message && ('result' in message || 'error' in message)) {
       const connId = this._requestConnections.get(String(message.id));
-      
+
       // if the corresponding connection is not found, the connection may be disconnected
       if (!connId || !this._connections.has(connId)) {
         // select an available connection
@@ -458,9 +456,9 @@ export class StreamableHTTPServerTransport implements Transport {
     }
 
     const messageId = randomUUID();
-    this._messageHistory.set(messageId, { 
-      message, 
-      connectionId: targetConnectionId 
+    this._messageHistory.set(messageId, {
+      message,
+      connectionId: targetConnectionId
     });
 
     // keep the message history in a reasonable range
@@ -490,7 +488,7 @@ export class StreamableHTTPServerTransport implements Transport {
   /**
    * Returns the session ID for this transport
    */
-  get sessionId(): string {
+  get sessionId(): string | undefined {
     return this._sessionId;
   }
 } 
