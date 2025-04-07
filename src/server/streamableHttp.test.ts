@@ -344,7 +344,7 @@ describe("StreamableHTTPServerTransport", () => {
         "Allow": "POST, DELETE"
       }));
       expect(mockResponse.end).toHaveBeenCalledWith(expect.stringContaining('"jsonrpc":"2.0"'));
-      expect(mockResponse.end).toHaveBeenCalledWith(expect.stringContaining('Server does not offer an SSE stream at this endpoint'));
+      expect(mockResponse.end).toHaveBeenCalledWith(expect.stringContaining('Method not allowed'));
     });
 
     it("should reject POST requests without proper Accept header", async () => {

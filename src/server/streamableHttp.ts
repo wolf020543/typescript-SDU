@@ -84,31 +84,20 @@ export class StreamableHTTPServerTransport implements Transport {
    * Handles an incoming HTTP request, whether GET or POST
    */
   async handleRequest(req: IncomingMessage, res: ServerResponse, parsedBody?: unknown): Promise<void> {
-    if (req.method === "GET") {
-      await this.handleGetRequest(req, res);
-    } else if (req.method === "POST") {
+    if (req.method === "POST") {
       await this.handlePostRequest(req, res, parsedBody);
     } else if (req.method === "DELETE") {
       await this.handleDeleteRequest(req, res);
     } else {
-      res.writeHead(405).end(JSON.stringify({
-        jsonrpc: "2.0",
-        error: {
-          code: -32000,
-          message: "Method not allowed"
-        },
-        id: null
-      }));
+      await this.handleUnsupportedRequest(req, res);
     }
   }
 
   /**
-   * Handles GET requests to establish SSE connections
-   * According to the MCP Streamable HTTP transport spec, the server MUST either return SSE or 405.
-   * We choose to return 405 Method Not Allowed as we don't support GET SSE connections yet.
+   * Handles unsupported requests (GET, PUT, PATCH, etc.)
+   * For now we support only POST and DELETE requests. Support for GET for SSE connections will be added later.
    */
-  private async handleGetRequest(req: IncomingMessage, res: ServerResponse): Promise<void> {
-    // Check session validity first for GET requests when session management is enabled
+  private async handleUnsupportedRequest(req: IncomingMessage, res: ServerResponse): Promise<void> {
     if (this._sessionId !== undefined && !this.validateSession(req, res)) {
       return;
     }
@@ -119,7 +108,7 @@ export class StreamableHTTPServerTransport implements Transport {
       jsonrpc: "2.0",
       error: {
         code: -32000,
-        message: "Method not allowed: Server does not offer an SSE stream at this endpoint"
+        message: "Method not allowed."
       },
       id: null
     }));
@@ -322,6 +311,8 @@ export class StreamableHTTPServerTransport implements Transport {
 
   async send(message: JSONRPCMessage, options?: { relatedRequestId?: RequestId }): Promise<void> {
     const relatedRequestId = options?.relatedRequestId;
+    // SSE connections are established per POST request, for now we don't support it through the GET
+    // this will be changed when we implement the GET SSE connection
     if (relatedRequestId === undefined) {
       throw new Error("relatedRequestId is required for Streamable HTTP transport");
     }
