@@ -37,7 +37,7 @@ export interface StreamableHTTPServerTransportOptions {
  *  sessionId: randomUUID(),
  * });
  * 
- * // Stateless mode - explisitly set session ID to undefined
+ * // Stateless mode - explicitly set session ID to undefined
  * const statelessTransport = new StreamableHTTPServerTransport({
  *    sessionId: undefined,
  * });
@@ -60,7 +60,7 @@ export interface StreamableHTTPServerTransportOptions {
  * - No session validation is performed
  */
 export class StreamableHTTPServerTransport implements Transport {
-  // when sessionID is not set, it means the transport is in stateless mode
+  // when sessionId is not set (undefined), it means the transport is in stateless mode
   private _sessionId: string | undefined;
   private _started: boolean = false;
   private _customHeaders: Record<string, string>;
@@ -71,8 +71,8 @@ export class StreamableHTTPServerTransport implements Transport {
   onmessage?: (message: JSONRPCMessage) => void;
 
   constructor(options: StreamableHTTPServerTransportOptions) {
-    this._sessionId = options?.sessionId;
-    this._customHeaders = options?.customHeaders || {};
+    this._sessionId = options.sessionId;
+    this._customHeaders = options.customHeaders || {};
   }
 
   /**
@@ -90,16 +90,6 @@ export class StreamableHTTPServerTransport implements Transport {
    * Handles an incoming HTTP request, whether GET or POST
    */
   async handleRequest(req: IncomingMessage, res: ServerResponse, parsedBody?: unknown): Promise<void> {
-    // Only validate session ID for non-initialization requests when session management is enabled
-    if (this._sessionId !== undefined) {
-      const isInitializationRequest = req.method === "POST" &&
-        req.headers["content-type"]?.includes("application/json");
-
-      if (!isInitializationRequest && !this.validateSession(req, res)) {
-        return;
-      }
-    }
-
     if (req.method === "GET") {
       await this.handleGetRequest(req, res);
     } else if (req.method === "POST") {
@@ -124,7 +114,11 @@ export class StreamableHTTPServerTransport implements Transport {
    * We choose to return 405 Method Not Allowed as we don't support GET SSE connections yet.
    */
   private async handleGetRequest(req: IncomingMessage, res: ServerResponse): Promise<void> {
-    // Return 405 Method Not Allowed
+    // Check session validity first for GET requests when session management is enabled
+    if (this._sessionId !== undefined && !this.validateSession(req, res)) {
+      return;
+    }
+
     res.writeHead(405, {
       ...this._customHeaders,
       "Allow": "POST, DELETE"
@@ -143,15 +137,16 @@ export class StreamableHTTPServerTransport implements Transport {
    */
   private async handlePostRequest(req: IncomingMessage, res: ServerResponse, parsedBody?: unknown): Promise<void> {
     try {
-      // validate the Accept header
+      // Validate the Accept header
       const acceptHeader = req.headers.accept;
+      // The client MUST include an Accept header, listing both application/json and text/event-stream as supported content types.
       if (!acceptHeader ||
-        (!acceptHeader.includes("application/json") && !acceptHeader.includes("text/event-stream"))) {
+        !acceptHeader.includes("application/json") || !acceptHeader.includes("text/event-stream")) {
         res.writeHead(406).end(JSON.stringify({
           jsonrpc: "2.0",
           error: {
             code: -32000,
-            message: "Not Acceptable: Client must accept application/json and/or text/event-stream"
+            message: "Not Acceptable: Client must accept both application/json and text/event-stream"
           },
           id: null
         }));
@@ -192,16 +187,33 @@ export class StreamableHTTPServerTransport implements Transport {
         messages = [JSONRPCMessageSchema.parse(rawMessage)];
       }
 
-      if (this._sessionId !== undefined) {
-        // Check if this is an initialization request
-        // https://spec.modelcontextprotocol.io/specification/2025-03-26/basic/lifecycle/
-        const isInitializationRequest = messages.some(
-          msg => 'method' in msg && msg.method === 'initialize' && 'id' in msg
-        );
+      // Check if this is an initialization request
+      // https://spec.modelcontextprotocol.io/specification/2025-03-26/basic/lifecycle/
+      const isInitializationRequest = messages.some(
+        msg => 'method' in msg && msg.method === 'initialize'
+      );
+      if (isInitializationRequest) {
+        const headers: Record<string, string> = {
+          ...this._customHeaders
+        };
 
-        if (!isInitializationRequest && !this.validateSession(req, res)) {
-          return;
+        if (this._sessionId !== undefined) {
+          headers["mcp-session-id"] = this._sessionId;
         }
+
+        // Process initialization messages before responding
+        for (const message of messages) {
+          this.onmessage?.(message);
+        }
+
+        res.writeHead(200, headers).end();
+        return;
+      }
+      // If an Mcp-Session-Id is returned by the server during initialization,
+      // clients using the Streamable HTTP transport MUST include it 
+      // in the Mcp-Session-Id header on all of their subsequent HTTP requests.
+      if (this._sessionId !== undefined && !isInitializationRequest && !this.validateSession(req, res)) {
+        return;
       }
 
 
@@ -219,62 +231,35 @@ export class StreamableHTTPServerTransport implements Transport {
           this.onmessage?.(message);
         }
       } else if (hasRequests) {
-        // if it contains requests, you can choose to return an SSE stream or a JSON response
-        const useSSE = acceptHeader.includes("text/event-stream");
+        const headers: Record<string, string> = {
+          ...this._customHeaders,
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+          Connection: "keep-alive",
+        };
 
-        if (useSSE) {
-          const headers: Record<string, string> = {
-            ...this._customHeaders,
-            "Content-Type": "text/event-stream",
-            "Cache-Control": "no-cache",
-            Connection: "keep-alive",
-          };
-
-          // For initialization requests, always include the session ID if we have one
-          // even if we're in stateless mode
-          if (this._sessionId !== undefined) {
-            headers["mcp-session-id"] = this._sessionId;
-          }
-
-          res.writeHead(200, headers);
-
-          // Store the response for this request to send messages back through this connection
-          // We need to track by request ID to maintain the connection
-          for (const message of messages) {
-            if ('method' in message && 'id' in message) {
-              this._sseResponseMapping.set(message.id, res);
-            }
-          }
-
-          // handle each message
-          for (const message of messages) {
-            this.onmessage?.(message);
-          }
-
-          // The server SHOULD NOT close the SSE stream before sending all JSON-RPC responses
-          // This will be handled by the send() method when responses are ready
-        } else {
-          // use direct JSON response
-          const headers: Record<string, string> = {
-            ...this._customHeaders,
-            "Content-Type": "application/json",
-          };
-
-          // For initialization requests, always include the session ID if we have one
-          // even if we're in stateless mode
-          if (this._sessionId !== undefined) {
-            headers["mcp-session-id"] = this._sessionId;
-          }
-
-          res.writeHead(200, headers);
-
-          // handle each message
-          for (const message of messages) {
-            this.onmessage?.(message);
-          }
-
-          res.end();
+        // For initialization requests, always include the session ID if we have one
+        // even if we're in stateless mode
+        if (this._sessionId !== undefined) {
+          headers["mcp-session-id"] = this._sessionId;
         }
+
+        res.writeHead(200, headers);
+
+        // Store the response for this request to send messages back through this connection
+        // We need to track by request ID to maintain the connection
+        for (const message of messages) {
+          if ('method' in message && 'id' in message) {
+            this._sseResponseMapping.set(message.id, res);
+          }
+        }
+
+        // handle each message
+        for (const message of messages) {
+          this.onmessage?.(message);
+        }
+        // The server SHOULD NOT close the SSE stream before sending all JSON-RPC responses
+        // This will be handled by the send() method when responses are ready
       }
     } catch (error) {
       // return JSON-RPC formatted error
@@ -295,6 +280,9 @@ export class StreamableHTTPServerTransport implements Transport {
    * Handles DELETE requests to terminate sessions
    */
   private async handleDeleteRequest(req: IncomingMessage, res: ServerResponse): Promise<void> {
+    if (!this.validateSession(req, res)) {
+      return;
+    }
     await this.close();
     res.writeHead(200).end();
   }
@@ -346,12 +334,12 @@ export class StreamableHTTPServerTransport implements Transport {
   async send(message: JSONRPCMessage, options?: { relatedRequestId?: RequestId }): Promise<void> {
     const relatedRequestId = options?.relatedRequestId;
     if (relatedRequestId === undefined) {
-      throw new Error("relatedRequestId is required");
+      throw new Error("relatedRequestId is required for Streamable HTTP transport");
     }
 
     const sseResponse = this._sseResponseMapping.get(relatedRequestId);
     if (!sseResponse) {
-      throw new Error("No SSE connection established");
+      throw new Error(`No SSE connection established for request ID: ${String(relatedRequestId)}`);
     }
 
     // Send the message as an SSE event

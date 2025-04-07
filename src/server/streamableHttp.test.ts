@@ -73,7 +73,7 @@ describe("StreamableHTTPServerTransport", () => {
         method: "POST",
         headers: {
           "content-type": "application/json",
-          "accept": "application/json",
+          "accept": "application/json, text/event-stream",
         },
         body: JSON.stringify(initializeMessage),
       });
@@ -93,7 +93,7 @@ describe("StreamableHTTPServerTransport", () => {
         method: "GET",
         headers: {
           "mcp-session-id": "invalid-session-id",
-          "accept": "text/event-stream"
+          "accept": "application/json, text/event-stream"
         },
       });
 
@@ -109,7 +109,7 @@ describe("StreamableHTTPServerTransport", () => {
       const req = createMockRequest({
         method: "GET",
         headers: {
-          accept: "text/event-stream",
+          accept: "application/json, text/event-stream",
           // No mcp-session-id header
         },
       });
@@ -143,7 +143,7 @@ describe("StreamableHTTPServerTransport", () => {
         method: "POST",
         headers: {
           "content-type": "application/json",
-          "accept": "application/json",
+          "accept": "application/json, text/event-stream",
         },
         body: JSON.stringify(message),
       });
@@ -161,7 +161,7 @@ describe("StreamableHTTPServerTransport", () => {
         method: "POST",
         headers: {
           "content-type": "application/json",
-          "accept": "application/json",
+          "accept": "application/json, text/event-stream",
           "mcp-session-id": "invalid-session-id", // This would cause a 404 in stateful mode
         },
         body: JSON.stringify({
@@ -195,7 +195,7 @@ describe("StreamableHTTPServerTransport", () => {
         method: "POST",
         headers: {
           "content-type": "application/json",
-          "accept": "application/json",
+          "accept": "application/json, text/event-stream",
           "mcp-session-id": "non-existent-session-id", // This would be rejected in stateful mode
         },
         body: JSON.stringify(message),
@@ -216,7 +216,7 @@ describe("StreamableHTTPServerTransport", () => {
         method: "POST",
         headers: {
           "content-type": "application/json",
-          accept: "text/event-stream",
+          accept: "application/json, text/event-stream",
         },
         body: JSON.stringify({
           jsonrpc: "2.0",
@@ -242,7 +242,7 @@ describe("StreamableHTTPServerTransport", () => {
         method: "POST",
         headers: {
           "content-type": "application/json",
-          accept: "text/event-stream",
+          accept: "application/json, text/event-stream",
           "mcp-session-id": "some-random-session-id",
         },
         body: JSON.stringify({
@@ -264,7 +264,7 @@ describe("StreamableHTTPServerTransport", () => {
       );
     });
 
-    it("should handle initialization requests properly in statefull mode", async () => {
+    it("should handle initialization requests properly in stateful mode", async () => {
       // Initialize message that would typically be sent during initialization
       const initializeMessage: JSONRPCMessage = {
         jsonrpc: "2.0",
@@ -281,7 +281,7 @@ describe("StreamableHTTPServerTransport", () => {
         method: "POST",
         headers: {
           "content-type": "application/json",
-          "accept": "application/json",
+          "accept": "application/json, text/event-stream",
         },
         body: JSON.stringify(initializeMessage),
       });
@@ -314,7 +314,7 @@ describe("StreamableHTTPServerTransport", () => {
         method: "POST",
         headers: {
           "content-type": "application/json",
-          "accept": "application/json",
+          "accept": "application/json, text/event-stream",
         },
         body: JSON.stringify(initializeMessage),
       });
@@ -333,7 +333,7 @@ describe("StreamableHTTPServerTransport", () => {
       const req = createMockRequest({
         method: "GET",
         headers: {
-          "accept": "text/event-stream",
+          "accept": "application/json, text/event-stream",
           "mcp-session-id": transport.sessionId,
         },
       });
@@ -380,7 +380,7 @@ describe("StreamableHTTPServerTransport", () => {
         method: "POST",
         headers: {
           "content-type": "application/json",
-          "accept": "text/event-stream",
+          "accept": "application/json, text/event-stream",
         },
         body: JSON.stringify(message),
       });
@@ -394,7 +394,7 @@ describe("StreamableHTTPServerTransport", () => {
       expect(mockResponse.writeHead).toHaveBeenCalledWith(
         200,
         expect.objectContaining({
-          "Content-Type": "text/event-stream",
+          "mcp-session-id": transport.sessionId,
         })
       );
     });
@@ -435,7 +435,7 @@ describe("StreamableHTTPServerTransport", () => {
         method: "POST",
         headers: {
           "content-type": "application/json",
-          "accept": "application/json",
+          "accept": "application/json, text/event-stream",
           "mcp-session-id": transport.sessionId,
         },
         body: JSON.stringify(batchMessages),
@@ -488,7 +488,7 @@ describe("StreamableHTTPServerTransport", () => {
         method: "POST",
         headers: {
           "content-type": "text/plain",
-          "accept": "application/json",
+          "accept": "application/json, text/event-stream",
           "mcp-session-id": transport.sessionId,
         },
         body: "test",
@@ -532,7 +532,7 @@ describe("StreamableHTTPServerTransport", () => {
         method: "POST",
         headers: {
           "content-type": "application/json",
-          "accept": "text/event-stream",
+          "accept": "application/json, text/event-stream",
           "mcp-session-id": transport.sessionId
         },
         body: JSON.stringify(requestMessage)
@@ -571,7 +571,7 @@ describe("StreamableHTTPServerTransport", () => {
         method: "POST",
         headers: {
           "content-type": "application/json",
-          "accept": "text/event-stream",
+          "accept": "application/json, text/event-stream",
           "mcp-session-id": transport.sessionId
         },
         body: JSON.stringify(requestMessage)
@@ -620,7 +620,7 @@ describe("StreamableHTTPServerTransport", () => {
         method: "POST",
         headers: {
           "content-type": "application/json",
-          "accept": "text/event-stream",
+          "accept": "application/json, text/event-stream",
           "mcp-session-id": transport.sessionId
         },
         body: JSON.stringify(requestMessage1),
@@ -639,7 +639,7 @@ describe("StreamableHTTPServerTransport", () => {
         method: "POST",
         headers: {
           "content-type": "application/json",
-          "accept": "text/event-stream",
+          "accept": "application/json, text/event-stream",
           "mcp-session-id": transport.sessionId
         },
         body: JSON.stringify(requestMessage2),
@@ -691,7 +691,7 @@ describe("StreamableHTTPServerTransport", () => {
         method: "POST",
         headers: {
           "content-type": "application/json",
-          "accept": "application/json",
+          "accept": "application/json, text/event-stream",
         },
         body: "invalid json",
       });
@@ -712,7 +712,7 @@ describe("StreamableHTTPServerTransport", () => {
         method: "POST",
         headers: {
           "content-type": "application/json",
-          "accept": "application/json",
+          "accept": "application/json, text/event-stream",
         },
         body: JSON.stringify({ invalid: "message" }),
       });
@@ -745,7 +745,7 @@ describe("StreamableHTTPServerTransport", () => {
         method: "POST",
         headers: {
           "content-type": "application/json",
-          "accept": "application/json",
+          "accept": "application/json, text/event-stream",
         },
         // No body provided here - it will be passed as parsedBody
       });
@@ -761,7 +761,7 @@ describe("StreamableHTTPServerTransport", () => {
       expect(mockResponse.writeHead).toHaveBeenCalledWith(
         200,
         expect.objectContaining({
-          "Content-Type": "application/json",
+          "mcp-session-id": transport.sessionId,
         })
       );
     });
@@ -787,7 +787,7 @@ describe("StreamableHTTPServerTransport", () => {
         method: "POST",
         headers: {
           "content-type": "application/json",
-          "accept": "text/event-stream",
+          "accept": "application/json, text/event-stream",
           "mcp-session-id": transport.sessionId,
         },
         // No body provided here - it will be passed as parsedBody
@@ -825,7 +825,7 @@ describe("StreamableHTTPServerTransport", () => {
         method: "POST",
         headers: {
           "content-type": "application/json",
-          "accept": "application/json",
+          "accept": "application/json, text/event-stream",
           "mcp-session-id": transport.sessionId,
         },
         body: JSON.stringify(requestBodyMessage),
@@ -863,7 +863,7 @@ describe("StreamableHTTPServerTransport", () => {
         method: "POST",
         headers: {
           "content-type": "application/json",
-          accept: "text/event-stream",
+          accept: "application/json, text/event-stream",
           "mcp-session-id": transportWithHeaders.sessionId
         },
         body: JSON.stringify({
@@ -888,41 +888,11 @@ describe("StreamableHTTPServerTransport", () => {
       );
     });
 
-    it("should include custom headers in JSON response", async () => {
-      const message: JSONRPCMessage = {
-        jsonrpc: "2.0",
-        method: "test",
-        params: {},
-        id: 1,
-      };
-
-      const req = createMockRequest({
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          "accept": "application/json",
-          "mcp-session-id": transportWithHeaders.sessionId
-        },
-        body: JSON.stringify(message),
-      });
-
-      await transportWithHeaders.handleRequest(req, mockResponse);
-
-      expect(mockResponse.writeHead).toHaveBeenCalledWith(
-        200,
-        expect.objectContaining({
-          ...customHeaders,
-          "Content-Type": "application/json",
-          "mcp-session-id": transportWithHeaders.sessionId
-        })
-      );
-    });
-
     it("should include custom headers in error responses", async () => {
       const req = createMockRequest({
         method: "GET",
         headers: {
-          accept: "text/event-stream",
+          accept: "application/json, text/event-stream",
           "mcp-session-id": "invalid-session-id"
         },
       });
@@ -948,7 +918,7 @@ describe("StreamableHTTPServerTransport", () => {
         method: "POST",
         headers: {
           "content-type": "application/json",
-          accept: "text/event-stream",
+          accept: "application/json, text/event-stream",
           "mcp-session-id": transportWithConflictingHeaders.sessionId
         },
         body: JSON.stringify({
@@ -979,7 +949,7 @@ describe("StreamableHTTPServerTransport", () => {
         method: "POST",
         headers: {
           "content-type": "application/json",
-          accept: "text/event-stream",
+          accept: "application/json, text/event-stream",
           "mcp-session-id": transportWithoutHeaders.sessionId
         },
         body: JSON.stringify({
