@@ -13,15 +13,11 @@ export interface StreamableHTTPServerTransportOptions {
   /**
    * The session ID SHOULD be globally unique and cryptographically secure (e.g., a securely generated UUID, a JWT, or a cryptographic hash)
    * 
-   * When sessionId is not set, the transport will be in stateless mode.
+   * When there is no sessionId, the transport will not perform session management.
    */
   sessionId: string | undefined;
 
-  /**
-   * Custom headers to be included in all responses
-   * These headers will be added to both SSE and regular HTTP responses
-   */
-  customHeaders?: Record<string, string>;
+
 
 }
 
@@ -63,7 +59,6 @@ export class StreamableHTTPServerTransport implements Transport {
   // when sessionId is not set (undefined), it means the transport is in stateless mode
   private _sessionId: string | undefined;
   private _started: boolean = false;
-  private _customHeaders: Record<string, string>;
   private _sseResponseMapping: Map<RequestId, ServerResponse> = new Map();
 
   onclose?: () => void;
@@ -72,7 +67,6 @@ export class StreamableHTTPServerTransport implements Transport {
 
   constructor(options: StreamableHTTPServerTransportOptions) {
     this._sessionId = options.sessionId;
-    this._customHeaders = options.customHeaders || {};
   }
 
   /**
@@ -97,7 +91,7 @@ export class StreamableHTTPServerTransport implements Transport {
     } else if (req.method === "DELETE") {
       await this.handleDeleteRequest(req, res);
     } else {
-      res.writeHead(405, this._customHeaders).end(JSON.stringify({
+      res.writeHead(405).end(JSON.stringify({
         jsonrpc: "2.0",
         error: {
           code: -32000,
@@ -120,7 +114,6 @@ export class StreamableHTTPServerTransport implements Transport {
     }
 
     res.writeHead(405, {
-      ...this._customHeaders,
       "Allow": "POST, DELETE"
     }).end(JSON.stringify({
       jsonrpc: "2.0",
@@ -193,9 +186,7 @@ export class StreamableHTTPServerTransport implements Transport {
         msg => 'method' in msg && msg.method === 'initialize'
       );
       if (isInitializationRequest) {
-        const headers: Record<string, string> = {
-          ...this._customHeaders
-        };
+        const headers: Record<string, string> = {};
 
         if (this._sessionId !== undefined) {
           headers["mcp-session-id"] = this._sessionId;
@@ -232,14 +223,12 @@ export class StreamableHTTPServerTransport implements Transport {
         }
       } else if (hasRequests) {
         const headers: Record<string, string> = {
-          ...this._customHeaders,
           "Content-Type": "text/event-stream",
           "Cache-Control": "no-cache",
           Connection: "keep-alive",
         };
 
-        // For initialization requests, always include the session ID if we have one
-        // even if we're in stateless mode
+        // After initialization, always include the session ID if we have one
         if (this._sessionId !== undefined) {
           headers["mcp-session-id"] = this._sessionId;
         }
@@ -296,7 +285,7 @@ export class StreamableHTTPServerTransport implements Transport {
 
     if (!sessionId) {
       // Non-initialization requests without a session ID should return 400 Bad Request
-      res.writeHead(400, this._customHeaders).end(JSON.stringify({
+      res.writeHead(400).end(JSON.stringify({
         jsonrpc: "2.0",
         error: {
           code: -32000,
@@ -307,7 +296,7 @@ export class StreamableHTTPServerTransport implements Transport {
       return false;
     } else if ((Array.isArray(sessionId) ? sessionId[0] : sessionId) !== this._sessionId) {
       // Reject requests with invalid session ID with 404 Not Found
-      res.writeHead(404, this._customHeaders).end(JSON.stringify({
+      res.writeHead(404).end(JSON.stringify({
         jsonrpc: "2.0",
         error: {
           code: -32001,

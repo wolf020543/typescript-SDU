@@ -99,7 +99,7 @@ describe("StreamableHTTPServerTransport", () => {
 
       await transport.handleRequest(req, mockResponse);
 
-      expect(mockResponse.writeHead).toHaveBeenCalledWith(404, {});
+      expect(mockResponse.writeHead).toHaveBeenCalledWith(404);
       // check if the error response is a valid JSON-RPC error format
       expect(mockResponse.end).toHaveBeenCalledWith(expect.stringContaining('"jsonrpc":"2.0"'));
       expect(mockResponse.end).toHaveBeenCalledWith(expect.stringContaining('"error"'));
@@ -116,7 +116,7 @@ describe("StreamableHTTPServerTransport", () => {
 
       await transport.handleRequest(req, mockResponse);
 
-      expect(mockResponse.writeHead).toHaveBeenCalledWith(400, {});
+      expect(mockResponse.writeHead).toHaveBeenCalledWith(400);
       expect(mockResponse.end).toHaveBeenCalledWith(expect.stringContaining('"jsonrpc":"2.0"'));
       expect(mockResponse.end).toHaveBeenCalledWith(expect.stringContaining('"message":"Bad Request: Mcp-Session-Id header is required"'));
     });
@@ -840,137 +840,6 @@ describe("StreamableHTTPServerTransport", () => {
       // Should use the parsed body instead of the request body
       expect(onMessageMock).toHaveBeenCalledWith(parsedBodyMessage);
       expect(onMessageMock).not.toHaveBeenCalledWith(requestBodyMessage);
-    });
-  });
-
-  describe("Custom Headers", () => {
-    const customHeaders = {
-      "X-Custom-Header": "custom-value",
-      "X-API-Version": "1.0",
-      "Access-Control-Allow-Origin": "*"
-    };
-
-    let transportWithHeaders: StreamableHTTPServerTransport;
-    let mockResponse: jest.Mocked<ServerResponse>;
-
-    beforeEach(() => {
-      transportWithHeaders = new StreamableHTTPServerTransport({ sessionId: randomUUID(), customHeaders });
-      mockResponse = createMockResponse();
-    });
-
-    it("should include custom headers in SSE response", async () => {
-      const req = createMockRequest({
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          accept: "application/json, text/event-stream",
-          "mcp-session-id": transportWithHeaders.sessionId
-        },
-        body: JSON.stringify({
-          jsonrpc: "2.0",
-          method: "test",
-          params: {},
-          id: "test-headers-id"
-        })
-      });
-
-      await transportWithHeaders.handleRequest(req, mockResponse);
-
-      expect(mockResponse.writeHead).toHaveBeenCalledWith(
-        200,
-        expect.objectContaining({
-          ...customHeaders,
-          "Content-Type": "text/event-stream",
-          "Cache-Control": "no-cache",
-          "Connection": "keep-alive",
-          "mcp-session-id": transportWithHeaders.sessionId
-        })
-      );
-    });
-
-    it("should include custom headers in error responses", async () => {
-      const req = createMockRequest({
-        method: "GET",
-        headers: {
-          accept: "application/json, text/event-stream",
-          "mcp-session-id": "invalid-session-id"
-        },
-      });
-
-      await transportWithHeaders.handleRequest(req, mockResponse);
-
-      expect(mockResponse.writeHead).toHaveBeenCalledWith(
-        404,
-        expect.objectContaining(customHeaders)
-      );
-    });
-
-    it("should not override essential headers with custom headers", async () => {
-      const transportWithConflictingHeaders = new StreamableHTTPServerTransport({
-        sessionId: randomUUID(),
-        customHeaders: {
-          "Content-Type": "text/plain",
-          "X-Custom-Header": "custom-value"
-        }
-      });
-
-      const req = createMockRequest({
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          accept: "application/json, text/event-stream",
-          "mcp-session-id": transportWithConflictingHeaders.sessionId
-        },
-        body: JSON.stringify({
-          jsonrpc: "2.0",
-          method: "test",
-          params: {},
-          id: "test-conflict-id"
-        })
-      });
-
-      await transportWithConflictingHeaders.handleRequest(req, mockResponse);
-
-      expect(mockResponse.writeHead).toHaveBeenCalledWith(
-        200,
-        expect.objectContaining({
-          "Content-Type": "text/event-stream",
-          "X-Custom-Header": "custom-value"
-        })
-      );
-    });
-
-    it("should work with empty custom headers", async () => {
-      const transportWithoutHeaders = new StreamableHTTPServerTransport({
-        sessionId: randomUUID(),
-      });
-
-      const req = createMockRequest({
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          accept: "application/json, text/event-stream",
-          "mcp-session-id": transportWithoutHeaders.sessionId
-        },
-        body: JSON.stringify({
-          jsonrpc: "2.0",
-          method: "test",
-          params: {},
-          id: "test-empty-headers-id"
-        })
-      });
-
-      await transportWithoutHeaders.handleRequest(req, mockResponse);
-
-      expect(mockResponse.writeHead).toHaveBeenCalledWith(
-        200,
-        expect.objectContaining({
-          "Content-Type": "text/event-stream",
-          "Cache-Control": "no-cache",
-          "Connection": "keep-alive",
-          "mcp-session-id": transportWithoutHeaders.sessionId
-        })
-      );
     });
   });
 }); 

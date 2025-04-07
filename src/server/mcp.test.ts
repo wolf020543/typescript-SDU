@@ -379,7 +379,7 @@ describe("tool()", () => {
     expect(receivedSessionId).toBe("test-session-123");
   });
 
-  test("should provide sendNotification withing tool call", async () => {
+  test("should provide sendNotification within tool call", async () => {
     const mcpServer = new McpServer(
       {
         name: "test server",
@@ -401,12 +401,10 @@ describe("tool()", () => {
     );
 
     let receivedLogMessage: string | undefined;
-
-    const loggingMessage = "hello here is log message 1"
+    const loggingMessage = "hello here is log message 1";
 
     client.setNotificationHandler(LoggingMessageNotificationSchema, (notification) => {
       receivedLogMessage = notification.params.data as string;
-
     });
 
     mcpServer.tool("test-tool", async ({ sendNotification }) => {
@@ -422,15 +420,10 @@ describe("tool()", () => {
     });
 
     const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
-    // Set a test sessionId on the server transport
-    serverTransport.sessionId = "test-session-123";
-
-
     await Promise.all([
       client.connect(clientTransport),
       mcpServer.server.connect(serverTransport),
     ]);
-
     await client.request(
       {
         method: "tools/call",
