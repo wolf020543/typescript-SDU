@@ -98,9 +98,6 @@ export class StreamableHTTPServerTransport implements Transport {
    * For now we support only POST and DELETE requests. Support for GET for SSE connections will be added later.
    */
   private async handleUnsupportedRequest(req: IncomingMessage, res: ServerResponse): Promise<void> {
-    if (this._sessionId !== undefined && !this.validateSession(req, res)) {
-      return;
-    }
 
     res.writeHead(405, {
       "Allow": "POST, DELETE"

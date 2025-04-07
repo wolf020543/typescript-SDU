@@ -39,12 +39,19 @@ function createMockResponse(): jest.Mocked<ServerResponse> {
 describe("StreamableHTTPServerTransport", () => {
   let transport: StreamableHTTPServerTransport;
   let mockResponse: jest.Mocked<ServerResponse>;
+  let mockRequest: string;
 
   beforeEach(() => {
     transport = new StreamableHTTPServerTransport({
       sessionId: randomUUID(),
     });
     mockResponse = createMockResponse();
+    mockRequest = JSON.stringify({
+      jsonrpc: "2.0",
+      method: "test",
+      params: {},
+      id: 1,
+    });
   });
 
   afterEach(() => {
@@ -90,11 +97,13 @@ describe("StreamableHTTPServerTransport", () => {
 
     it("should reject invalid session ID", async () => {
       const req = createMockRequest({
-        method: "GET",
+        method: "POST",
         headers: {
           "mcp-session-id": "invalid-session-id",
-          "accept": "application/json, text/event-stream"
+          "accept": "application/json, text/event-stream",
+          "content-type": "application/json",
         },
+        body: mockRequest,
       });
 
       await transport.handleRequest(req, mockResponse);
@@ -107,11 +116,13 @@ describe("StreamableHTTPServerTransport", () => {
 
     it("should reject non-initialization requests without session ID with 400 Bad Request", async () => {
       const req = createMockRequest({
-        method: "GET",
+        method: "POST",
         headers: {
-          accept: "application/json, text/event-stream",
+          "accept": "application/json, text/event-stream",
+          "content-type": "application/json",
           // No mcp-session-id header
         },
+        body: mockRequest
       });
 
       await transport.handleRequest(req, mockResponse);
