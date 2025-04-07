@@ -1,22 +1,10 @@
-import { randomUUID } from "node:crypto";
 import { IncomingMessage, ServerResponse } from "node:http";
 import { Transport } from "../shared/transport.js";
-import { JSONRPCMessage, JSONRPCMessageSchema } from "../types.js";
+import { JSONRPCMessage, JSONRPCMessageSchema, RequestId } from "../types.js";
 import getRawBody from "raw-body";
 import contentType from "content-type";
 
 const MAXIMUM_MESSAGE_SIZE = "4mb";
-
-interface StreamConnection {
-  response: ServerResponse;
-  lastEventId?: string;
-  messages: Array<{
-    id: string;
-    message: JSONRPCMessage;
-  }>;
-  // mark this connection as a response to a specific request
-  requestId?: string | null;
-}
 
 /**
  * Configuration options for StreamableHTTPServerTransport
@@ -34,6 +22,7 @@ export interface StreamableHTTPServerTransportOptions {
    * These headers will be added to both SSE and regular HTTP responses
    */
   customHeaders?: Record<string, string>;
+
 }
 
 /**
@@ -71,16 +60,11 @@ export interface StreamableHTTPServerTransportOptions {
  * - No session validation is performed
  */
 export class StreamableHTTPServerTransport implements Transport {
-  private _connections: Map<string, StreamConnection> = new Map();
   // when sessionID is not set, it means the transport is in stateless mode
   private _sessionId: string | undefined;
-  private _messageHistory: Map<string, {
-    message: JSONRPCMessage;
-    connectionId?: string; // record which connection the message should be sent to
-  }> = new Map();
   private _started: boolean = false;
-  private _requestConnections: Map<string, string> = new Map(); // request ID to connection ID mapping
   private _customHeaders: Record<string, string>;
+  private _sseResponseMapping: Map<RequestId, ServerResponse> = new Map();
 
   onclose?: () => void;
   onerror?: (error: Error) => void;
@@ -108,37 +92,10 @@ export class StreamableHTTPServerTransport implements Transport {
   async handleRequest(req: IncomingMessage, res: ServerResponse, parsedBody?: unknown): Promise<void> {
     // Only validate session ID for non-initialization requests when session management is enabled
     if (this._sessionId !== undefined) {
-      const sessionId = req.headers["mcp-session-id"];
-
-      // Check if this might be an initialization request
       const isInitializationRequest = req.method === "POST" &&
         req.headers["content-type"]?.includes("application/json");
 
-      if (isInitializationRequest) {
-        // For POST requests with JSON content, we need to check if it's an initialization request
-        // This will be done in handlePostRequest, as we need to parse the body
-        // Continue processing normally
-      } else if (!sessionId) {
-        // Non-initialization requests without a session ID should return 400 Bad Request
-        res.writeHead(400, this._customHeaders).end(JSON.stringify({
-          jsonrpc: "2.0",
-          error: {
-            code: -32000,
-            message: "Bad Request: Mcp-Session-Id header is required"
-          },
-          id: null
-        }));
-        return;
-      } else if ((Array.isArray(sessionId) ? sessionId[0] : sessionId) !== this._sessionId) {
-        // Reject requests with invalid session ID with 404 Not Found
-        res.writeHead(404, this._customHeaders).end(JSON.stringify({
-          jsonrpc: "2.0",
-          error: {
-            code: -32001,
-            message: "Session not found"
-          },
-          id: null
-        }));
+      if (!isInitializationRequest && !this.validateSession(req, res)) {
         return;
       }
     }
@@ -163,66 +120,22 @@ export class StreamableHTTPServerTransport implements Transport {
 
   /**
    * Handles GET requests to establish SSE connections
+   * According to the MCP Streamable HTTP transport spec, the server MUST either return SSE or 405.
+   * We choose to return 405 Method Not Allowed as we don't support GET SSE connections yet.
    */
   private async handleGetRequest(req: IncomingMessage, res: ServerResponse): Promise<void> {
-    // validate the Accept header
-    const acceptHeader = req.headers.accept;
-    if (!acceptHeader || !acceptHeader.includes("text/event-stream")) {
-      res.writeHead(406, this._customHeaders).end(JSON.stringify({
-        jsonrpc: "2.0",
-        error: {
-          code: -32000,
-          message: "Not Acceptable: Client must accept text/event-stream"
-        },
-        id: null
-      }));
-      return;
-    }
-
-    const connectionId = randomUUID();
-    const lastEventId = req.headers["last-event-id"];
-    const lastEventIdStr = Array.isArray(lastEventId) ? lastEventId[0] : lastEventId;
-
-    // Prepare response headers
-    const headers: Record<string, string> = {
+    // Return 405 Method Not Allowed
+    res.writeHead(405, {
       ...this._customHeaders,
-      "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache",
-      Connection: "keep-alive",
-    };
-
-    // Only include session ID header if session management is enabled by assigning a value to _sessionId
-    if (this._sessionId !== undefined) {
-      headers["mcp-session-id"] = this._sessionId;
-    }
-
-    res.writeHead(200, headers);
-
-    const connection: StreamConnection = {
-      response: res,
-      lastEventId: lastEventIdStr,
-      messages: [],
-    };
-
-    this._connections.set(connectionId, connection);
-
-    // if there is a Last-Event-ID, replay messages on this connection
-    if (lastEventIdStr) {
-      this.replayMessages(connectionId, lastEventIdStr);
-    }
-
-    res.on("close", () => {
-      this._connections.delete(connectionId);
-      // remove all request mappings associated with this connection
-      for (const [reqId, connId] of this._requestConnections.entries()) {
-        if (connId === connectionId) {
-          this._requestConnections.delete(reqId);
-        }
-      }
-      if (this._connections.size === 0) {
-        this.onclose?.();
-      }
-    });
+      "Allow": "POST, DELETE"
+    }).end(JSON.stringify({
+      jsonrpc: "2.0",
+      error: {
+        code: -32000,
+        message: "Method not allowed: Server does not offer an SSE stream at this endpoint"
+      },
+      id: null
+    }));
   }
 
   /**
@@ -279,11 +192,18 @@ export class StreamableHTTPServerTransport implements Transport {
         messages = [JSONRPCMessageSchema.parse(rawMessage)];
       }
 
-      // Check if this is an initialization request
-      // https://spec.modelcontextprotocol.io/specification/2025-03-26/basic/lifecycle/
-      const isInitializationRequest = messages.some(
-        msg => 'method' in msg && msg.method === 'initialize' && 'id' in msg
-      );
+      if (this._sessionId !== undefined) {
+        // Check if this is an initialization request
+        // https://spec.modelcontextprotocol.io/specification/2025-03-26/basic/lifecycle/
+        const isInitializationRequest = messages.some(
+          msg => 'method' in msg && msg.method === 'initialize' && 'id' in msg
+        );
+
+        if (!isInitializationRequest && !this.validateSession(req, res)) {
+          return;
+        }
+      }
+
 
       // check if it contains requests
       const hasRequests = messages.some(msg => 'method' in msg && 'id' in msg);
@@ -310,40 +230,29 @@ export class StreamableHTTPServerTransport implements Transport {
             Connection: "keep-alive",
           };
 
+          // For initialization requests, always include the session ID if we have one
+          // even if we're in stateless mode
           if (this._sessionId !== undefined) {
             headers["mcp-session-id"] = this._sessionId;
           }
 
           res.writeHead(200, headers);
 
-          const connectionId = randomUUID();
-          const connection: StreamConnection = {
-            response: res,
-            messages: [],
-          };
-
-          this._connections.set(connectionId, connection);
-
-          // map each request to a connection ID
+          // Store the response for this request to send messages back through this connection
+          // We need to track by request ID to maintain the connection
           for (const message of messages) {
             if ('method' in message && 'id' in message) {
-              this._requestConnections.set(String(message.id), connectionId);
+              this._sseResponseMapping.set(message.id, res);
             }
+          }
+
+          // handle each message
+          for (const message of messages) {
             this.onmessage?.(message);
           }
 
-          res.on("close", () => {
-            this._connections.delete(connectionId);
-            // remove all request mappings associated with this connection
-            for (const [reqId, connId] of this._requestConnections.entries()) {
-              if (connId === connectionId) {
-                this._requestConnections.delete(reqId);
-              }
-            }
-            if (this._connections.size === 0) {
-              this.onclose?.();
-            }
-          });
+          // The server SHOULD NOT close the SSE stream before sending all JSON-RPC responses
+          // This will be handled by the send() method when responses are ready
         } else {
           // use direct JSON response
           const headers: Record<string, string> = {
@@ -351,7 +260,8 @@ export class StreamableHTTPServerTransport implements Transport {
             "Content-Type": "application/json",
           };
 
-
+          // For initialization requests, always include the session ID if we have one
+          // even if we're in stateless mode
           if (this._sessionId !== undefined) {
             headers["mcp-session-id"] = this._sessionId;
           }
@@ -390,97 +300,73 @@ export class StreamableHTTPServerTransport implements Transport {
   }
 
   /**
-   * Replays messages after the specified event ID for a specific connection
+   * Validates session ID for non-initialization requests when session management is enabled
+   * Returns true if the session is valid, false otherwise
    */
-  private replayMessages(connectionId: string, lastEventId: string): void {
-    if (!lastEventId) return;
+  private validateSession(req: IncomingMessage, res: ServerResponse): boolean {
+    const sessionId = req.headers["mcp-session-id"];
 
-    // only replay messages that should be sent on this connection
-    const messages = Array.from(this._messageHistory.entries())
-      .filter(([id, { connectionId: msgConnId }]) =>
-        id > lastEventId &&
-        (!msgConnId || msgConnId === connectionId)) // only replay messages that are not specified to a connection or specified to the current connection
-      .sort(([a], [b]) => a.localeCompare(b));
-
-    const connection = this._connections.get(connectionId);
-    if (!connection) return;
-
-    for (const [id, { message }] of messages) {
-      connection.response.write(
-        `id: ${id}\nevent: message\ndata: ${JSON.stringify(message)}\n\n`
-      );
+    if (!sessionId) {
+      // Non-initialization requests without a session ID should return 400 Bad Request
+      res.writeHead(400, this._customHeaders).end(JSON.stringify({
+        jsonrpc: "2.0",
+        error: {
+          code: -32000,
+          message: "Bad Request: Mcp-Session-Id header is required"
+        },
+        id: null
+      }));
+      return false;
+    } else if ((Array.isArray(sessionId) ? sessionId[0] : sessionId) !== this._sessionId) {
+      // Reject requests with invalid session ID with 404 Not Found
+      res.writeHead(404, this._customHeaders).end(JSON.stringify({
+        jsonrpc: "2.0",
+        error: {
+          code: -32001,
+          message: "Session not found"
+        },
+        id: null
+      }));
+      return false;
     }
+
+    return true;
   }
 
+
   async close(): Promise<void> {
-    for (const connection of this._connections.values()) {
-      connection.response.end();
-    }
-    this._connections.clear();
-    this._messageHistory.clear();
-    this._requestConnections.clear();
+    // Close all SSE connections
+    this._sseResponseMapping.forEach((response) => {
+      response.end();
+    });
+    this._sseResponseMapping.clear();
     this.onclose?.();
   }
 
-  async send(message: JSONRPCMessage): Promise<void> {
-    if (this._connections.size === 0) {
-      throw new Error("No active connections");
+  async send(message: JSONRPCMessage, options?: { relatedRequestId?: RequestId }): Promise<void> {
+    const relatedRequestId = options?.relatedRequestId;
+    if (relatedRequestId === undefined) {
+      throw new Error("relatedRequestId is required");
     }
 
-    let targetConnectionId = "";
-
-    // if it is a response, find the corresponding request connection
-    if ('id' in message && ('result' in message || 'error' in message)) {
-      const connId = this._requestConnections.get(String(message.id));
-
-      // if the corresponding connection is not found, the connection may be disconnected
-      if (!connId || !this._connections.has(connId)) {
-        // select an available connection
-        const firstConnId = this._connections.keys().next().value;
-        if (firstConnId) {
-          targetConnectionId = firstConnId;
-        } else {
-          throw new Error("No available connections");
-        }
-      } else {
-        targetConnectionId = connId;
-      }
-    } else {
-      // for other messages, select an available connection
-      const firstConnId = this._connections.keys().next().value;
-      if (firstConnId) {
-        targetConnectionId = firstConnId;
-      } else {
-        throw new Error("No available connections");
-      }
+    const sseResponse = this._sseResponseMapping.get(relatedRequestId);
+    if (!sseResponse) {
+      throw new Error("No SSE connection established");
     }
 
-    const messageId = randomUUID();
-    this._messageHistory.set(messageId, {
-      message,
-      connectionId: targetConnectionId
-    });
+    // Send the message as an SSE event
+    sseResponse.write(
+      `event: message\ndata: ${JSON.stringify(message)}\n\n`,
+    );
 
-    // keep the message history in a reasonable range
-    if (this._messageHistory.size > 1000) {
-      const oldestKey = Array.from(this._messageHistory.keys())[0];
-      this._messageHistory.delete(oldestKey);
-    }
-
-    // send the message to all active connections
-    for (const [connId, connection] of this._connections.entries()) {
-      // if it is a response message, only send to the target connection
-      if ('id' in message && ('result' in message || 'error' in message)) {
-        if (connId === targetConnectionId) {
-          connection.response.write(
-            `id: ${messageId}\nevent: message\ndata: ${JSON.stringify(message)}\n\n`
-          );
-        }
-      } else {
-        // for other messages, send to all connections
-        connection.response.write(
-          `id: ${messageId}\nevent: message\ndata: ${JSON.stringify(message)}\n\n`
-        );
+    // If this is a response message with the same ID as the request, we can check
+    // if we need to close the stream after sending the response
+    if ('result' in message || 'error' in message) {
+      if (message.id === relatedRequestId) {
+        // This is a response to the original request, we can close the stream
+        // after sending all related responses
+        this._sseResponseMapping.delete(relatedRequestId);
+        sseResponse.end();
       }
     }
   }

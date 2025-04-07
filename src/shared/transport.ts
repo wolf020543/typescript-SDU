@@ -16,7 +16,7 @@ export interface Transport {
   /**
    * Sends a JSON-RPC message (request or response).
    * 
-   * If present, `relatedRequestId` is used to indicate to the transport which incoming request to associate this outgoing message with. 
+   * If present, `relatedRequestId` is used to indicate to the transport which incoming request to associate this outgoing message with.
    */
   send(message: JSONRPCMessage, options?: { relatedRequestId?: RequestId }): Promise<void>;
 

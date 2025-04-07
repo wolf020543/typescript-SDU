@@ -52,7 +52,7 @@ describe("StreamableHTTPServerTransport", () => {
   });
 
   describe("Session Management", () => {
-    it("should generate a valid session ID", () => {
+    it("should store a valid session ID", () => {
       expect(transport.sessionId).toBeTruthy();
       expect(typeof transport.sessionId).toBe("string");
     });
@@ -158,11 +158,18 @@ describe("StreamableHTTPServerTransport", () => {
 
     it("should not validate session ID in stateless mode", async () => {
       const req = createMockRequest({
-        method: "GET",
+        method: "POST",
         headers: {
-          accept: "text/event-stream",
+          "content-type": "application/json",
+          "accept": "application/json",
           "mcp-session-id": "invalid-session-id", // This would cause a 404 in stateful mode
         },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          method: "test",
+          params: {},
+          id: 1
+        }),
       });
 
       await statelessTransport.handleRequest(req, mockResponse);
@@ -206,10 +213,17 @@ describe("StreamableHTTPServerTransport", () => {
     it("should work with a mix of requests with and without session IDs in stateless mode", async () => {
       // First request without session ID
       const req1 = createMockRequest({
-        method: "GET",
+        method: "POST",
         headers: {
+          "content-type": "application/json",
           accept: "text/event-stream",
         },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          method: "test",
+          params: {},
+          id: "test-id"
+        })
       });
 
       await statelessTransport.handleRequest(req1, mockResponse);
@@ -225,11 +239,18 @@ describe("StreamableHTTPServerTransport", () => {
 
       // Second request with a session ID (which would be invalid in stateful mode)
       const req2 = createMockRequest({
-        method: "GET",
+        method: "POST",
         headers: {
+          "content-type": "application/json",
           accept: "text/event-stream",
           "mcp-session-id": "some-random-session-id",
         },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          method: "test2",
+          params: {},
+          id: "test-id-2"
+        })
       });
 
       await statelessTransport.handleRequest(req2, mockResponse);
@@ -308,21 +329,7 @@ describe("StreamableHTTPServerTransport", () => {
   });
 
   describe("Request Handling", () => {
-    it("should reject GET requests without Accept: text/event-stream header", async () => {
-      const req = createMockRequest({
-        method: "GET",
-        headers: {
-          "mcp-session-id": transport.sessionId,
-        },
-      });
-
-      await transport.handleRequest(req, mockResponse);
-
-      expect(mockResponse.writeHead).toHaveBeenCalledWith(406, {});
-      expect(mockResponse.end).toHaveBeenCalledWith(expect.stringContaining('"jsonrpc":"2.0"'));
-    });
-
-    it("should properly handle GET requests with Accept header and establish SSE connection", async () => {
+    it("should reject GET requests for SSE with 405 Method Not Allowed", async () => {
       const req = createMockRequest({
         method: "GET",
         headers: {
@@ -333,14 +340,11 @@ describe("StreamableHTTPServerTransport", () => {
 
       await transport.handleRequest(req, mockResponse);
 
-      expect(mockResponse.writeHead).toHaveBeenCalledWith(
-        200,
-        expect.objectContaining({
-          "Content-Type": "text/event-stream",
-          "Cache-Control": "no-cache",
-          Connection: "keep-alive",
-        })
-      );
+      expect(mockResponse.writeHead).toHaveBeenCalledWith(405, expect.objectContaining({
+        "Allow": "POST, DELETE"
+      }));
+      expect(mockResponse.end).toHaveBeenCalledWith(expect.stringContaining('"jsonrpc":"2.0"'));
+      expect(mockResponse.end).toHaveBeenCalledWith(expect.stringContaining('Server does not offer an SSE stream at this endpoint'));
     });
 
     it("should reject POST requests without proper Accept header", async () => {
@@ -421,7 +425,7 @@ describe("StreamableHTTPServerTransport", () => {
       expect(mockResponse.writeHead).toHaveBeenCalledWith(202);
     });
 
-    it("should handle batch messages properly", async () => {
+    it("should handle batch notification messages properly with 202 response", async () => {
       const batchMessages: JSONRPCMessage[] = [
         { jsonrpc: "2.0", method: "test1", params: {} },
         { jsonrpc: "2.0", method: "test2", params: {} },
@@ -444,6 +448,39 @@ describe("StreamableHTTPServerTransport", () => {
 
       expect(onMessageMock).toHaveBeenCalledTimes(2);
       expect(mockResponse.writeHead).toHaveBeenCalledWith(202);
+    });
+
+    it("should handle batch request messages with SSE when Accept header includes text/event-stream", async () => {
+      const batchMessages: JSONRPCMessage[] = [
+        { jsonrpc: "2.0", method: "test1", params: {}, id: "req1" },
+        { jsonrpc: "2.0", method: "test2", params: {}, id: "req2" },
+      ];
+
+      const req = createMockRequest({
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "accept": "text/event-stream, application/json",
+          "mcp-session-id": transport.sessionId,
+        },
+        body: JSON.stringify(batchMessages),
+      });
+
+      const onMessageMock = jest.fn();
+      transport.onmessage = onMessageMock;
+
+      await transport.handleRequest(req, mockResponse);
+
+      // Should establish SSE connection
+      expect(mockResponse.writeHead).toHaveBeenCalledWith(
+        200,
+        expect.objectContaining({
+          "Content-Type": "text/event-stream"
+        })
+      );
+      expect(onMessageMock).toHaveBeenCalledTimes(2);
+      // Stream should remain open until responses are sent
+      expect(mockResponse.end).not.toHaveBeenCalled();
     });
 
     it("should reject unsupported Content-Type", async () => {
@@ -481,130 +518,170 @@ describe("StreamableHTTPServerTransport", () => {
     });
   });
 
-  describe("Message Replay", () => {
-    it("should replay messages after specified Last-Event-ID", async () => {
-      // Establish first connection with Accept header and session ID
-      const req1 = createMockRequest({
-        method: "GET",
+  describe("SSE Response Handling", () => {
+    it("should send response messages as SSE events", async () => {
+      // Setup a POST request with JSON-RPC request that accepts SSE
+      const requestMessage: JSONRPCMessage = {
+        jsonrpc: "2.0",
+        method: "test",
+        params: {},
+        id: "test-req-id"
+      };
+
+      const req = createMockRequest({
+        method: "POST",
         headers: {
+          "content-type": "application/json",
           "accept": "text/event-stream",
           "mcp-session-id": transport.sessionId
         },
-      });
-      await transport.handleRequest(req1, mockResponse);
-
-      // Send a message to first connection
-      const message1: JSONRPCMessage = {
-        jsonrpc: "2.0",
-        method: "test1",
-        params: {},
-        id: 1
-      };
-
-      await transport.send(message1);
-
-      // Get message ID (captured from write call)
-      const writeCall = mockResponse.write.mock.calls[0][0] as string;
-      const idMatch = writeCall.match(/id: ([a-f0-9-]+)/);
-      if (!idMatch) {
-        throw new Error("Message ID not found in write call");
-      }
-      const lastEventId = idMatch[1];
-
-      // Create a second connection with last-event-id
-      const mockResponse2 = createMockResponse();
-      const req2 = createMockRequest({
-        method: "GET",
-        headers: {
-          "accept": "text/event-stream",
-          "last-event-id": lastEventId,
-          "mcp-session-id": transport.sessionId
-        },
+        body: JSON.stringify(requestMessage)
       });
 
-      await transport.handleRequest(req2, mockResponse2);
+      await transport.handleRequest(req, mockResponse);
 
-      // Send a second message
-      const message2: JSONRPCMessage = {
+      // Send a response to the request
+      const responseMessage: JSONRPCMessage = {
         jsonrpc: "2.0",
-        method: "test2",
-        params: {},
-        id: 2
+        result: { value: "test-result" },
+        id: "test-req-id"
       };
 
-      await transport.send(message2);
+      await transport.send(responseMessage, { relatedRequestId: "test-req-id" });
 
-      // Verify the second message was received by both connections
+      // Verify response was sent as SSE event
       expect(mockResponse.write).toHaveBeenCalledWith(
-        expect.stringContaining(JSON.stringify(message1))
+        expect.stringContaining(`event: message\ndata: ${JSON.stringify(responseMessage)}\n\n`)
       );
-      expect(mockResponse2.write).toHaveBeenCalledWith(
-        expect.stringContaining(JSON.stringify(message2))
-      );
+
+      // Stream should be closed after sending response
+      expect(mockResponse.end).toHaveBeenCalled();
+    });
+
+    it("should keep stream open when sending intermediate notifications and requests", async () => {
+      // Setup a POST request with JSON-RPC request that accepts SSE
+      const requestMessage: JSONRPCMessage = {
+        jsonrpc: "2.0",
+        method: "test",
+        params: {},
+        id: "test-req-id"
+      };
+
+      const req = createMockRequest({
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "accept": "text/event-stream",
+          "mcp-session-id": transport.sessionId
+        },
+        body: JSON.stringify(requestMessage)
+      });
+
+      await transport.handleRequest(req, mockResponse);
+
+      // Send an intermediate notification 
+      const notification: JSONRPCMessage = {
+        jsonrpc: "2.0",
+        method: "progress",
+        params: { progress: "50%" }
+      };
+
+      await transport.send(notification, { relatedRequestId: "test-req-id" });
+
+      // Stream should remain open
+      expect(mockResponse.end).not.toHaveBeenCalled();
+
+      // Send the final response
+      const responseMessage: JSONRPCMessage = {
+        jsonrpc: "2.0",
+        result: { value: "test-result" },
+        id: "test-req-id"
+      };
+
+      await transport.send(responseMessage, { relatedRequestId: "test-req-id" });
+
+      // Now stream should be closed
+      expect(mockResponse.end).toHaveBeenCalled();
     });
   });
 
   describe("Message Targeting", () => {
     it("should send response messages to the connection that sent the request", async () => {
-      // Create two connections
-      const mockResponse1 = createMockResponse();
-      const req1 = createMockRequest({
-        method: "GET",
-        headers: {
-          "accept": "text/event-stream",
-        },
-      });
-      await transport.handleRequest(req1, mockResponse1);
-
-      const mockResponse2 = createMockResponse();
-      const req2 = createMockRequest({
-        method: "GET",
-        headers: {
-          "accept": "text/event-stream",
-        },
-      });
-      await transport.handleRequest(req2, mockResponse2);
-
-      // Send a request through the first connection
-      const requestMessage: JSONRPCMessage = {
+      // Create request with two separate connections
+      const requestMessage1: JSONRPCMessage = {
         jsonrpc: "2.0",
-        method: "test",
+        method: "test1",
         params: {},
-        id: "test-id",
+        id: "req-id-1",
       };
 
-      const reqPost = createMockRequest({
+      const mockResponse1 = createMockResponse();
+      const req1 = createMockRequest({
         method: "POST",
         headers: {
           "content-type": "application/json",
           "accept": "text/event-stream",
+          "mcp-session-id": transport.sessionId
         },
-        body: JSON.stringify(requestMessage),
+        body: JSON.stringify(requestMessage1),
       });
+      await transport.handleRequest(req1, mockResponse1);
 
-      await transport.handleRequest(reqPost, mockResponse1);
-
-      // Send a response with matching ID
-      const responseMessage: JSONRPCMessage = {
+      const requestMessage2: JSONRPCMessage = {
         jsonrpc: "2.0",
-        result: { success: true },
-        id: "test-id",
+        method: "test2",
+        params: {},
+        id: "req-id-2",
       };
 
-      await transport.send(responseMessage);
+      const mockResponse2 = createMockResponse();
+      const req2 = createMockRequest({
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "accept": "text/event-stream",
+          "mcp-session-id": transport.sessionId
+        },
+        body: JSON.stringify(requestMessage2),
+      });
+      await transport.handleRequest(req2, mockResponse2);
 
-      // Verify response was sent to the right connection
+      // Send responses with matching IDs
+      const responseMessage1: JSONRPCMessage = {
+        jsonrpc: "2.0",
+        result: { success: true },
+        id: "req-id-1",
+      };
+
+      await transport.send(responseMessage1, { relatedRequestId: "req-id-1" });
+
+      const responseMessage2: JSONRPCMessage = {
+        jsonrpc: "2.0",
+        result: { success: true },
+        id: "req-id-2",
+      };
+
+      await transport.send(responseMessage2, { relatedRequestId: "req-id-2" });
+
+      // Verify responses were sent to the right connections
       expect(mockResponse1.write).toHaveBeenCalledWith(
-        expect.stringContaining(JSON.stringify(responseMessage))
+        expect.stringContaining(JSON.stringify(responseMessage1))
       );
 
-      // Check if write was called with this exact message on the second connection
-      const writeCallsOnSecondConn = mockResponse2.write.mock.calls.filter(call =>
-        typeof call[0] === 'string' && call[0].includes(JSON.stringify(responseMessage))
+      expect(mockResponse2.write).toHaveBeenCalledWith(
+        expect.stringContaining(JSON.stringify(responseMessage2))
       );
 
-      // Verify the response wasn't broadcast to all connections
-      expect(writeCallsOnSecondConn.length).toBe(0);
+      // Verify responses were not sent to the wrong connections
+      const resp1HasResp2 = mockResponse1.write.mock.calls.some(call =>
+        typeof call[0] === 'string' && call[0].includes(JSON.stringify(responseMessage2))
+      );
+      expect(resp1HasResp2).toBe(false);
+
+      const resp2HasResp1 = mockResponse2.write.mock.calls.some(call =>
+        typeof call[0] === 'string' && call[0].includes(JSON.stringify(responseMessage1))
+      );
+      expect(resp2HasResp1).toBe(false);
     });
   });
 
@@ -749,6 +826,7 @@ describe("StreamableHTTPServerTransport", () => {
         headers: {
           "content-type": "application/json",
           "accept": "application/json",
+          "mcp-session-id": transport.sessionId,
         },
         body: JSON.stringify(requestBodyMessage),
       });
@@ -782,11 +860,18 @@ describe("StreamableHTTPServerTransport", () => {
 
     it("should include custom headers in SSE response", async () => {
       const req = createMockRequest({
-        method: "GET",
+        method: "POST",
         headers: {
+          "content-type": "application/json",
           accept: "text/event-stream",
           "mcp-session-id": transportWithHeaders.sessionId
         },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          method: "test",
+          params: {},
+          id: "test-headers-id"
+        })
       });
 
       await transportWithHeaders.handleRequest(req, mockResponse);
@@ -860,11 +945,18 @@ describe("StreamableHTTPServerTransport", () => {
       });
 
       const req = createMockRequest({
-        method: "GET",
+        method: "POST",
         headers: {
+          "content-type": "application/json",
           accept: "text/event-stream",
           "mcp-session-id": transportWithConflictingHeaders.sessionId
         },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          method: "test",
+          params: {},
+          id: "test-conflict-id"
+        })
       });
 
       await transportWithConflictingHeaders.handleRequest(req, mockResponse);
@@ -872,7 +964,7 @@ describe("StreamableHTTPServerTransport", () => {
       expect(mockResponse.writeHead).toHaveBeenCalledWith(
         200,
         expect.objectContaining({
-          "Content-Type": "text/event-stream", // 应该保持原有的 Content-Type
+          "Content-Type": "text/event-stream",
           "X-Custom-Header": "custom-value"
         })
       );
@@ -884,11 +976,18 @@ describe("StreamableHTTPServerTransport", () => {
       });
 
       const req = createMockRequest({
-        method: "GET",
+        method: "POST",
         headers: {
+          "content-type": "application/json",
           accept: "text/event-stream",
           "mcp-session-id": transportWithoutHeaders.sessionId
         },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          method: "test",
+          params: {},
+          id: "test-empty-headers-id"
+        })
       });
 
       await transportWithoutHeaders.handleRequest(req, mockResponse);
