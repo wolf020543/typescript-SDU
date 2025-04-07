@@ -111,11 +111,6 @@ export type RequestHandlerExtra<SendRequestT extends Request,
     sessionId?: string;
 
     /**
-     * The authenticated user, if available.
-     */
-    user?: unknown;
-
-    /**
        * Sends a notification that relates to the current request being handled.
        * 
        * This is used by certain transports to correctly associate related messages.
@@ -354,7 +349,6 @@ export abstract class Protocol<
     const extra: RequestHandlerExtra<SendRequestT, SendNotificationT> = {
       signal: abortController.signal,
       sessionId: this._transport?.sessionId,
-      user: this._transport?.user,
       sendNotification:
         (notification) =>
           this.notification(notification, { relatedRequestId: request.id }),
