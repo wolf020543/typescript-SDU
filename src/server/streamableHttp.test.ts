@@ -43,7 +43,7 @@ describe("StreamableHTTPServerTransport", () => {
 
   beforeEach(() => {
     transport = new StreamableHTTPServerTransport({
-      sessionId: randomUUID(),
+      sessionIdGenerator: () => randomUUID(),
     });
     mockResponse = createMockResponse();
     mockRequest = JSON.stringify({
@@ -59,13 +59,7 @@ describe("StreamableHTTPServerTransport", () => {
   });
 
   describe("Session Management", () => {
-    it("should store a valid session ID", () => {
-      expect(transport.sessionId).toBeTruthy();
-      expect(typeof transport.sessionId).toBe("string");
-    });
-
-    it("should include session ID in response headers", async () => {
-      // Use POST with initialize method to avoid session ID requirement
+    it("should generate session ID during initialization", async () => {
       const initializeMessage: JSONRPCMessage = {
         jsonrpc: "2.0",
         method: "initialize",
@@ -85,8 +79,13 @@ describe("StreamableHTTPServerTransport", () => {
         body: JSON.stringify(initializeMessage),
       });
 
+      expect(transport.sessionId).toBeUndefined();
+      expect(transport["_initialized"]).toBe(false);
+
       await transport.handleRequest(req, mockResponse);
 
+      expect(transport.sessionId).toBeDefined();
+      expect(transport["_initialized"]).toBe(true);
       expect(mockResponse.writeHead).toHaveBeenCalledWith(
         200,
         expect.objectContaining({
@@ -95,7 +94,122 @@ describe("StreamableHTTPServerTransport", () => {
       );
     });
 
+    it("should reject second initialization request", async () => {
+      // First initialize
+      const initMessage1: JSONRPCMessage = {
+        jsonrpc: "2.0",
+        method: "initialize",
+        params: {
+          clientInfo: { name: "test-client", version: "1.0" },
+          protocolVersion: "2025-03-26"
+        },
+        id: "init-1",
+      };
+
+      const req1 = createMockRequest({
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "accept": "application/json, text/event-stream",
+        },
+        body: JSON.stringify(initMessage1),
+      });
+
+      await transport.handleRequest(req1, mockResponse);
+      expect(transport["_initialized"]).toBe(true);
+
+      // Reset mock for second request
+      mockResponse.writeHead.mockClear();
+      mockResponse.end.mockClear();
+
+      // Try second initialize
+      const initMessage2: JSONRPCMessage = {
+        jsonrpc: "2.0",
+        method: "initialize",
+        params: {
+          clientInfo: { name: "test-client", version: "1.0" },
+          protocolVersion: "2025-03-26"
+        },
+        id: "init-2",
+      };
+
+      const req2 = createMockRequest({
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "accept": "application/json, text/event-stream",
+        },
+        body: JSON.stringify(initMessage2),
+      });
+
+      await transport.handleRequest(req2, mockResponse);
+
+      expect(mockResponse.writeHead).toHaveBeenCalledWith(400);
+      expect(mockResponse.end).toHaveBeenCalledWith(expect.stringContaining('"message":"Invalid Request: Server already initialized"'));
+    });
+
+    it("should reject batch initialize request", async () => {
+      const batchInitialize: JSONRPCMessage[] = [
+        {
+          jsonrpc: "2.0",
+          method: "initialize",
+          params: {
+            clientInfo: { name: "test-client", version: "1.0" },
+            protocolVersion: "2025-03-26"
+          },
+          id: "init-1",
+        },
+        {
+          jsonrpc: "2.0",
+          method: "initialize",
+          params: {
+            clientInfo: { name: "test-client-2", version: "1.0" },
+            protocolVersion: "2025-03-26"
+          },
+          id: "init-2",
+        }
+      ];
+
+      const req = createMockRequest({
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "accept": "application/json, text/event-stream",
+        },
+        body: JSON.stringify(batchInitialize),
+      });
+
+      await transport.handleRequest(req, mockResponse);
+
+      expect(mockResponse.writeHead).toHaveBeenCalledWith(400);
+      expect(mockResponse.end).toHaveBeenCalledWith(expect.stringContaining('"message":"Invalid Request: Only one initialization request is allowed"'));
+    });
+
     it("should reject invalid session ID", async () => {
+      // First initialize the transport
+      const initMessage: JSONRPCMessage = {
+        jsonrpc: "2.0",
+        method: "initialize",
+        params: {
+          clientInfo: { name: "test-client", version: "1.0" },
+          protocolVersion: "2025-03-26"
+        },
+        id: "init-1",
+      };
+
+      const initReq = createMockRequest({
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "accept": "application/json, text/event-stream",
+        },
+        body: JSON.stringify(initMessage),
+      });
+
+      await transport.handleRequest(initReq, mockResponse);
+      mockResponse.writeHead.mockClear();
+
+      // Now try with an invalid session ID
       const req = createMockRequest({
         method: "POST",
         headers: {
@@ -109,12 +223,35 @@ describe("StreamableHTTPServerTransport", () => {
       await transport.handleRequest(req, mockResponse);
 
       expect(mockResponse.writeHead).toHaveBeenCalledWith(404);
-      // check if the error response is a valid JSON-RPC error format
       expect(mockResponse.end).toHaveBeenCalledWith(expect.stringContaining('"jsonrpc":"2.0"'));
-      expect(mockResponse.end).toHaveBeenCalledWith(expect.stringContaining('"error"'));
+      expect(mockResponse.end).toHaveBeenCalledWith(expect.stringContaining('"message":"Session not found"'));
     });
 
     it("should reject non-initialization requests without session ID with 400 Bad Request", async () => {
+      // First initialize the transport
+      const initMessage: JSONRPCMessage = {
+        jsonrpc: "2.0",
+        method: "initialize",
+        params: {
+          clientInfo: { name: "test-client", version: "1.0" },
+          protocolVersion: "2025-03-26"
+        },
+        id: "init-1",
+      };
+
+      const initReq = createMockRequest({
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "accept": "application/json, text/event-stream",
+        },
+        body: JSON.stringify(initMessage),
+      });
+
+      await transport.handleRequest(initReq, mockResponse);
+      mockResponse.writeHead.mockClear();
+
+      // Now try without session ID
       const req = createMockRequest({
         method: "POST",
         headers: {
@@ -131,17 +268,103 @@ describe("StreamableHTTPServerTransport", () => {
       expect(mockResponse.end).toHaveBeenCalledWith(expect.stringContaining('"jsonrpc":"2.0"'));
       expect(mockResponse.end).toHaveBeenCalledWith(expect.stringContaining('"message":"Bad Request: Mcp-Session-Id header is required"'));
     });
-  });
-  describe("Stateless Mode", () => {
-    let statelessTransport: StreamableHTTPServerTransport;
-    let mockResponse: jest.Mocked<ServerResponse>;
 
-    beforeEach(() => {
-      statelessTransport = new StreamableHTTPServerTransport({ sessionId: undefined });
-      mockResponse = createMockResponse();
+    it("should reject requests to uninitialized server", async () => {
+      // Create a new transport that hasn't been initialized
+      const uninitializedTransport = new StreamableHTTPServerTransport({
+        sessionIdGenerator: () => randomUUID(),
+      });
+
+      const req = createMockRequest({
+        method: "POST",
+        headers: {
+          "accept": "application/json, text/event-stream",
+          "content-type": "application/json",
+          "mcp-session-id": "any-session-id",
+        },
+        body: mockRequest
+      });
+
+      await uninitializedTransport.handleRequest(req, mockResponse);
+
+      expect(mockResponse.writeHead).toHaveBeenCalledWith(400);
+      expect(mockResponse.end).toHaveBeenCalledWith(expect.stringContaining('"message":"Bad Request: Server not initialized"'));
     });
 
-    it("should not include session ID in response headers when in stateless mode", async () => {
+    it("should reject session ID as array", async () => {
+      // First initialize the transport
+      const initMessage: JSONRPCMessage = {
+        jsonrpc: "2.0",
+        method: "initialize",
+        params: {
+          clientInfo: { name: "test-client", version: "1.0" },
+          protocolVersion: "2025-03-26"
+        },
+        id: "init-1",
+      };
+
+      const initReq = createMockRequest({
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "accept": "application/json, text/event-stream",
+        },
+        body: JSON.stringify(initMessage),
+      });
+
+      await transport.handleRequest(initReq, mockResponse);
+      mockResponse.writeHead.mockClear();
+
+      // Now try with an array session ID
+      const req = createMockRequest({
+        method: "POST",
+        headers: {
+          "mcp-session-id": ["session1", "session2"],
+          "accept": "application/json, text/event-stream",
+          "content-type": "application/json",
+        },
+        body: mockRequest,
+      });
+
+      await transport.handleRequest(req, mockResponse);
+
+      expect(mockResponse.writeHead).toHaveBeenCalledWith(400);
+      expect(mockResponse.end).toHaveBeenCalledWith(expect.stringContaining('"message":"Bad Request: Mcp-Session-Id header must be a single value"'));
+    });
+  });
+  describe("Mode without state management", () => {
+    let transportWithoutState: StreamableHTTPServerTransport;
+    let mockResponse: jest.Mocked<ServerResponse>;
+
+    beforeEach(async () => {
+      transportWithoutState = new StreamableHTTPServerTransport({ sessionIdGenerator: () => undefined });
+      mockResponse = createMockResponse();
+
+      // Initialize the transport for each test
+      const initMessage: JSONRPCMessage = {
+        jsonrpc: "2.0",
+        method: "initialize",
+        params: {
+          clientInfo: { name: "test-client", version: "1.0" },
+          protocolVersion: "2025-03-26"
+        },
+        id: "init-1",
+      };
+
+      const initReq = createMockRequest({
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "accept": "application/json, text/event-stream",
+        },
+        body: JSON.stringify(initMessage),
+      });
+
+      await transportWithoutState.handleRequest(initReq, mockResponse);
+      mockResponse.writeHead.mockClear();
+    });
+
+    it("should not include session ID in response headers when in mode without state management", async () => {
       // Use a non-initialization request
       const message: JSONRPCMessage = {
         jsonrpc: "2.0",
@@ -159,7 +382,7 @@ describe("StreamableHTTPServerTransport", () => {
         body: JSON.stringify(message),
       });
 
-      await statelessTransport.handleRequest(req, mockResponse);
+      await transportWithoutState.handleRequest(req, mockResponse);
 
       expect(mockResponse.writeHead).toHaveBeenCalled();
       // Extract the headers from writeHead call
@@ -167,13 +390,13 @@ describe("StreamableHTTPServerTransport", () => {
       expect(headers).not.toHaveProperty("mcp-session-id");
     });
 
-    it("should not validate session ID in stateless mode", async () => {
+    it("should not validate session ID in mode without state management", async () => {
       const req = createMockRequest({
         method: "POST",
         headers: {
           "content-type": "application/json",
           "accept": "application/json, text/event-stream",
-          "mcp-session-id": "invalid-session-id", // This would cause a 404 in stateful mode
+          "mcp-session-id": "invalid-session-id", // This would cause a 404 in mode with state management
         },
         body: JSON.stringify({
           jsonrpc: "2.0",
@@ -183,7 +406,7 @@ describe("StreamableHTTPServerTransport", () => {
         }),
       });
 
-      await statelessTransport.handleRequest(req, mockResponse);
+      await transportWithoutState.handleRequest(req, mockResponse);
 
       // Should still get 200 OK, not 404 Not Found
       expect(mockResponse.writeHead).toHaveBeenCalledWith(
@@ -194,7 +417,7 @@ describe("StreamableHTTPServerTransport", () => {
       );
     });
 
-    it("should handle POST requests without session validation in stateless mode", async () => {
+    it("should handle POST requests without session validation in mode without state management", async () => {
       const message: JSONRPCMessage = {
         jsonrpc: "2.0",
         method: "test",
@@ -207,21 +430,21 @@ describe("StreamableHTTPServerTransport", () => {
         headers: {
           "content-type": "application/json",
           "accept": "application/json, text/event-stream",
-          "mcp-session-id": "non-existent-session-id", // This would be rejected in stateful mode
+          "mcp-session-id": "non-existent-session-id", // This would be rejected in mode with state management
         },
         body: JSON.stringify(message),
       });
 
       const onMessageMock = jest.fn();
-      statelessTransport.onmessage = onMessageMock;
+      transportWithoutState.onmessage = onMessageMock;
 
-      await statelessTransport.handleRequest(req, mockResponse);
+      await transportWithoutState.handleRequest(req, mockResponse);
 
       // Message should be processed despite invalid session ID
       expect(onMessageMock).toHaveBeenCalledWith(message);
     });
 
-    it("should work with a mix of requests with and without session IDs in stateless mode", async () => {
+    it("should work with a mix of requests with and without session IDs in mode without state management", async () => {
       // First request without session ID
       const req1 = createMockRequest({
         method: "POST",
@@ -237,7 +460,7 @@ describe("StreamableHTTPServerTransport", () => {
         })
       });
 
-      await statelessTransport.handleRequest(req1, mockResponse);
+      await transportWithoutState.handleRequest(req1, mockResponse);
       expect(mockResponse.writeHead).toHaveBeenCalledWith(
         200,
         expect.objectContaining({
@@ -248,7 +471,7 @@ describe("StreamableHTTPServerTransport", () => {
       // Reset mock for second request
       mockResponse.writeHead.mockClear();
 
-      // Second request with a session ID (which would be invalid in stateful mode)
+      // Second request with a session ID (which would be invalid in mode with state management)
       const req2 = createMockRequest({
         method: "POST",
         headers: {
@@ -264,7 +487,7 @@ describe("StreamableHTTPServerTransport", () => {
         })
       });
 
-      await statelessTransport.handleRequest(req2, mockResponse);
+      await transportWithoutState.handleRequest(req2, mockResponse);
 
       // Should still succeed
       expect(mockResponse.writeHead).toHaveBeenCalledWith(
@@ -275,8 +498,10 @@ describe("StreamableHTTPServerTransport", () => {
       );
     });
 
-    it("should handle initialization requests properly in stateful mode", async () => {
-      // Initialize message that would typically be sent during initialization
+    it("should handle initialization in mode without state management", async () => {
+      const transportWithoutState = new StreamableHTTPServerTransport({ sessionIdGenerator: () => undefined });
+
+      // Initialize message
       const initializeMessage: JSONRPCMessage = {
         jsonrpc: "2.0",
         method: "initialize",
@@ -287,8 +512,10 @@ describe("StreamableHTTPServerTransport", () => {
         id: "init-1",
       };
 
-      // Test stateful transport (default)
-      const statefulReq = createMockRequest({
+      expect(transportWithoutState.sessionId).toBeUndefined();
+      expect(transportWithoutState["_initialized"]).toBe(false);
+
+      const req = createMockRequest({
         method: "POST",
         headers: {
           "content-type": "application/json",
@@ -297,49 +524,46 @@ describe("StreamableHTTPServerTransport", () => {
         body: JSON.stringify(initializeMessage),
       });
 
-      await transport.handleRequest(statefulReq, mockResponse);
+      const newResponse = createMockResponse();
+      await transportWithoutState.handleRequest(req, newResponse);
 
-      // In stateful mode, session ID should be included in the response header
-      expect(mockResponse.writeHead).toHaveBeenCalledWith(
-        200,
-        expect.objectContaining({
-          "mcp-session-id": transport.sessionId,
-        })
-      );
-    });
+      // After initialization, the sessionId should still be undefined
+      expect(transportWithoutState.sessionId).toBeUndefined();
+      expect(transportWithoutState["_initialized"]).toBe(true);
 
-    it("should handle initialization requests properly in stateless mode", async () => {
-      // Initialize message that would typically be sent during initialization
-      const initializeMessage: JSONRPCMessage = {
-        jsonrpc: "2.0",
-        method: "initialize",
-        params: {
-          clientInfo: { name: "test-client", version: "1.0" },
-          protocolVersion: "2025-03-26"
-        },
-        id: "init-1",
-      };
-
-      // Test stateless transport
-      const statelessReq = createMockRequest({
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          "accept": "application/json, text/event-stream",
-        },
-        body: JSON.stringify(initializeMessage),
-      });
-
-      await statelessTransport.handleRequest(statelessReq, mockResponse);
-
-      // In stateless mode, session ID should also be included for initialize responses
-      const headers = mockResponse.writeHead.mock.calls[0][1];
+      // Headers should NOT include session ID in mode without state management
+      const headers = newResponse.writeHead.mock.calls[0][1];
       expect(headers).not.toHaveProperty("mcp-session-id");
-
     });
   });
 
   describe("Request Handling", () => {
+    // Initialize the transport before tests that need initialization
+    beforeEach(async () => {
+      // For tests that need initialization, initialize here
+      const initMessage: JSONRPCMessage = {
+        jsonrpc: "2.0",
+        method: "initialize",
+        params: {
+          clientInfo: { name: "test-client", version: "1.0" },
+          protocolVersion: "2025-03-26"
+        },
+        id: "init-1",
+      };
+
+      const initReq = createMockRequest({
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "accept": "application/json, text/event-stream",
+        },
+        body: JSON.stringify(initMessage),
+      });
+
+      await transport.handleRequest(initReq, mockResponse);
+      mockResponse.writeHead.mockClear();
+    });
+
     it("should reject GET requests for SSE with 405 Method Not Allowed", async () => {
       const req = createMockRequest({
         method: "GET",
@@ -361,7 +585,7 @@ describe("StreamableHTTPServerTransport", () => {
     it("should reject POST requests without proper Accept header", async () => {
       const message: JSONRPCMessage = {
         jsonrpc: "2.0",
-        method: "initialize", // Use initialize to bypass session ID check
+        method: "test",
         params: {},
         id: 1,
       };
@@ -370,6 +594,7 @@ describe("StreamableHTTPServerTransport", () => {
         method: "POST",
         headers: {
           "content-type": "application/json",
+          "mcp-session-id": transport.sessionId,
         },
         body: JSON.stringify(message),
       });
@@ -382,7 +607,7 @@ describe("StreamableHTTPServerTransport", () => {
     it("should properly handle JSON-RPC request messages in POST requests", async () => {
       const message: JSONRPCMessage = {
         jsonrpc: "2.0",
-        method: "initialize", // Use initialize to bypass session ID check
+        method: "test",
         params: {},
         id: 1,
       };
@@ -392,6 +617,7 @@ describe("StreamableHTTPServerTransport", () => {
         headers: {
           "content-type": "application/json",
           "accept": "application/json, text/event-stream",
+          "mcp-session-id": transport.sessionId,
         },
         body: JSON.stringify(message),
       });
@@ -405,7 +631,7 @@ describe("StreamableHTTPServerTransport", () => {
       expect(mockResponse.writeHead).toHaveBeenCalledWith(
         200,
         expect.objectContaining({
-          "mcp-session-id": transport.sessionId,
+          "Content-Type": "text/event-stream",
         })
       );
     });
@@ -480,6 +706,7 @@ describe("StreamableHTTPServerTransport", () => {
       const onMessageMock = jest.fn();
       transport.onmessage = onMessageMock;
 
+      mockResponse = createMockResponse(); // Create fresh mock
       await transport.handleRequest(req, mockResponse);
 
       // Should establish SSE connection
@@ -512,6 +739,30 @@ describe("StreamableHTTPServerTransport", () => {
     });
 
     it("should properly handle DELETE requests and close session", async () => {
+      // First initialize the transport
+      const initMessage: JSONRPCMessage = {
+        jsonrpc: "2.0",
+        method: "initialize",
+        params: {
+          clientInfo: { name: "test-client", version: "1.0" },
+          protocolVersion: "2025-03-26"
+        },
+        id: "init-1",
+      };
+
+      const initReq = createMockRequest({
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "accept": "application/json, text/event-stream",
+        },
+        body: JSON.stringify(initMessage),
+      });
+
+      await transport.handleRequest(initReq, mockResponse);
+      mockResponse.writeHead.mockClear();
+
+      // Now try DELETE with proper session ID
       const req = createMockRequest({
         method: "DELETE",
         headers: {
@@ -527,9 +778,75 @@ describe("StreamableHTTPServerTransport", () => {
       expect(mockResponse.writeHead).toHaveBeenCalledWith(200);
       expect(onCloseMock).toHaveBeenCalled();
     });
+
+    it("should reject DELETE requests with invalid session ID", async () => {
+      // First initialize the transport
+      const initMessage: JSONRPCMessage = {
+        jsonrpc: "2.0",
+        method: "initialize",
+        params: {
+          clientInfo: { name: "test-client", version: "1.0" },
+          protocolVersion: "2025-03-26"
+        },
+        id: "init-1",
+      };
+
+      const initReq = createMockRequest({
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "accept": "application/json, text/event-stream",
+        },
+        body: JSON.stringify(initMessage),
+      });
+
+      await transport.handleRequest(initReq, mockResponse);
+      mockResponse.writeHead.mockClear();
+
+      // Now try DELETE with invalid session ID
+      const req = createMockRequest({
+        method: "DELETE",
+        headers: {
+          "mcp-session-id": "invalid-session-id",
+        },
+      });
+
+      const onCloseMock = jest.fn();
+      transport.onclose = onCloseMock;
+
+      await transport.handleRequest(req, mockResponse);
+
+      expect(mockResponse.writeHead).toHaveBeenCalledWith(404);
+      expect(onCloseMock).not.toHaveBeenCalled();
+    });
   });
 
   describe("SSE Response Handling", () => {
+    beforeEach(async () => {
+      // Initialize the transport
+      const initMessage: JSONRPCMessage = {
+        jsonrpc: "2.0",
+        method: "initialize",
+        params: {
+          clientInfo: { name: "test-client", version: "1.0" },
+          protocolVersion: "2025-03-26"
+        },
+        id: "init-1",
+      };
+
+      const initReq = createMockRequest({
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "accept": "application/json, text/event-stream",
+        },
+        body: JSON.stringify(initMessage),
+      });
+
+      await transport.handleRequest(initReq, mockResponse);
+      mockResponse.writeHead.mockClear();
+    });
+
     it("should send response messages as SSE events", async () => {
       // Setup a POST request with JSON-RPC request that accepts SSE
       const requestMessage: JSONRPCMessage = {
@@ -578,6 +895,9 @@ describe("StreamableHTTPServerTransport", () => {
         id: "test-req-id"
       };
 
+      // Create fresh response for this test
+      mockResponse = createMockResponse();
+
       const req = createMockRequest({
         method: "POST",
         headers: {
@@ -617,6 +937,31 @@ describe("StreamableHTTPServerTransport", () => {
   });
 
   describe("Message Targeting", () => {
+    beforeEach(async () => {
+      // Initialize the transport
+      const initMessage: JSONRPCMessage = {
+        jsonrpc: "2.0",
+        method: "initialize",
+        params: {
+          clientInfo: { name: "test-client", version: "1.0" },
+          protocolVersion: "2025-03-26"
+        },
+        id: "init-1",
+      };
+
+      const initReq = createMockRequest({
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "accept": "application/json, text/event-stream",
+        },
+        body: JSON.stringify(initMessage),
+      });
+
+      await transport.handleRequest(initReq, mockResponse);
+      mockResponse.writeHead.mockClear();
+    });
+
     it("should send response messages to the connection that sent the request", async () => {
       // Create request with two separate connections
       const requestMessage1: JSONRPCMessage = {
@@ -697,7 +1042,7 @@ describe("StreamableHTTPServerTransport", () => {
   });
 
   describe("Error Handling", () => {
-    it("should handle invalid JSON data", async () => {
+    it("should return 400 error for invalid JSON data", async () => {
       const req = createMockRequest({
         method: "POST",
         headers: {
@@ -718,7 +1063,7 @@ describe("StreamableHTTPServerTransport", () => {
       expect(onErrorMock).toHaveBeenCalled();
     });
 
-    it("should handle invalid JSON-RPC messages", async () => {
+    it("should return 400 error for invalid JSON-RPC messages", async () => {
       const req = createMockRequest({
         method: "POST",
         headers: {
@@ -740,14 +1085,36 @@ describe("StreamableHTTPServerTransport", () => {
   });
 
   describe("Handling Pre-Parsed Body", () => {
-    it("should accept pre-parsed request body", async () => {
-      const message: JSONRPCMessage = {
+    beforeEach(async () => {
+      // Initialize the transport
+      const initMessage: JSONRPCMessage = {
         jsonrpc: "2.0",
         method: "initialize",
         params: {
           clientInfo: { name: "test-client", version: "1.0" },
           protocolVersion: "2025-03-26"
         },
+        id: "init-1",
+      };
+
+      const initReq = createMockRequest({
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "accept": "application/json, text/event-stream",
+        },
+        body: JSON.stringify(initMessage),
+      });
+
+      await transport.handleRequest(initReq, mockResponse);
+      mockResponse.writeHead.mockClear();
+    });
+
+    it("should accept pre-parsed request body", async () => {
+      const message: JSONRPCMessage = {
+        jsonrpc: "2.0",
+        method: "test",
+        params: {},
         id: "pre-parsed-test",
       };
 
@@ -757,6 +1124,7 @@ describe("StreamableHTTPServerTransport", () => {
         headers: {
           "content-type": "application/json",
           "accept": "application/json, text/event-stream",
+          "mcp-session-id": transport.sessionId,
         },
         // No body provided here - it will be passed as parsedBody
       });
@@ -772,7 +1140,7 @@ describe("StreamableHTTPServerTransport", () => {
       expect(mockResponse.writeHead).toHaveBeenCalledWith(
         200,
         expect.objectContaining({
-          "mcp-session-id": transport.sessionId,
+          "Content-Type": "text/event-stream",
         })
       );
     });

@@ -11,11 +11,12 @@ const MAXIMUM_MESSAGE_SIZE = "4mb";
  */
 export interface StreamableHTTPServerTransportOptions {
   /**
+   * Function that generates a session ID for the transport.
    * The session ID SHOULD be globally unique and cryptographically secure (e.g., a securely generated UUID, a JWT, or a cryptographic hash)
    * 
-   * When there is no sessionId, the transport will not perform session management.
+   * Return undefined to disable session management.
    */
-  sessionId: string | undefined;
+  sessionIdGenerator: () => string | undefined;
 
 
 
@@ -57,16 +58,18 @@ export interface StreamableHTTPServerTransportOptions {
  */
 export class StreamableHTTPServerTransport implements Transport {
   // when sessionId is not set (undefined), it means the transport is in stateless mode
-  private _sessionId: string | undefined;
+  private sessionIdGenerator: () => string | undefined;
   private _started: boolean = false;
   private _sseResponseMapping: Map<RequestId, ServerResponse> = new Map();
+  private _initialized: boolean = false;
 
+  sessionId?: string | undefined;
   onclose?: () => void;
   onerror?: (error: Error) => void;
   onmessage?: (message: JSONRPCMessage) => void;
 
   constructor(options: StreamableHTTPServerTransportOptions) {
-    this._sessionId = options.sessionId;
+    this.sessionIdGenerator = options.sessionIdGenerator;
   }
 
   /**
@@ -170,6 +173,17 @@ export class StreamableHTTPServerTransport implements Transport {
         msg => 'method' in msg && msg.method === 'initialize'
       );
       if (isInitializationRequest) {
+        if (this._initialized) {
+          res.writeHead(400).end(JSON.stringify({
+            jsonrpc: "2.0",
+            error: {
+              code: -32600,
+              message: "Invalid Request: Server already initialized"
+            },
+            id: null
+          }));
+          return;
+        }
         if (messages.length > 1) {
           res.writeHead(400).end(JSON.stringify({
             jsonrpc: "2.0",
@@ -181,10 +195,12 @@ export class StreamableHTTPServerTransport implements Transport {
           }));
           return;
         }
+        this.sessionId = this.sessionIdGenerator();
+        this._initialized = true;
         const headers: Record<string, string> = {};
 
-        if (this._sessionId !== undefined) {
-          headers["mcp-session-id"] = this._sessionId;
+        if (this.sessionId !== undefined) {
+          headers["mcp-session-id"] = this.sessionId;
         }
 
         // Process initialization messages before responding
@@ -198,7 +214,7 @@ export class StreamableHTTPServerTransport implements Transport {
       // If an Mcp-Session-Id is returned by the server during initialization,
       // clients using the Streamable HTTP transport MUST include it 
       // in the Mcp-Session-Id header on all of their subsequent HTTP requests.
-      if (this._sessionId !== undefined && !isInitializationRequest && !this.validateSession(req, res)) {
+      if (!isInitializationRequest && !this.validateSession(req, res)) {
         return;
       }
 
@@ -224,8 +240,8 @@ export class StreamableHTTPServerTransport implements Transport {
         };
 
         // After initialization, always include the session ID if we have one
-        if (this._sessionId !== undefined) {
-          headers["mcp-session-id"] = this._sessionId;
+        if (this.sessionId !== undefined) {
+          headers["mcp-session-id"] = this.sessionId;
         }
 
         res.writeHead(200, headers);
@@ -272,10 +288,27 @@ export class StreamableHTTPServerTransport implements Transport {
   }
 
   /**
-   * Validates session ID for non-initialization requests when session management is enabled
+   * Validates session ID for non-initialization requests
    * Returns true if the session is valid, false otherwise
    */
   private validateSession(req: IncomingMessage, res: ServerResponse): boolean {
+    if (!this._initialized) {
+      // If the server has not been initialized yet, reject all requests
+      res.writeHead(400).end(JSON.stringify({
+        jsonrpc: "2.0",
+        error: {
+          code: -32000,
+          message: "Bad Request: Server not initialized"
+        },
+        id: null
+      }));
+      return false;
+    }
+    if (this.sessionId === undefined) {
+      // If the session ID is not set, the session management is disabled
+      // and we don't need to validate the session ID
+      return true;
+    }
     const sessionId = req.headers["mcp-session-id"];
 
     if (!sessionId) {
@@ -300,7 +333,7 @@ export class StreamableHTTPServerTransport implements Transport {
       }));
       return false;
     }
-    else if (sessionId !== this._sessionId) {
+    else if (sessionId !== this.sessionId) {
       // Reject requests with invalid session ID with 404 Not Found
       res.writeHead(404).end(JSON.stringify({
         jsonrpc: "2.0",
@@ -361,10 +394,4 @@ export class StreamableHTTPServerTransport implements Transport {
     }
   }
 
-  /**
-   * Returns the session ID for this transport
-   */
-  get sessionId(): string | undefined {
-    return this._sessionId;
-  }
 } 
