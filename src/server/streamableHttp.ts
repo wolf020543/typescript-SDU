@@ -89,7 +89,7 @@ export class StreamableHTTPServerTransport implements Transport {
     } else if (req.method === "DELETE") {
       await this.handleDeleteRequest(req, res);
     } else {
-      await this.handleUnsupportedRequest(req, res);
+      await this.handleUnsupportedRequest(res);
     }
   }
 
@@ -97,8 +97,7 @@ export class StreamableHTTPServerTransport implements Transport {
    * Handles unsupported requests (GET, PUT, PATCH, etc.)
    * For now we support only POST and DELETE requests. Support for GET for SSE connections will be added later.
    */
-  private async handleUnsupportedRequest(req: IncomingMessage, res: ServerResponse): Promise<void> {
-
+  private async handleUnsupportedRequest(res: ServerResponse): Promise<void> {
     res.writeHead(405, {
       "Allow": "POST, DELETE"
     }).end(JSON.stringify({
@@ -119,8 +118,7 @@ export class StreamableHTTPServerTransport implements Transport {
       // Validate the Accept header
       const acceptHeader = req.headers.accept;
       // The client MUST include an Accept header, listing both application/json and text/event-stream as supported content types.
-      if (!acceptHeader ||
-        !acceptHeader.includes("application/json") || !acceptHeader.includes("text/event-stream")) {
+      if (!acceptHeader?.includes("application/json") || !acceptHeader.includes("text/event-stream")) {
         res.writeHead(406).end(JSON.stringify({
           jsonrpc: "2.0",
           error: {
@@ -172,6 +170,17 @@ export class StreamableHTTPServerTransport implements Transport {
         msg => 'method' in msg && msg.method === 'initialize'
       );
       if (isInitializationRequest) {
+        if (messages.length > 1) {
+          res.writeHead(400).end(JSON.stringify({
+            jsonrpc: "2.0",
+            error: {
+              code: -32600,
+              message: "Invalid Request: Only one initialization request is allowed"
+            },
+            id: null
+          }));
+          return;
+        }
         const headers: Record<string, string> = {};
 
         if (this._sessionId !== undefined) {
@@ -280,7 +289,18 @@ export class StreamableHTTPServerTransport implements Transport {
         id: null
       }));
       return false;
-    } else if ((Array.isArray(sessionId) ? sessionId[0] : sessionId) !== this._sessionId) {
+    } else if (Array.isArray(sessionId)) {
+      res.writeHead(400).end(JSON.stringify({
+        jsonrpc: "2.0",
+        error: {
+          code: -32000,
+          message: "Bad Request: Mcp-Session-Id header must be a single value"
+        },
+        id: null
+      }));
+      return false;
+    }
+    else if (sessionId !== this._sessionId) {
       // Reject requests with invalid session ID with 404 Not Found
       res.writeHead(404).end(JSON.stringify({
         jsonrpc: "2.0",
@@ -331,7 +351,12 @@ export class StreamableHTTPServerTransport implements Transport {
         // This is a response to the original request, we can close the stream
         // after sending all related responses
         this._sseResponseMapping.delete(relatedRequestId);
-        sseResponse.end();
+
+        // Only close the connection if it's not needed by other requests
+        const canCloseConnection = ![...this._sseResponseMapping.entries()].some(([id, res]) => res === sseResponse && id !== relatedRequestId);
+        if (canCloseConnection) {
+          sseResponse.end();
+        }
       }
     }
   }

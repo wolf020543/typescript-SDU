@@ -111,10 +111,10 @@ export type RequestHandlerExtra<SendRequestT extends Request,
     sessionId?: string;
 
     /**
-       * Sends a notification that relates to the current request being handled.
-       * 
-       * This is used by certain transports to correctly associate related messages.
-       */
+     * Sends a notification that relates to the current request being handled.
+     * 
+     * This is used by certain transports to correctly associate related messages.
+     */
     sendNotification: (notification: SendNotificationT) => Promise<void>;
 
     /**
