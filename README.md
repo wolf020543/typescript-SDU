@@ -455,13 +455,6 @@ const client = new Client(
   {
     name: "example-client",
     version: "1.0.0"
-  },
-  {
-    capabilities: {
-      prompts: {},
-      resources: {},
-      tools: {}
-    }
   }
 );
 
