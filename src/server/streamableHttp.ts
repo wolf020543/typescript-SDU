@@ -379,7 +379,7 @@ export class StreamableHTTPServerTransport implements Transport {
       // after sending all related responses
       shouldCloseConnection = true;
     }
-    if (!requestId) {
+    if (requestId === undefined) {
       throw new Error("No request ID provided for the message");
     }
 
