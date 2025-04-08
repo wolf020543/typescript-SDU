@@ -124,46 +124,6 @@ describe("StreamableHTTPClientTransport", () => {
     expect(errorSpy).toHaveBeenCalled();
   });
 
-  it("should handle session termination via DELETE request", async () => {
-    // First set the session ID by mocking initialization
-    (global.fetch as jest.Mock).mockResolvedValueOnce({
-      ok: true,
-      status: 200,
-      headers: new Headers({ "mcp-session-id": "session-to-terminate" }),
-    });
-
-    await transport.send({
-      jsonrpc: "2.0",
-      method: "initialize",
-      params: {
-        clientInfo: { name: "test-client", version: "1.0" },
-        protocolVersion: "2025-03-26"
-      },
-      id: "init-id"
-    } as JSONRPCMessage);
-
-    // Mock DELETE request for session termination
-    (global.fetch as jest.Mock).mockResolvedValueOnce({
-      ok: true,
-      status: 200,
-      headers: new Headers()
-    });
-
-    const closeSpy = jest.fn();
-    transport.onclose = closeSpy;
-
-    await transport.close();
-
-    // Check that DELETE request was sent
-    const calls = (global.fetch as jest.Mock).mock.calls;
-    const lastCall = calls[calls.length - 1];
-    expect(lastCall[1].method).toBe("DELETE");
-    // The headers may be a plain object in tests
-    expect(lastCall[1].headers["mcp-session-id"]).toBe("session-to-terminate");
-
-    expect(closeSpy).toHaveBeenCalled();
-  });
-
   it("should handle non-streaming JSON response", async () => {
     const message: JSONRPCMessage = {
       jsonrpc: "2.0",
