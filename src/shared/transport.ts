@@ -44,7 +44,7 @@ export interface Transport {
    * Includes the authInfo if the transport is authenticated.
    * 
    */
-  onmessage?: (message: JSONRPCMessage, authInfo?: AuthInfo) => void;
+  onmessage?: (message: JSONRPCMessage, extra?: { authInfo?: AuthInfo }) => void;
 
   /**
    * The session ID generated for this connection.
