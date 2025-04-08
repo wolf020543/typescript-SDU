@@ -2,7 +2,7 @@ import { Transport } from "../shared/transport.js";
 import { JSONRPCMessage, JSONRPCMessageSchema } from "../types.js";
 import { auth, AuthResult, OAuthClientProvider, UnauthorizedError } from "./auth.js";
 import { type ErrorEvent } from "eventsource";
-
+import { EventSourceParserStream } from 'eventsource-parser/stream';
 export class StreamableHTTPError extends Error {
   constructor(
     public readonly code: number | undefined,
@@ -45,7 +45,7 @@ export type StreamableHTTPClientTransportOptions = {
  * for receiving messages.
  */
 export class StreamableHTTPClientTransport implements Transport {
-  private _activeStreams: Map<string, ReadableStreamDefaultReader<Uint8Array>> = new Map();
+  private _activeStreams: Map<string, ReadableStreamDefaultReader<any>> = new Map();
   private _abortController?: AbortController;
   private _url: URL;
   private _requestInit?: RequestInit;
@@ -186,30 +186,6 @@ export class StreamableHTTPClientTransport implements Transport {
     // Abort any pending requests
     this._abortController?.abort();
 
-    // If we have a session ID, send a DELETE request to explicitly terminate the session
-    if (this._sessionId) {
-      try {
-        const commonHeaders = await this._commonHeaders();
-        const response = await fetch(this._url, {
-          method: "DELETE",
-          headers: commonHeaders,
-          signal: this._abortController?.signal,
-        });
-
-        if (!response.ok) {
-          // Server might respond with 405 if it doesn't support explicit session termination
-          // We don't throw an error in that case
-          if (response.status !== 405) {
-            const text = await response.text().catch(() => null);
-            throw new Error(`Error terminating session (HTTP ${response.status}): ${text}`);
-          }
-        }
-      } catch (error) {
-        // We still want to invoke onclose even if the session termination fails
-        this.onerror?.(error as Error);
-      }
-    }
-
     this.onclose?.();
   }
 
@@ -300,62 +276,36 @@ export class StreamableHTTPClientTransport implements Transport {
       return;
     }
 
-    // Set up stream handling for server-sent events
-    const reader = stream.getReader();
+    // Create a pipeline: binary stream -> text decoder -> SSE parser
+    const eventStream = stream
+      .pipeThrough(new TextDecoderStream())
+      .pipeThrough(new EventSourceParserStream());
+
+    const reader = eventStream.getReader();
     this._activeStreams.set(streamId, reader);
-    const decoder = new TextDecoder();
-    let buffer = '';
 
     const processStream = async () => {
       try {
         while (true) {
-          const { done, value } = await reader.read();
+          const { done, value: event } = await reader.read();
           if (done) {
-            // Stream closed by server
             this._activeStreams.delete(streamId);
             break;
           }
 
-          buffer += decoder.decode(value, { stream: true });
+          // Update last event ID if provided
+          if (event.id) {
+            this._lastEventId = event.id;
+          }
 
-          // Process SSE messages in the buffer
-          const events = buffer.split('\n\n');
-          buffer = events.pop() || '';
-
-          for (const event of events) {
-            const lines = event.split('\n');
-            let id: string | undefined;
-            let eventType: string | undefined;
-            let data: string | undefined;
-
-            // Parse SSE message according to the format
-            for (const line of lines) {
-              if (line.startsWith('id:')) {
-                id = line.slice(3).trim();
-              } else if (line.startsWith('event:')) {
-                eventType = line.slice(6).trim();
-              } else if (line.startsWith('data:')) {
-                data = line.slice(5).trim();
-              }
-            }
-
-            // Update last event ID if provided by server
-            // As per spec: the ID MUST be globally unique across all streams within that session
-            if (id) {
-              this._lastEventId = id;
-            }
-
-            // Handle message event
-            if (data) {
-              // Default event type is 'message' per SSE spec if not specified
-              if (!eventType || eventType === 'message') {
-                try {
-                  const message = JSONRPCMessageSchema.parse(JSON.parse(data));
-                  this.onmessage?.(message);
-                } catch (error) {
-                  this.onerror?.(error as Error);
-                }
-              }
+          // Handle message events (default event type is undefined per docs)
+          // or explicit 'message' event type
+          if (!event.event || event.event === 'message') {
+            try {
+              const message = JSONRPCMessageSchema.parse(JSON.parse(event.data));
+              this.onmessage?.(message);
+            } catch (error) {
+              this.onerror?.(error as Error);
             }
           }
         }
