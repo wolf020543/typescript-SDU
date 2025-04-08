@@ -197,19 +197,7 @@ export class StreamableHTTPServerTransport implements Transport {
         }
         this.sessionId = this.sessionIdGenerator();
         this._initialized = true;
-        const headers: Record<string, string> = {};
 
-        if (this.sessionId !== undefined) {
-          headers["mcp-session-id"] = this.sessionId;
-        }
-
-        // Process initialization messages before responding
-        for (const message of messages) {
-          this.onmessage?.(message);
-        }
-
-        res.writeHead(200, headers).end();
-        return;
       }
       // If an Mcp-Session-Id is returned by the server during initialization,
       // clients using the Streamable HTTP transport MUST include it 
