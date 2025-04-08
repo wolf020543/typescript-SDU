@@ -2,81 +2,9 @@
 
 This directory contains example implementations of MCP clients and servers using the TypeScript SDK.
 
-## Streamable HTTP Examples
+## Streamable HTTP - single node deployment with basic session state management
 
-### List Tool Request Example
-
-Using `curl` to list available tools:
-
-```bash
-# First initialize the server and save the session ID to a variable
-SESSION_ID=$(curl -X POST -H "Content-Type: application/json" -H "Accept: application/json, text/event-stream" \
-  -d '{"jsonrpc":"2.0","method":"initialize","params":{"capabilities":{}},"id":"1"}' \
-  -i http://localhost:3000/mcp 2>&1 | grep -i "mcp-session-id" | cut -d' ' -f2 | tr -d '\r')
-echo "Session ID: $SESSION_ID"
-
-# Then list tools using the saved session ID 
-curl -X POST -H "Content-Type: application/json" -H "Accept: application/json, text/event-stream" \
-  -H "mcp-session-id: $SESSION_ID" \
-  -d '{"jsonrpc":"2.0","method":"tools/list","params":{},"id":"2"}' \
-  http://localhost:3000/mcp
-```
-
-Using the TypeScript client (session management is handled automatically):
-
-```typescript
-const toolsRequest = { method: 'tools/list', params: {} };
-const toolsResult = await client.request(toolsRequest, ListToolsResultSchema);
-console.log('Available tools:', toolsResult.tools);
-```
-
-### Call Tool Request Example
-
-Using `curl` to call a tool:
-
-```bash
-curl -X POST -H "Content-Type: application/json" -H "Accept: application/json, text/event-stream" \
-  -H "mcp-session-id: $SESSION_ID" \
-  -d '{"jsonrpc":"2.0","method":"tools/call","params":{"name":"greet","arguments":{"name":"User"}},"id":"3"}' \
-  http://localhost:3000/mcp
-```
-
-Using the TypeScript client:
-
-```typescript
-const greetRequest = {
-  method: 'tools/call',
-  params: {
-    name: 'greet',
-    arguments: { name: 'MCP User' }
-  }
-};
-const greetResult = await client.request(greetRequest, CallToolResultSchema);
-```
-
-### Get Prompt Request Example
-
-Using `curl` to get a prompt:
-
-```bash
-curl -X POST -H "Content-Type: application/json" -H "Accept: application/json, text/event-stream" \
-  -H "mcp-session-id: $SESSION_ID" \
-  -d '{"jsonrpc":"2.0","method":"prompts/get","params":{"name":"greeting-template","arguments":{"name":"User"}},"id":"4"}' \
-  http://localhost:3000/mcp
-```
-
-Using the TypeScript client:
-
-```typescript
-const promptRequest = {
-  method: 'prompts/get',
-  params: {
-    name: 'greeting-template',
-    arguments: { name: 'MCP User' }
-  }
-};
-const promptResult = await client.request(promptRequest, GetPromptResultSchema);
-```
+Multi node with stete management example will be added soon after we add support.
 
 ### Server (`server/simpleStreamableHttp.ts`)
 
@@ -92,11 +20,19 @@ A simple MCP server that uses the Streamable HTTP transport, implemented with Ex
 npx tsx src/examples/server/simpleStreamableHttp.ts
 ```
 
-The server will start on port 3000. You can test the initialization with:
+The server will start on port 3000. You can test the initialization and tool listing:
 
 ```bash
-curl -X POST -H "Content-Type: application/json" -H "Accept: application/json, text/event-stream" \
+# First initialize the server and save the session ID to a variable
+SESSION_ID=$(curl -X POST -H "Content-Type: application/json" -H "Accept: application/json, text/event-stream" \
   -d '{"jsonrpc":"2.0","method":"initialize","params":{"capabilities":{}},"id":"1"}' \
+  -i http://localhost:3000/mcp 2>&1 | grep -i "mcp-session-id" | cut -d' ' -f2 | tr -d '\r')
+echo "Session ID: $SESSION_ID"
+
+# Then list tools using the saved session ID 
+curl -X POST -H "Content-Type: application/json" -H "Accept: application/json, text/event-stream" \
+  -H "mcp-session-id: $SESSION_ID" \
+  -d '{"jsonrpc":"2.0","method":"tools/list","params":{},"id":"2"}' \
   http://localhost:3000/mcp
 ```
 
@@ -119,5 +55,5 @@ Make sure the server is running before starting the client.
 ## Notes
 
 - These examples demonstrate the basic usage of the Streamable HTTP transport
-- The server manages sessions for stateful connections
+- The server manages sessions between the calls
 - The client handles both direct HTTP responses and SSE streaming responses
