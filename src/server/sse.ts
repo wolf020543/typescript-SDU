@@ -4,6 +4,7 @@ import { Transport } from "../shared/transport.js";
 import { JSONRPCMessage, JSONRPCMessageSchema } from "../types.js";
 import getRawBody from "raw-body";
 import contentType from "content-type";
+import { URL } from 'url';
 
 const MAXIMUM_MESSAGE_SIZE = "4mb";
 
@@ -49,17 +50,17 @@ export class SSEServerTransport implements Transport {
     });
 
     // Send the endpoint event
-    /**
-     * Determine the appropriate separator for adding the sessionId parameter.
-     * Uses '&' if the endpoint already contains a query parameter (has a '?'),
-     * otherwise uses '?' to start the query string.
-     * 
-     * Note: This approach works for standard endpoints but doesn't handle
-     * the edge case where '?' might be part of the path itself.
-     */
-    const separator = this._endpoint.includes('?') ? '&' : '?';
+    // Use a dummy base URL because this._endpoint is relative.
+    // This allows using URL/URLSearchParams for robust parameter handling.
+    const dummyBase = 'http://localhost'; // Any valid base works
+    const endpointUrl = new URL(this._endpoint, dummyBase);
+    endpointUrl.searchParams.set('sessionId', this._sessionId);
+
+    // Reconstruct the relative URL string (pathname + search + hash)
+    const relativeUrlWithSession = endpointUrl.pathname + endpointUrl.search + endpointUrl.hash;
+
     this.res.write(
-      `event: endpoint\ndata: ${encodeURI(this._endpoint)}${separator}sessionId=${this._sessionId}\n\n`,
+      `event: endpoint\ndata: ${relativeUrlWithSession}\n\n`,
     );
 
     this._sseResponse = this.res;
