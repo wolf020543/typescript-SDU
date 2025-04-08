@@ -53,7 +53,7 @@ export class InMemoryTransport implements Transport {
    * Sends a message with optional auth info.
    * This is useful for testing authentication scenarios.
    */
-  async sendWithAuth(message: JSONRPCMessage, authInfo?: AuthInfo): Promise<void> {
+  async send(message: JSONRPCMessage, options?: { authInfo?: AuthInfo }): Promise<void>
     if (!this._otherTransport) {
       throw new Error("Not connected");
     }
