@@ -36,7 +36,7 @@ curl -X POST -H "Content-Type: application/json" -H "Accept: application/json, t
   http://localhost:3000/mcp
 ```
 
-### Client (`client/simpleStreamableHttpClient.ts`)
+### Client (`client/simpleStreamableHttp.ts`)
 
 A client that connects to the server, initializes it, and demonstrates how to:
 
@@ -47,7 +47,7 @@ A client that connects to the server, initializes it, and demonstrates how to:
 #### Running the client
 
 ```bash
-npx tsx src/examples/client/simpleStreamableHttpClient.ts
+npx tsx src/examples/client/simpleStreamableHttp.ts
 ```
 
 Make sure the server is running before starting the client.

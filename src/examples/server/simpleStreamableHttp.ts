@@ -135,11 +135,11 @@ app.post('/mcp', async (req: Request, res: Response) => {
 });
 
 // Helper function to detect initialize requests
-function isInitializeRequest(body: any): boolean {
+function isInitializeRequest(body: unknown): boolean {
   if (Array.isArray(body)) {
-    return body.some(msg => msg.method === 'initialize');
+    return body.some(msg => typeof msg === 'object' && msg !== null && 'method' in msg && msg.method === 'initialize');
   }
-  return body.method === 'initialize';
+  return typeof body === 'object' && body !== null && 'method' in body && body.method === 'initialize';
 }
 
 // Start the server
