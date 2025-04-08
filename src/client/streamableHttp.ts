@@ -121,7 +121,7 @@ export class StreamableHTTPClientTransport implements Transport {
         signal: this._abortController?.signal,
       });
 
-      if (response.status === 405) {
+      if (response.status === 405 || response.status === 404) {
         // Server doesn't support GET for SSE, which is allowed by the spec
         // We'll rely on SSE responses to POST requests for communication
         return;
