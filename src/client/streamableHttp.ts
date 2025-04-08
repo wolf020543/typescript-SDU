@@ -2,7 +2,7 @@ import { Transport } from "../shared/transport.js";
 import { JSONRPCMessage, JSONRPCMessageSchema } from "../types.js";
 import { auth, AuthResult, OAuthClientProvider, UnauthorizedError } from "./auth.js";
 import { type ErrorEvent } from "eventsource";
-import { EventSourceParserStream } from 'eventsource-parser/stream';
+import { EventSourceMessage, EventSourceParserStream } from 'eventsource-parser/stream';
 export class StreamableHTTPError extends Error {
   constructor(
     public readonly code: number | undefined,
@@ -45,7 +45,7 @@ export type StreamableHTTPClientTransportOptions = {
  * for receiving messages.
  */
 export class StreamableHTTPClientTransport implements Transport {
-  private _activeStreams: Map<string, ReadableStreamDefaultReader<any>> = new Map();
+  private _activeStreams: Map<string, ReadableStreamDefaultReader<EventSourceMessage>> = new Map();
   private _abortController?: AbortController;
   private _url: URL;
   private _requestInit?: RequestInit;
