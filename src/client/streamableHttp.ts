@@ -1,7 +1,7 @@
 import { Transport } from "../shared/transport.js";
 import { JSONRPCMessage, JSONRPCMessageSchema } from "../types.js";
 import { auth, AuthResult, OAuthClientProvider, UnauthorizedError } from "./auth.js";
-import { EventSource, type ErrorEvent, type EventSourceInit } from "eventsource";
+import { type ErrorEvent } from "eventsource";
 
 export class StreamableHTTPError extends Error {
   constructor(
@@ -34,12 +34,7 @@ export type StreamableHTTPClientTransportOptions = {
   authProvider?: OAuthClientProvider;
 
   /**
-   * Customizes the initial SSE request to the server (the request that begins the stream).
-   */
-  eventSourceInit?: EventSourceInit;
-
-  /**
-   * Customizes recurring POST requests to the server.
+   * Customizes HTTP requests to the server.
    */
   requestInit?: RequestInit;
 };
@@ -50,10 +45,9 @@ export type StreamableHTTPClientTransportOptions = {
  * for receiving messages.
  */
 export class StreamableHTTPClientTransport implements Transport {
-  private _eventSource?: EventSource;
+  private _activeStreams: Map<string, ReadableStreamDefaultReader<Uint8Array>> = new Map();
   private _abortController?: AbortController;
   private _url: URL;
-  private _eventSourceInit?: EventSourceInit;
   private _requestInit?: RequestInit;
   private _authProvider?: OAuthClientProvider;
   private _sessionId?: string;
@@ -68,7 +62,6 @@ export class StreamableHTTPClientTransport implements Transport {
     opts?: StreamableHTTPClientTransportOptions,
   ) {
     this._url = url;
-    this._eventSourceInit = opts?.eventSourceInit;
     this._requestInit = opts?.requestInit;
     this._authProvider = opts?.authProvider;
   }
@@ -109,61 +102,59 @@ export class StreamableHTTPClientTransport implements Transport {
     return headers;
   }
 
-  private _startOrAuth(): Promise<void> {
-    return new Promise((resolve, reject) => {
-      // Try to open an SSE stream with GET to listen for server messages
+  private async _startOrAuth(): Promise<void> {
+    try {
+      // Try to open an initial SSE stream with GET to listen for server messages
       // This is optional according to the spec - server may not support it
-
-      const headers: HeadersInit = {
-        'Accept': 'text/event-stream'
-      };
+      const commonHeaders = await this._commonHeaders();
+      const headers = new Headers(commonHeaders);
+      headers.set('Accept', 'text/event-stream');
 
       // Include Last-Event-ID header for resumable streams
       if (this._lastEventId) {
-        headers['last-event-id'] = this._lastEventId;
+        headers.set('last-event-id', this._lastEventId);
       }
 
-      fetch(this._url, {
+      const response = await fetch(this._url, {
         method: 'GET',
-        headers
-      }).then(response => {
-        if (response.status === 405) {
-          // Server doesn't support GET for SSE, which is allowed by the spec
-          // We'll rely on SSE responses to POST requests for communication
-          resolve();
-          return;
-        }
-
-        if (!response.ok) {
-          if (response.status === 401 && this._authProvider) {
-            // Need to authenticate
-            this._authThenStart().then(resolve, reject);
-            return;
-          }
-
-          const error = new Error(`Failed to open SSE stream: ${response.status} ${response.statusText}`);
-          reject(error);
-          this.onerror?.(error);
-          return;
-        }
-
-        // Successful connection, handle the SSE stream
-        this._handleSseStream(response.body);
-        resolve();
-      }).catch(error => {
-        reject(error);
-        this.onerror?.(error);
+        headers,
+        signal: this._abortController?.signal,
       });
-    });
+
+      if (response.status === 405) {
+        // Server doesn't support GET for SSE, which is allowed by the spec
+        // We'll rely on SSE responses to POST requests for communication
+        return;
+      }
+
+      if (!response.ok) {
+        if (response.status === 401 && this._authProvider) {
+          // Need to authenticate
+          return await this._authThenStart();
+        }
+
+        const error = new Error(`Failed to open SSE stream: ${response.status} ${response.statusText}`);
+        this.onerror?.(error);
+        throw error;
+      }
+
+      // Successful connection, handle the SSE stream as a standalone listener
+      const streamId = `initial-${Date.now()}`;
+      this._handleSseStream(response.body, streamId);
+    } catch (error) {
+      this.onerror?.(error as Error);
+      throw error;
+    }
   }
 
   async start() {
-    if (this._eventSource) {
+    if (this._activeStreams.size > 0) {
       throw new Error(
         "StreamableHTTPClientTransport already started! If using Client class, note that connect() calls start() automatically.",
       );
     }
 
+    this._abortController = new AbortController();
     return await this._startOrAuth();
   }
 
@@ -182,8 +173,18 @@ export class StreamableHTTPClientTransport implements Transport {
   }
 
   async close(): Promise<void> {
+    // Close all active streams
+    for (const reader of this._activeStreams.values()) {
+      try {
+        reader.cancel();
+      } catch (error) {
+        this.onerror?.(error as Error);
+      }
+    }
+    this._activeStreams.clear();
+
+    // Abort any pending requests
     this._abortController?.abort();
-    this._eventSource?.close();
 
     // If we have a session ID, send a DELETE request to explicitly terminate the session
     if (this._sessionId) {
@@ -257,17 +258,25 @@ export class StreamableHTTPClientTransport implements Transport {
         return;
       }
 
-      // Determine if the message contains any requests
-      const containsRequests = Array.isArray(message)
-        ? message.some(msg => 'method' in msg && 'id' in msg)
-        : ('method' in message && 'id' in message);
+      // Get original message(s) for detecting request IDs
+      const messages = Array.isArray(message) ? message : [message];
 
-      if (containsRequests) {
-        // Check if we got text/event-stream in response - if so, handle SSE stream
-        const contentType = response.headers.get("content-type");
+      // Extract IDs from request messages for tracking responses
+      const requestIds = messages.filter(msg => 'method' in msg && 'id' in msg)
+        .map(msg => 'id' in msg ? msg.id : undefined)
+        .filter(id => id !== undefined);
+
+      // If we have request IDs and an SSE response, create a unique stream ID
+      const hasRequests = requestIds.length > 0;
+
+      // Check the response type
+      const contentType = response.headers.get("content-type");
+
+      if (hasRequests) {
         if (contentType?.includes("text/event-stream")) {
-          // Handle SSE stream to receive responses
-          this._handleSseStream(response.body);
+          // For streaming responses, create a unique stream ID based on request IDs
+          const streamId = `req-${requestIds.join('-')}-${Date.now()}`;
+          this._handleSseStream(response.body, streamId);
         } else if (contentType?.includes("application/json")) {
           // For non-streaming servers, we might get direct JSON responses
           const data = await response.json();
@@ -286,13 +295,14 @@ export class StreamableHTTPClientTransport implements Transport {
     }
   }
 
-  private _handleSseStream(stream: ReadableStream<Uint8Array> | null): void {
+  private _handleSseStream(stream: ReadableStream<Uint8Array> | null, streamId: string): void {
     if (!stream) {
       return;
     }
 
     // Set up stream handling for server-sent events
     const reader = stream.getReader();
+    this._activeStreams.set(streamId, reader);
     const decoder = new TextDecoder();
     let buffer = '';
 
@@ -300,7 +310,11 @@ export class StreamableHTTPClientTransport implements Transport {
       try {
         while (true) {
           const { done, value } = await reader.read();
-          if (done) break;
+          if (done) {
+            // Stream closed by server
+            this._activeStreams.delete(streamId);
+            break;
+          }
 
           buffer += decoder.decode(value, { stream: true });
 
@@ -326,22 +340,27 @@ export class StreamableHTTPClientTransport implements Transport {
             }
 
             // Update last event ID if provided by server
+            // As per spec: the ID MUST be globally unique across all streams within that session
             if (id) {
               this._lastEventId = id;
             }
 
             // Handle message event
-            if (eventType === 'message' && data) {
-              try {
-                const message = JSONRPCMessageSchema.parse(JSON.parse(data));
-                this.onmessage?.(message);
-              } catch (error) {
-                this.onerror?.(error as Error);
+            if (data) {
+              // Default event type is 'message' per SSE spec if not specified
+              if (!eventType || eventType === 'message') {
+                try {
+                  const message = JSONRPCMessageSchema.parse(JSON.parse(data));
+                  this.onmessage?.(message);
+                } catch (error) {
+                  this.onerror?.(error as Error);
+                }
               }
             }
           }
         }
       } catch (error) {
+        this._activeStreams.delete(streamId);
         this.onerror?.(error as Error);
       }
     };

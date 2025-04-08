@@ -10,7 +10,8 @@ describe("StreamableHTTPClientTransport", () => {
     jest.spyOn(global, "fetch");
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    await transport.close().catch(() => { });
     jest.clearAllMocks();
   });
 
@@ -190,5 +191,156 @@ describe("StreamableHTTPClientTransport", () => {
     await transport.send(message);
 
     expect(messageSpy).toHaveBeenCalledWith(responseMessage);
+  });
+
+  it("should attempt initial GET connection and handle 405 gracefully", async () => {
+    // Mock the server not supporting GET for SSE (returning 405)
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: false,
+      status: 405,
+      statusText: "Method Not Allowed"
+    });
+
+    await transport.start();
+
+    // Check that GET was attempted
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        method: "GET",
+        headers: expect.any(Headers)
+      })
+    );
+
+    // Verify transport still works after 405
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      status: 202,
+      headers: new Headers()
+    });
+
+    await transport.send({ jsonrpc: "2.0", method: "test", params: {} } as JSONRPCMessage);
+    expect(global.fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it("should handle successful initial GET connection for SSE", async () => {
+    // Set up readable stream for SSE events
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream({
+      start(controller) {
+        // Send a server notification via SSE
+        const event = 'event: message\ndata: {"jsonrpc": "2.0", "method": "serverNotification", "params": {}}\n\n';
+        controller.enqueue(encoder.encode(event));
+      }
+    });
+
+    // Mock successful GET connection
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      headers: new Headers({ "content-type": "text/event-stream" }),
+      body: stream
+    });
+
+    const messageSpy = jest.fn();
+    transport.onmessage = messageSpy;
+
+    await transport.start();
+
+    // Give time for the SSE event to be processed
+    await new Promise(resolve => setTimeout(resolve, 50));
+
+    expect(messageSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        jsonrpc: "2.0",
+        method: "serverNotification",
+        params: {}
+      })
+    );
+  });
+
+  it("should handle multiple concurrent SSE streams", async () => {
+    // Mock two POST requests that return SSE streams
+    const makeStream = (id: string) => {
+      const encoder = new TextEncoder();
+      return new ReadableStream({
+        start(controller) {
+          const event = `event: message\ndata: {"jsonrpc": "2.0", "result": {"id": "${id}"}, "id": "${id}"}\n\n`;
+          controller.enqueue(encoder.encode(event));
+        }
+      });
+    };
+
+    (global.fetch as jest.Mock)
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: new Headers({ "content-type": "text/event-stream" }),
+        body: makeStream("request1")
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: new Headers({ "content-type": "text/event-stream" }),
+        body: makeStream("request2")
+      });
+
+    const messageSpy = jest.fn();
+    transport.onmessage = messageSpy;
+
+    // Send two concurrent requests
+    await Promise.all([
+      transport.send({ jsonrpc: "2.0", method: "test1", params: {}, id: "request1" }),
+      transport.send({ jsonrpc: "2.0", method: "test2", params: {}, id: "request2" })
+    ]);
+
+    // Give time for SSE processing
+    await new Promise(resolve => setTimeout(resolve, 50));
+
+    // Both streams should have delivered their messages
+    expect(messageSpy).toHaveBeenCalledTimes(2);
+    expect(messageSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ result: { id: "request1" }, id: "request1" })
+    );
+    expect(messageSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ result: { id: "request2" }, id: "request2" })
+    );
+  });
+
+  it("should include last-event-id header when resuming a broken connection", async () => {
+    // First make a successful connection that provides an event ID
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream({
+      start(controller) {
+        const event = 'id: event-123\nevent: message\ndata: {"jsonrpc": "2.0", "method": "serverNotification", "params": {}}\n\n';
+        controller.enqueue(encoder.encode(event));
+        controller.close();
+      }
+    });
+
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      headers: new Headers({ "content-type": "text/event-stream" }),
+      body: stream
+    });
+
+    await transport.start();
+    await new Promise(resolve => setTimeout(resolve, 50));
+
+    // Now simulate attempting to reconnect
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      headers: new Headers({ "content-type": "text/event-stream" }),
+      body: null
+    });
+
+    await transport.start();
+
+    // Check that Last-Event-ID was included
+    const calls = (global.fetch as jest.Mock).mock.calls;
+    const lastCall = calls[calls.length - 1];
+    expect(lastCall[1].headers.get("last-event-id")).toBe("event-123");
   });
 });
