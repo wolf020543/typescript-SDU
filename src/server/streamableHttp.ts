@@ -254,6 +254,16 @@ export class StreamableHTTPServerTransport implements Transport {
           }
         }
 
+        // Set up close handler for client disconnects
+        res.on("close", () => {
+          // Remove all entries that reference this response
+          for (const [id, storedRes] of this._sseResponseMapping.entries()) {
+            if (storedRes === res) {
+              this._sseResponseMapping.delete(id);
+            }
+          }
+        });
+
         // handle each message
         for (const message of messages) {
           this.onmessage?.(message);
@@ -360,16 +370,22 @@ export class StreamableHTTPServerTransport implements Transport {
   }
 
   async send(message: JSONRPCMessage, options?: { relatedRequestId?: RequestId }): Promise<void> {
-    const relatedRequestId = options?.relatedRequestId;
-    // SSE connections are established per POST request, for now we don't support it through the GET
-    // this will be changed when we implement the GET SSE connection
-    if (relatedRequestId === undefined) {
-      throw new Error("relatedRequestId is required for Streamable HTTP transport");
+    let requestId = options?.relatedRequestId;
+    let shouldCloseConnection = false;
+    if ('result' in message || 'error' in message) {
+      // If the message is a response, use the request ID from the message
+      requestId = message.id;
+      // This is a response to the original request, we can close the stream
+      // after sending all related responses
+      shouldCloseConnection = true;
+    }
+    if (!requestId) {
+      throw new Error("No request ID provided for the message");
     }
 
-    const sseResponse = this._sseResponseMapping.get(relatedRequestId);
+    const sseResponse = this._sseResponseMapping.get(requestId);
     if (!sseResponse) {
-      throw new Error(`No SSE connection established for request ID: ${String(relatedRequestId)}`);
+      throw new Error(`No SSE connection established for request ID: ${String(requestId)}`);
     }
 
     // Send the message as an SSE event
@@ -377,19 +393,12 @@ export class StreamableHTTPServerTransport implements Transport {
       `event: message\ndata: ${JSON.stringify(message)}\n\n`,
     );
 
-    // If this is a response message with the same ID as the request, we can check
-    // if we need to close the stream after sending the response
-    if ('result' in message || 'error' in message) {
-      if (message.id === relatedRequestId) {
-        // This is a response to the original request, we can close the stream
-        // after sending all related responses
-        this._sseResponseMapping.delete(relatedRequestId);
-
-        // Only close the connection if it's not needed by other requests
-        const canCloseConnection = ![...this._sseResponseMapping.entries()].some(([id, res]) => res === sseResponse && id !== relatedRequestId);
-        if (canCloseConnection) {
-          sseResponse.end();
-        }
+    if (shouldCloseConnection) {
+      this._sseResponseMapping.delete(requestId);
+      // Only close the connection if it's not needed by other requests
+      const canCloseConnection = ![...this._sseResponseMapping.entries()].some(([id, res]) => res === sseResponse && id !== requestId);
+      if (canCloseConnection) {
+        sseResponse?.end();
       }
     }
   }
