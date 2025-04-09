@@ -1,7 +1,7 @@
 import { Transport } from "../shared/transport.js";
 import { JSONRPCMessage, JSONRPCMessageSchema } from "../types.js";
 import { auth, AuthResult, OAuthClientProvider, UnauthorizedError } from "./auth.js";
-import { EventSourceMessage, EventSourceParserStream } from 'eventsource-parser/stream';
+import { EventSourceParserStream } from 'eventsource-parser/stream';
 export class StreamableHTTPError extends Error {
   constructor(
     public readonly code: number | undefined,
