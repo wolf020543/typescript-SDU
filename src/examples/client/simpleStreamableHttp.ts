@@ -10,7 +10,8 @@ import {
   GetPromptRequest,
   GetPromptResultSchema,
   ListResourcesRequest,
-  ListResourcesResultSchema
+  ListResourcesResultSchema,
+  LoggingMessageNotificationSchema
 } from '../../types.js';
 
 async function main(): Promise<void> {
@@ -19,12 +20,17 @@ async function main(): Promise<void> {
     name: 'example-client',
     version: '1.0.0'
   });
+
   const transport = new StreamableHTTPClientTransport(
     new URL('http://localhost:3000/mcp')
   );
 
   // Connect the client using the transport and initialize the server
   await client.connect(transport);
+  client.setNotificationHandler(LoggingMessageNotificationSchema, (notification) => {
+    console.log(`Notification received: ${notification.params.level} - ${notification.params.data}`);
+  });
+
 
   console.log('Connected to MCP server');
   // List available tools
@@ -45,6 +51,23 @@ async function main(): Promise<void> {
   };
   const greetResult = await client.request(greetRequest, CallToolResultSchema);
   console.log('Greeting result:', greetResult.content[0].text);
+
+  // Call the new 'multi-greet' tool
+  console.log('\nCalling multi-greet tool (with notifications)...');
+  const multiGreetRequest: CallToolRequest = {
+    method: 'tools/call',
+    params: {
+      name: 'multi-greet',
+      arguments: { name: 'MCP User' }
+    }
+  };
+  const multiGreetResult = await client.request(multiGreetRequest, CallToolResultSchema);
+  console.log('Multi-greet results:');
+  multiGreetResult.content.forEach(item => {
+    if (item.type === 'text') {
+      console.log(`- ${item.text}`);
+    }
+  });
 
   // List available prompts
   try {

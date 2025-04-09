@@ -9,7 +9,7 @@ import { CallToolResult, GetPromptResult, ReadResourceResult } from '../../types
 const server = new McpServer({
   name: 'simple-streamable-http-server',
   version: '1.0.0',
-});
+}, { capabilities: { logging: {} } });
 
 // Register a simple tool that returns a greeting
 server.tool(
@@ -25,6 +25,46 @@ server.tool(
           type: 'text',
           text: `Hello, ${name}!`,
         },
+      ],
+    };
+  }
+);
+
+// Register a tool that sends multiple greetings with notifications
+server.tool(
+  'multi-greet',
+  'A tool that sends different greetings with delays between them',
+  {
+    name: z.string().describe('Name to greet'),
+  },
+  async ({ name }, { sendNotification }): Promise<CallToolResult> => {
+    const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+    await sendNotification({
+      method: "notifications/message",
+      params: { level: "debug", data: `Starting multi-greet for ${name}` }
+    });
+
+    await sleep(1000); // Wait 1 second before first greeting
+
+    await sendNotification({
+      method: "notifications/message",
+      params: { level: "info", data: `Sending first greeting to ${name}` }
+    });
+
+    await sleep(1000); // Wait another second before second greeting
+
+    await sendNotification({
+      method: "notifications/message",
+      params: { level: "info", data: `Sending second greeting to ${name}` }
+    });
+
+    return {
+      content: [
+        {
+          type: 'text',
+          text: `Good morning, ${name}!`,
+        }
       ],
     };
   }
@@ -81,7 +121,7 @@ app.post('/mcp', async (req: Request, res: Response) => {
     // Check for existing session ID
     const sessionId = req.headers['mcp-session-id'] as string | undefined;
     let transport: StreamableHTTPServerTransport;
-    
+
     if (sessionId && transports[sessionId]) {
       // Reuse existing transport
       transport = transports[sessionId];
@@ -90,14 +130,14 @@ app.post('/mcp', async (req: Request, res: Response) => {
       transport = new StreamableHTTPServerTransport({
         sessionIdGenerator: () => randomUUID(),
       });
-      
+
       // Connect the transport to the MCP server BEFORE handling the request
       // so responses can flow back through the same transport
       await server.connect(transport);
-      
+
       // After handling the request, if we get a session ID back, store the transport
       await transport.handleRequest(req, res, req.body);
-      
+
       // Store the transport by session ID for future requests
       if (transport.sessionId) {
         transports[transport.sessionId] = transport;
