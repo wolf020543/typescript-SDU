@@ -20,7 +20,7 @@ describe('SSEServerTransport', () => {
       const mockRes = createMockResponse();
       const endpoint = '/messages';
       const transport = new SSEServerTransport(endpoint, mockRes);
-      const expectedSessionId = (transport as any)._sessionId;
+      const expectedSessionId = transport.sessionId;
 
       await transport.start();
 
@@ -35,7 +35,7 @@ describe('SSEServerTransport', () => {
       const mockRes = createMockResponse();
       const endpoint = '/messages?foo=bar&baz=qux';
       const transport = new SSEServerTransport(endpoint, mockRes);
-      const expectedSessionId = (transport as any)._sessionId;
+      const expectedSessionId = transport.sessionId;
 
       await transport.start();
 
@@ -50,7 +50,7 @@ describe('SSEServerTransport', () => {
       const mockRes = createMockResponse();
       const endpoint = '/messages#section1';
       const transport = new SSEServerTransport(endpoint, mockRes);
-      const expectedSessionId = (transport as any)._sessionId;
+      const expectedSessionId = transport.sessionId;
 
       await transport.start();
 
@@ -65,7 +65,7 @@ describe('SSEServerTransport', () => {
       const mockRes = createMockResponse();
       const endpoint = '/messages?key=value#section2';
       const transport = new SSEServerTransport(endpoint, mockRes);
-      const expectedSessionId = (transport as any)._sessionId;
+      const expectedSessionId = transport.sessionId;
 
       await transport.start();
 
@@ -80,7 +80,7 @@ describe('SSEServerTransport', () => {
       const mockRes = createMockResponse();
       const endpoint = '/';
       const transport = new SSEServerTransport(endpoint, mockRes);
-      const expectedSessionId = (transport as any)._sessionId;
+      const expectedSessionId = transport.sessionId;
 
       await transport.start();
 
@@ -95,7 +95,7 @@ describe('SSEServerTransport', () => {
       const mockRes = createMockResponse();
       const endpoint = ''; 
       const transport = new SSEServerTransport(endpoint, mockRes);
-      const expectedSessionId = (transport as any)._sessionId;
+      const expectedSessionId = transport.sessionId;
 
       await transport.start();
 
