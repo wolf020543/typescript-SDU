@@ -3,6 +3,7 @@ import {
   CancelledNotificationSchema,
   ClientCapabilities,
   ErrorCode,
+  isJSONRPCError,
   isJSONRPCRequest,
   isJSONRPCResponse,
   isJSONRPCNotification,
@@ -274,7 +275,7 @@ export abstract class Protocol<
     };
 
     this._transport.onmessage = (message) => {
-      if (isJSONRPCResponse(message)) {
+      if (isJSONRPCResponse(message) || isJSONRPCError(message)) {
         this._onresponse(message);
       } else if (isJSONRPCRequest(message)) {
         this._onrequest(message);

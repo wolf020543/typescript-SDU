@@ -150,6 +150,9 @@ export const JSONRPCErrorSchema = z
   })
   .strict();
 
+export const isJSONRPCError = (value: unknown): value is JSONRPCError =>
+  JSONRPCErrorSchema.safeParse(value).success;
+
 export const JSONRPCMessageSchema = z.union([
   JSONRPCRequestSchema,
   JSONRPCNotificationSchema,
