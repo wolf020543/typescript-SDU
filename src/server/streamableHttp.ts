@@ -406,8 +406,6 @@ export class StreamableHTTPServerTransport implements Transport {
 
       if (allResponsesReady) {
         if (this._enableJsonResponse) {
-          // If we are in SSE mode, we don't need to do anything else
-
           // All responses ready, send as JSON
           const headers: Record<string, string> = {
             'Content-Type': 'application/json',
@@ -416,18 +414,7 @@ export class StreamableHTTPServerTransport implements Transport {
             headers['mcp-session-id'] = this.sessionId;
           }
 
-          // In tests, relatedIds might be coming in non-deterministic order
-          // We need to sort numerically for numeric IDs, alphabetically for string IDs
           const responses = relatedIds
-            .sort((a, b) => {
-              // If both IDs are numbers, sort numerically
-              if (typeof a === 'number' && typeof b === 'number') {
-                return a - b;
-              }
-
-              // Otherwise sort by string lexical order 
-              return String(a).localeCompare(String(b));
-            })
             .map(id => this._requestResponseMap.get(id)!);
 
           response.writeHead(200, headers);
@@ -437,6 +424,7 @@ export class StreamableHTTPServerTransport implements Transport {
             response.end(JSON.stringify(responses));
           }
         } else {
+          // End the SSE stream
           response.end();
         }
         // Clean up
