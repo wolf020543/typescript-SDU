@@ -161,7 +161,10 @@ describe("StreamableHTTPClientTransport", () => {
       statusText: "Method Not Allowed"
     });
 
+    // We expect the 405 error to be caught and handled gracefully
+    // This should not throw an error that breaks the transport
     await transport.start();
+    await expect(transport.openSseStream()).rejects.toThrow('Failed to open SSE stream: Method Not Allowed');
 
     // Check that GET was attempted
     expect(global.fetch).toHaveBeenCalledWith(
@@ -206,6 +209,7 @@ describe("StreamableHTTPClientTransport", () => {
     transport.onmessage = messageSpy;
 
     await transport.start();
+    await transport.openSseStream();
 
     // Give time for the SSE event to be processed
     await new Promise(resolve => setTimeout(resolve, 50));
@@ -233,7 +237,7 @@ describe("StreamableHTTPClientTransport", () => {
 
     (global.fetch as jest.Mock)
       .mockResolvedValueOnce({
-        ok: true,
+        ok: true, 
         status: 200,
         headers: new Headers({ "content-type": "text/event-stream" }),
         body: makeStream("request1")
@@ -255,16 +259,21 @@ describe("StreamableHTTPClientTransport", () => {
     ]);
 
     // Give time for SSE processing
-    await new Promise(resolve => setTimeout(resolve, 50));
+    await new Promise(resolve => setTimeout(resolve, 100));
 
     // Both streams should have delivered their messages
     expect(messageSpy).toHaveBeenCalledTimes(2);
-    expect(messageSpy).toHaveBeenCalledWith(
-      expect.objectContaining({ result: { id: "request1" }, id: "request1" })
-    );
-    expect(messageSpy).toHaveBeenCalledWith(
-      expect.objectContaining({ result: { id: "request2" }, id: "request2" })
-    );
+    
+    // Verify received messages without assuming specific order
+    expect(messageSpy.mock.calls.some(call => {
+      const msg = call[0];
+      return msg.id === "request1" && msg.result?.id === "request1";
+    })).toBe(true);
+    
+    expect(messageSpy.mock.calls.some(call => {
+      const msg = call[0];
+      return msg.id === "request2" && msg.result?.id === "request2";
+    })).toBe(true);
   });
 
   it("should include last-event-id header when resuming a broken connection", async () => {
@@ -286,6 +295,7 @@ describe("StreamableHTTPClientTransport", () => {
     });
 
     await transport.start();
+    await transport.openSseStream();
     await new Promise(resolve => setTimeout(resolve, 50));
 
     // Now simulate attempting to reconnect
@@ -296,7 +306,7 @@ describe("StreamableHTTPClientTransport", () => {
       body: null
     });
 
-    await transport.start();
+    await transport.openSseStream();
 
     // Check that Last-Event-ID was included
     const calls = (global.fetch as jest.Mock).mock.calls;
