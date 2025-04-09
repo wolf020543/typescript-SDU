@@ -1,13 +1,11 @@
 import { Transport } from "../shared/transport.js";
 import { JSONRPCMessage, JSONRPCMessageSchema } from "../types.js";
 import { auth, AuthResult, OAuthClientProvider, UnauthorizedError } from "./auth.js";
-import { type ErrorEvent } from "eventsource";
 import { EventSourceMessage, EventSourceParserStream } from 'eventsource-parser/stream';
 export class StreamableHTTPError extends Error {
   constructor(
     public readonly code: number | undefined,
     message: string | undefined,
-    public readonly event: ErrorEvent,
   ) {
     super(`Streamable HTTP error: ${message}`);
   }
@@ -83,7 +81,7 @@ export class StreamableHTTPClientTransport implements Transport {
       throw new UnauthorizedError();
     }
 
-    return await this._startOrAuth();
+    return await this._startOrAuthStandaloneSSE();
   }
 
   private async _commonHeaders(): Promise<HeadersInit> {
@@ -102,7 +100,7 @@ export class StreamableHTTPClientTransport implements Transport {
     return headers;
   }
 
-  private async _startOrAuth(): Promise<void> {
+  private async _startOrAuthStandaloneSSE(): Promise<void> {
     try {
       // Try to open an initial SSE stream with GET to listen for server messages
       // This is optional according to the spec - server may not support it
@@ -121,30 +119,74 @@ export class StreamableHTTPClientTransport implements Transport {
         signal: this._abortController?.signal,
       });
 
-      if (response.status === 405 || response.status === 404) {
-        // Server doesn't support GET for SSE, which is allowed by the spec
-        // We'll rely on SSE responses to POST requests for communication
-        return;
-      }
-
       if (!response.ok) {
         if (response.status === 401 && this._authProvider) {
           // Need to authenticate
           return await this._authThenStart();
         }
 
-        const error = new Error(`Failed to open SSE stream: ${response.status} ${response.statusText}`);
+        const error = new StreamableHTTPError(
+          response.status,
+          `Failed to open SSE stream: ${response.statusText}`,
+        );
         this.onerror?.(error);
         throw error;
       }
 
       // Successful connection, handle the SSE stream as a standalone listener
-      const streamId = `initial-${Date.now()}`;
+      const streamId = `standalone-sse-${Date.now()}`;
       this._handleSseStream(response.body, streamId);
     } catch (error) {
       this.onerror?.(error as Error);
       throw error;
     }
+  }
+
+  private _handleSseStream(stream: ReadableStream<Uint8Array> | null, streamId: string): void {
+    if (!stream) {
+      return;
+    }
+
+    // Create a pipeline: binary stream -> text decoder -> SSE parser
+    const eventStream = stream
+      .pipeThrough(new TextDecoderStream())
+      .pipeThrough(new EventSourceParserStream());
+
+    const reader = eventStream.getReader();
+    this._activeStreams.set(streamId, reader);
+
+    const processStream = async () => {
+      try {
+        while (true) {
+          const { done, value: event } = await reader.read();
+          if (done) {
+            this._activeStreams.delete(streamId);
+            break;
+          }
+
+          // Update last event ID if provided
+          if (event.id) {
+            this._lastEventId = event.id;
+          }
+
+          // Handle message events (default event type is undefined per docs)
+          // or explicit 'message' event type
+          if (!event.event || event.event === 'message') {
+            try {
+              const message = JSONRPCMessageSchema.parse(JSON.parse(event.data));
+              this.onmessage?.(message);
+            } catch (error) {
+              this.onerror?.(error as Error);
+            }
+          }
+        }
+      } catch (error) {
+        this._activeStreams.delete(streamId);
+        this.onerror?.(error as Error);
+      }
+    };
+
+    processStream();
   }
 
   async start() {
@@ -155,7 +197,6 @@ export class StreamableHTTPClientTransport implements Transport {
     }
 
     this._abortController = new AbortController();
-    return await this._startOrAuth();
   }
 
   /**
@@ -271,50 +312,17 @@ export class StreamableHTTPClientTransport implements Transport {
     }
   }
 
-  private _handleSseStream(stream: ReadableStream<Uint8Array> | null, streamId: string): void {
-    if (!stream) {
-      return;
+  /**
+   * Opens SSE stream to receive messages from the server.
+   * 
+   * This allows the server to push messages to the client without requiring the client
+   * to first send a request via HTTP POST. Some servers may not support this feature.
+   * If authentication is required but fails, this method will throw an UnauthorizedError.
+   */
+  async openSseStream(): Promise<void> {
+    if (!this._abortController) {
+      this._abortController = new AbortController();
     }
-
-    // Create a pipeline: binary stream -> text decoder -> SSE parser
-    const eventStream = stream
-      .pipeThrough(new TextDecoderStream())
-      .pipeThrough(new EventSourceParserStream());
-
-    const reader = eventStream.getReader();
-    this._activeStreams.set(streamId, reader);
-
-    const processStream = async () => {
-      try {
-        while (true) {
-          const { done, value: event } = await reader.read();
-          if (done) {
-            this._activeStreams.delete(streamId);
-            break;
-          }
-
-          // Update last event ID if provided
-          if (event.id) {
-            this._lastEventId = event.id;
-          }
-
-          // Handle message events (default event type is undefined per docs)
-          // or explicit 'message' event type
-          if (!event.event || event.event === 'message') {
-            try {
-              const message = JSONRPCMessageSchema.parse(JSON.parse(event.data));
-              this.onmessage?.(message);
-            } catch (error) {
-              this.onerror?.(error as Error);
-            }
-          }
-        }
-      } catch (error) {
-        this._activeStreams.delete(streamId);
-        this.onerror?.(error as Error);
-      }
-    };
-
-    processStream();
+    await this._startOrAuthStandaloneSSE();
   }
 }
