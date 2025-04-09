@@ -1008,8 +1008,8 @@ describe("StreamableHTTPServerTransport", () => {
       await transport.handleRequest(req, response);
 
       // Verify that the request is tracked in the SSE map
-      expect(transport["_sseResponseMapping"].size).toBe(2);
-      expect(transport["_sseResponseMapping"].has("cleanup-test")).toBe(true);
+      expect(transport["_responseMapping"].size).toBe(2);
+      expect(transport["_responseMapping"].has("cleanup-test")).toBe(true);
 
       // Send a response
       await transport.send({
@@ -1019,8 +1019,8 @@ describe("StreamableHTTPServerTransport", () => {
       });
 
       // Verify that the mapping was cleaned up
-      expect(transport["_sseResponseMapping"].size).toBe(1);
-      expect(transport["_sseResponseMapping"].has("cleanup-test")).toBe(false);
+      expect(transport["_responseMapping"].size).toBe(1);
+      expect(transport["_responseMapping"].has("cleanup-test")).toBe(false);
     });
 
     it("should clean up connection tracking when client disconnects", async () => {
@@ -1052,17 +1052,17 @@ describe("StreamableHTTPServerTransport", () => {
       await transport.handleRequest(req, response);
 
       // Both requests should be mapped to the same response
-      expect(transport["_sseResponseMapping"].size).toBe(3);
-      expect(transport["_sseResponseMapping"].get("req1")).toBe(response);
-      expect(transport["_sseResponseMapping"].get("req2")).toBe(response);
+      expect(transport["_responseMapping"].size).toBe(3);
+      expect(transport["_responseMapping"].get("req1")).toBe(response);
+      expect(transport["_responseMapping"].get("req2")).toBe(response);
 
       // Simulate client disconnect by triggering the stored callback
       if (closeCallback) closeCallback();
 
       // All entries using this response should be removed
-      expect(transport["_sseResponseMapping"].size).toBe(1);
-      expect(transport["_sseResponseMapping"].has("req1")).toBe(false);
-      expect(transport["_sseResponseMapping"].has("req2")).toBe(false);
+      expect(transport["_responseMapping"].size).toBe(1);
+      expect(transport["_responseMapping"].has("req1")).toBe(false);
+      expect(transport["_responseMapping"].has("req2")).toBe(false);
     });
   });
 
@@ -1211,6 +1211,148 @@ describe("StreamableHTTPServerTransport", () => {
       expect(mockResponse.writeHead).toHaveBeenCalledWith(400);
       expect(mockResponse.end).toHaveBeenCalledWith(expect.stringContaining('"jsonrpc":"2.0"'));
       expect(onErrorMock).toHaveBeenCalled();
+    });
+  });
+
+  describe("JSON Response Mode", () => {
+    let jsonResponseTransport: StreamableHTTPServerTransport;
+    let mockResponse: jest.Mocked<ServerResponse>;
+
+    beforeEach(async () => {
+      jsonResponseTransport = new StreamableHTTPServerTransport({
+        sessionIdGenerator: () => randomUUID(),
+        enableJsonResponse: true,
+      });
+
+      // Initialize the transport
+      const initMessage: JSONRPCMessage = {
+        jsonrpc: "2.0",
+        method: "initialize",
+        params: {
+          clientInfo: { name: "test-client", version: "1.0" },
+          protocolVersion: "2025-03-26"
+        },
+        id: "init-1",
+      };
+
+      const initReq = createMockRequest({
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "accept": "application/json, text/event-stream",
+        },
+        body: JSON.stringify(initMessage),
+      });
+
+      mockResponse = createMockResponse();
+      await jsonResponseTransport.handleRequest(initReq, mockResponse);
+      mockResponse = createMockResponse(); // Reset for tests
+    });
+
+    it("should return JSON response for a single request", async () => {
+      const requestMessage: JSONRPCMessage = {
+        jsonrpc: "2.0",
+        method: "test",
+        params: {},
+        id: "test-req-id",
+      };
+
+      const req = createMockRequest({
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "accept": "application/json, text/event-stream",
+          "mcp-session-id": jsonResponseTransport.sessionId,
+        },
+        body: JSON.stringify(requestMessage),
+      });
+
+      // Mock immediate response
+      jsonResponseTransport.onmessage = (message) => {
+        if ('method' in message && 'id' in message) {
+          const responseMessage: JSONRPCMessage = {
+            jsonrpc: "2.0",
+            result: { value: "test-result" },
+            id: message.id,
+          };
+          setTimeout(() => {
+            void jsonResponseTransport.send(responseMessage);
+          }, 10);
+        }
+      };
+
+      await jsonResponseTransport.handleRequest(req, mockResponse);
+
+      // Wait for all promises to resolve
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      // Should respond with application/json header
+      expect(mockResponse.writeHead).toHaveBeenCalledWith(
+        200,
+        expect.objectContaining({
+          "Content-Type": "application/json",
+        })
+      );
+
+      // Should return the response as JSON
+      const expectedResponse = {
+        jsonrpc: "2.0",
+        result: { value: "test-result" },
+        id: "test-req-id",
+      };
+
+      expect(mockResponse.end).toHaveBeenCalledWith(JSON.stringify(expectedResponse));
+    });
+
+    it("should return JSON response for batch requests", async () => {
+      const batchMessages: JSONRPCMessage[] = [
+        { jsonrpc: "2.0", method: "test1", params: {}, id: "req1" },
+        { jsonrpc: "2.0", method: "test2", params: {}, id: "req2" },
+      ];
+
+      const req = createMockRequest({
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "accept": "application/json, text/event-stream",
+          "mcp-session-id": jsonResponseTransport.sessionId,
+        },
+        body: JSON.stringify(batchMessages),
+      });
+
+      // Mock sequential responses - send them in specific order
+      jsonResponseTransport.onmessage = (message) => {
+        if ('method' in message && 'id' in message) {
+          const responseMessage: JSONRPCMessage = {
+            jsonrpc: "2.0",
+            result: { value: `result-for-${message.id}` },
+            id: message.id,
+          };
+          // Send responses in order - req1 first, then req2 
+          if (message.id === 'req1') {
+            void jsonResponseTransport.send(responseMessage);
+          } else {
+            // Add a tiny delay to req2 to ensure it's processed after req1
+            setTimeout(() => void jsonResponseTransport.send(responseMessage), 5);
+          }
+        }
+      };
+
+      await jsonResponseTransport.handleRequest(req, mockResponse);
+
+      // Wait for all promises to resolve - give it enough time
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Should respond with application/json header
+      expect(mockResponse.writeHead).toHaveBeenCalledWith(
+        200,
+        expect.objectContaining({
+          "Content-Type": "application/json",
+        })
+      );
+
+      expect(mockResponse.end).toHaveBeenCalled();
+      expect(mockResponse.end.mock.calls[0][0]).toContain("result-for-req2");
     });
   });
 

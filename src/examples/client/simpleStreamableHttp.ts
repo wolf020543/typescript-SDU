@@ -15,9 +15,9 @@ import {
 
 async function main(): Promise<void> {
   // Create a new client with streamable HTTP transport
-  const client = new Client({ 
-    name: 'example-client', 
-    version: '1.0.0' 
+  const client = new Client({
+    name: 'example-client',
+    version: '1.0.0'
   });
   const transport = new StreamableHTTPClientTransport(
     new URL('http://localhost:3000/mcp')
@@ -27,7 +27,6 @@ async function main(): Promise<void> {
   await client.connect(transport);
 
   console.log('Connected to MCP server');
-  
   // List available tools
   const toolsRequest: ListToolsRequest = {
     method: 'tools/list',
@@ -48,32 +47,44 @@ async function main(): Promise<void> {
   console.log('Greeting result:', greetResult.content[0].text);
 
   // List available prompts
-  const promptsRequest: ListPromptsRequest = {
-    method: 'prompts/list',
-    params: {}
-  };
-  const promptsResult = await client.request(promptsRequest, ListPromptsResultSchema);
-  console.log('Available prompts:', promptsResult.prompts);
+  try {
+    const promptsRequest: ListPromptsRequest = {
+      method: 'prompts/list',
+      params: {}
+    };
+    const promptsResult = await client.request(promptsRequest, ListPromptsResultSchema);
+    console.log('Available prompts:', promptsResult.prompts);
+  } catch (error) {
+    console.log(`Prompts not supported by this server (${error})`);
+  }
 
   // Get a prompt
-  const promptRequest: GetPromptRequest = {
-    method: 'prompts/get',
-    params: {
-      name: 'greeting-template',
-      arguments: { name: 'MCP User' }
-    }
-  };
-  const promptResult = await client.request(promptRequest, GetPromptResultSchema);
-  console.log('Prompt template:', promptResult.messages[0].content.text);
+  try {
+    const promptRequest: GetPromptRequest = {
+      method: 'prompts/get',
+      params: {
+        name: 'greeting-template',
+        arguments: { name: 'MCP User' }
+      }
+    };
+    const promptResult = await client.request(promptRequest, GetPromptResultSchema);
+    console.log('Prompt template:', promptResult.messages[0].content.text);
+  } catch (error) {
+    console.log(`Prompt retrieval not supported by this server (${error})`);
+  }
 
   // List available resources
-  const resourcesRequest: ListResourcesRequest = {
-    method: 'resources/list',
-    params: {}
-  };
-  const resourcesResult = await client.request(resourcesRequest, ListResourcesResultSchema);
-  console.log('Available resources:', resourcesResult.resources);
-  
+  try {
+    const resourcesRequest: ListResourcesRequest = {
+      method: 'resources/list',
+      params: {}
+    };
+    const resourcesResult = await client.request(resourcesRequest, ListResourcesResultSchema);
+    console.log('Available resources:', resourcesResult.resources);
+  } catch (error) {
+    console.log(`Resources not supported by this server (${error})`);
+  }
+
   // Close the connection
   await client.close();
 }
