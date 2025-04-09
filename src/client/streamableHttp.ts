@@ -43,7 +43,6 @@ export type StreamableHTTPClientTransportOptions = {
  * for receiving messages.
  */
 export class StreamableHTTPClientTransport implements Transport {
-  private _activeStreams: Map<string, ReadableStreamDefaultReader<EventSourceMessage>> = new Map();
   private _abortController?: AbortController;
   private _url: URL;
   private _requestInit?: RequestInit;
@@ -134,33 +133,28 @@ export class StreamableHTTPClientTransport implements Transport {
       }
 
       // Successful connection, handle the SSE stream as a standalone listener
-      const streamId = `standalone-sse-${Date.now()}`;
-      this._handleSseStream(response.body, streamId);
+      this._handleSseStream(response.body);
     } catch (error) {
       this.onerror?.(error as Error);
       throw error;
     }
   }
 
-  private _handleSseStream(stream: ReadableStream<Uint8Array> | null, streamId: string): void {
+  private _handleSseStream(stream: ReadableStream<Uint8Array> | null): void {
     if (!stream) {
       return;
     }
-
     // Create a pipeline: binary stream -> text decoder -> SSE parser
     const eventStream = stream
       .pipeThrough(new TextDecoderStream())
       .pipeThrough(new EventSourceParserStream());
 
     const reader = eventStream.getReader();
-    this._activeStreams.set(streamId, reader);
-
     const processStream = async () => {
       try {
         while (true) {
           const { done, value: event } = await reader.read();
           if (done) {
-            this._activeStreams.delete(streamId);
             break;
           }
 
@@ -181,7 +175,6 @@ export class StreamableHTTPClientTransport implements Transport {
           }
         }
       } catch (error) {
-        this._activeStreams.delete(streamId);
         this.onerror?.(error as Error);
       }
     };
@@ -190,7 +183,7 @@ export class StreamableHTTPClientTransport implements Transport {
   }
 
   async start() {
-    if (this._activeStreams.size > 0) {
+    if (this._abortController) {
       throw new Error(
         "StreamableHTTPClientTransport already started! If using Client class, note that connect() calls start() automatically.",
       );
@@ -214,16 +207,6 @@ export class StreamableHTTPClientTransport implements Transport {
   }
 
   async close(): Promise<void> {
-    // Close all active streams
-    for (const reader of this._activeStreams.values()) {
-      try {
-        reader.cancel();
-      } catch (error) {
-        this.onerror?.(error as Error);
-      }
-    }
-    this._activeStreams.clear();
-
     // Abort any pending requests
     this._abortController?.abort();
 
@@ -292,8 +275,7 @@ export class StreamableHTTPClientTransport implements Transport {
       if (hasRequests) {
         if (contentType?.includes("text/event-stream")) {
           // For streaming responses, create a unique stream ID based on request IDs
-          const streamId = `req-${requestIds.join('-')}-${Date.now()}`;
-          this._handleSseStream(response.body, streamId);
+          this._handleSseStream(response.body);
         } else if (contentType?.includes("application/json")) {
           // For non-streaming servers, we might get direct JSON responses
           const data = await response.json();
@@ -321,7 +303,9 @@ export class StreamableHTTPClientTransport implements Transport {
    */
   async openSseStream(): Promise<void> {
     if (!this._abortController) {
-      this._abortController = new AbortController();
+      throw new Error(
+        "StreamableHTTPClientTransport not started! Call connect() before openSseStream().",
+      );
     }
     await this._startOrAuthStandaloneSSE();
   }
