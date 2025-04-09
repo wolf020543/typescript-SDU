@@ -359,13 +359,9 @@ export class StreamableHTTPServerTransport implements Transport {
 
   async send(message: JSONRPCMessage, options?: { relatedRequestId?: RequestId }): Promise<void> {
     let requestId = options?.relatedRequestId;
-    let shouldCloseConnection = false;
     if ('result' in message || 'error' in message) {
       // If the message is a response, use the request ID from the message
       requestId = message.id;
-      // This is a response to the original request, we can close the stream
-      // after sending all related responses
-      shouldCloseConnection = true;
     }
     if (requestId === undefined) {
       throw new Error("No request ID provided for the message");
@@ -380,8 +376,8 @@ export class StreamableHTTPServerTransport implements Transport {
     sseResponse.write(
       `event: message\ndata: ${JSON.stringify(message)}\n\n`,
     );
-
-    if (shouldCloseConnection) {
+    // After all JSON-RPC responses have been sent, the server SHOULD close the SSE stream.
+    if ('result' in message || 'error' in message) {
       this._sseResponseMapping.delete(requestId);
       // Only close the connection if it's not needed by other requests
       const canCloseConnection = ![...this._sseResponseMapping.entries()].some(([id, res]) => res === sseResponse && id !== requestId);
