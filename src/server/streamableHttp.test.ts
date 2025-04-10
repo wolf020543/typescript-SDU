@@ -1320,7 +1320,7 @@ describe("StreamableHTTPServerTransport", () => {
         body: JSON.stringify(batchMessages),
       });
 
-      // Mock sequential responses - send them in specific order
+      // Mock responses without enforcing specific order
       jsonResponseTransport.onmessage = (message) => {
         if ('method' in message && 'id' in message) {
           const responseMessage: JSONRPCMessage = {
@@ -1328,13 +1328,7 @@ describe("StreamableHTTPServerTransport", () => {
             result: { value: `result-for-${message.id}` },
             id: message.id,
           };
-          // Send responses in order - req1 first, then req2 
-          if (message.id === 'req1') {
-            void jsonResponseTransport.send(responseMessage);
-          } else {
-            // Add a tiny delay to req2 to ensure it's processed after req1
-            setTimeout(() => void jsonResponseTransport.send(responseMessage), 5);
-          }
+          void jsonResponseTransport.send(responseMessage);
         }
       };
 
@@ -1351,8 +1345,15 @@ describe("StreamableHTTPServerTransport", () => {
         })
       );
 
+      // Verify response was sent but don't assume specific order
       expect(mockResponse.end).toHaveBeenCalled();
-      expect(mockResponse.end.mock.calls[0][0]).toContain("result-for-req2");
+      const responseJson = JSON.parse(mockResponse.end.mock.calls[0][0] as string);
+      expect(Array.isArray(responseJson)).toBe(true);
+      expect(responseJson).toHaveLength(2);
+      
+      // Check each response exists separately without assuming order
+      expect(responseJson).toContainEqual(expect.objectContaining({ id: "req1", result: { value: "result-for-req1" } }));
+      expect(responseJson).toContainEqual(expect.objectContaining({ id: "req2", result: { value: "result-for-req2" } }));
     });
   });
 
