@@ -32,6 +32,7 @@ function createMockResponse(): jest.Mocked<ServerResponse> {
     emit: jest.fn().mockReturnThis(),
     getHeader: jest.fn(),
     setHeader: jest.fn(),
+    flushHeaders: jest.fn(),
   } as unknown as jest.Mocked<ServerResponse>;
   return response;
 }
