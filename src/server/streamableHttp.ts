@@ -162,8 +162,9 @@ export class StreamableHTTPServerTransport implements Transport {
       }));
       return;
     }
-
-    res.writeHead(200, headers);
+    // We need to send headers immediately as message will arrive much later,
+    // otherwise the client will just wait for the first message
+    res.writeHead(200, headers).flushHeaders();
 
     // Store the response for this request so we can use it for standalone server notifications
     // This response doesn't have an associated request ID, so we'll use a special string to track it
