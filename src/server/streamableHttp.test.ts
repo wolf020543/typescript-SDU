@@ -1272,20 +1272,14 @@ describe("StreamableHTTPServerTransport", () => {
         if ('method' in message && 'id' in message) {
           const responseMessage: JSONRPCMessage = {
             jsonrpc: "2.0",
-            result: { value: "test-result" },
+            result: { value: `test-result` },
             id: message.id,
           };
-          setTimeout(() => {
-            void jsonResponseTransport.send(responseMessage);
-          }, 10);
+          void jsonResponseTransport.send(responseMessage);
         }
       };
 
       await jsonResponseTransport.handleRequest(req, mockResponse);
-
-      // Wait for all promises to resolve
-      await new Promise(resolve => setTimeout(resolve, 50));
-
       // Should respond with application/json header
       expect(mockResponse.writeHead).toHaveBeenCalledWith(
         200,
