@@ -149,10 +149,29 @@ function isInitializeRequest(body: unknown): boolean {
 // Start the server
 const PORT = 3000;
 app.listen(PORT, () => {
-  console.log(`MCP Streamable HTTP Server with JSON responses listening on port ${PORT}`);
-  console.log(`Server is running. Press Ctrl+C to stop.`);
-  console.log(`Initialize with: curl -X POST -H "Content-Type: application/json" -H "Accept: application/json" -d '{"jsonrpc":"2.0","method":"initialize","params":{"capabilities":{}},"id":"1"}' http://localhost:${PORT}/mcp`);
-  console.log(`Then call tool with: curl -X POST -H "Content-Type: application/json" -H "Accept: application/json" -H "mcp-session-id: YOUR_SESSION_ID" -d '{"jsonrpc":"2.0","method":"mcp.call_tool","params":{"name":"greet","arguments":{"name":"World"}},"id":"2"}' http://localhost:${PORT}/mcp`);
+  console.log(`MCP Streamable HTTP Server listening on port ${PORT}`);
+  console.log(`Initialize session with the command below id you are using curl for testing: 
+  -----------------------------
+  SESSION_ID=$(curl -X POST \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -H "Accept: text/event-stream" \
+  -d '{
+    "jsonrpc": "2.0",
+    "method": "initialize",
+    "params": {
+      "capabilities": {},
+      "protocolVersion": "2025-03-26", 
+      "clientInfo": {
+        "name": "test",
+        "version": "1.0.0"
+      }
+    },
+    "id": "1"
+  }' \
+  -i http://localhost:3000/mcp 2>&1 | grep -i "mcp-session-id" | cut -d' ' -f2 | tr -d '\\r')
+  echo "Session ID: $SESSION_ID"
+  -----------------------------`);
 });
 
 // Handle server shutdown

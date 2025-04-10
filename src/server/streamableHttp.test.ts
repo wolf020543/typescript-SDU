@@ -1252,7 +1252,7 @@ describe("StreamableHTTPServerTransport", () => {
     it("should return JSON response for a single request", async () => {
       const requestMessage: JSONRPCMessage = {
         jsonrpc: "2.0",
-        method: "test",
+        method: "tools/list",
         params: {},
         id: "test-req-id",
       };
@@ -1306,8 +1306,8 @@ describe("StreamableHTTPServerTransport", () => {
 
     it("should return JSON response for batch requests", async () => {
       const batchMessages: JSONRPCMessage[] = [
-        { jsonrpc: "2.0", method: "test1", params: {}, id: "req1" },
-        { jsonrpc: "2.0", method: "test2", params: {}, id: "req2" },
+        { jsonrpc: "2.0", method: "tools/list", params: {}, id: "req1" },
+        { jsonrpc: "2.0", method: "tools/call", params: {}, id: "req2" },
       ];
 
       const req = createMockRequest({
@@ -1334,9 +1334,6 @@ describe("StreamableHTTPServerTransport", () => {
 
       await jsonResponseTransport.handleRequest(req, mockResponse);
 
-      // Wait for all promises to resolve - give it enough time
-      await new Promise(resolve => setTimeout(resolve, 100));
-
       // Should respond with application/json header
       expect(mockResponse.writeHead).toHaveBeenCalledWith(
         200,
@@ -1350,7 +1347,7 @@ describe("StreamableHTTPServerTransport", () => {
       const responseJson = JSON.parse(mockResponse.end.mock.calls[0][0] as string);
       expect(Array.isArray(responseJson)).toBe(true);
       expect(responseJson).toHaveLength(2);
-      
+
       // Check each response exists separately without assuming order
       expect(responseJson).toContainEqual(expect.objectContaining({ id: "req1", result: { value: "result-for-req1" } }));
       expect(responseJson).toContainEqual(expect.objectContaining({ id: "req2", result: { value: "result-for-req2" } }));
