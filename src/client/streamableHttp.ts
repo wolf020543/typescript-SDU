@@ -131,7 +131,6 @@ export class StreamableHTTPClientTransport implements Transport {
           `Failed to open SSE stream: ${response.statusText}`,
         );
       }
-
       // Successful connection, handle the SSE stream as a standalone listener
       this._handleSseStream(response.body);
     } catch (error) {

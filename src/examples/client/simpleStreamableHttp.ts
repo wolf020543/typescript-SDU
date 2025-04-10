@@ -25,7 +25,7 @@ async function main(): Promise<void> {
   const transport = new StreamableHTTPClientTransport(
     new URL('http://localhost:3000/mcp')
   );
-  const supportsStandaloneSse = false;
+  let supportsStandaloneSse = false;
 
   // Connect the client using the transport and initialize the server
   await client.connect(transport);
@@ -34,7 +34,7 @@ async function main(): Promise<void> {
   console.log('Opening SSE stream to receive server notifications...');
   try {
     await transport.openSseStream();
-    const supportsStandaloneSse = false;
+    supportsStandaloneSse = true;
     console.log('SSE stream established successfully. Waiting for notifications...');
   }
   catch (error) {
