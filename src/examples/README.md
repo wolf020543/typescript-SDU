@@ -9,6 +9,7 @@ This directory contains example implementations of MCP clients and servers using
   - [Server Supporting SSE via GET](#server-supporting-with-sse-via-get-serverstandalonessewithgetstreamablehttpts)
   - [Server with JSON Response Mode](#server-with-json-response-mode-serverjsonresponsestreamablehttpts)
 - [Client Example - Streamable HTTP](#client-clientsimplestreamablehttpts)
+- [Useful bash commands for testing](#useful-commands-for-testing)
 
 ## Streamable HTTP - single node deployment with basic session state management
 
@@ -30,35 +31,6 @@ npx tsx src/examples/server/simpleStreamableHttp.ts
 ```
 
 The server will start on port 3000. You can test the initialization and tool listing:
-
-```bash
-# First initialize the server and save the session ID to a variable
-SESSION_ID=$(curl -X POST \
-  -H "Content-Type: application/json" \
-  -H "Accept: application/json" \
-  -H "Accept: text/event-stream" \
-  -d '{
-    "jsonrpc": "2.0",
-    "method": "initialize",
-    "params": {
-      "capabilities": {},
-      "protocolVersion": "2025-03-26", 
-      "clientInfo": {
-        "name": "test",
-        "version": "1.0.0"
-      }
-    },
-    "id": "1"
-  }' \
-  -i http://localhost:3000/mcp 2>&1 | grep -i "mcp-session-id" | cut -d' ' -f2 | tr -d '\r')
-echo "Session ID: $SESSION_ID
-
-# Then list tools using the saved session ID 
-curl -X POST -H "Content-Type: application/json" -H "Accept: application/json, text/event-stream" \
-  -H "mcp-session-id: $SESSION_ID" \
-  -d '{"jsonrpc":"2.0","method":"tools/list","params":{},"id":"2"}' \
-  http://localhost:3000/mcp
-```
 
 ### Server supporting with SSE via GET (`server/standaloneSseWithGetStreamableHttp.ts`)
 
@@ -83,10 +55,31 @@ A simple MCP server that uses the Streamable HTTP transport with JSON response m
 npx tsx src/examples/server/jsonResponseStreamableHttp.ts
 ```
 
-The server will start on port 3000. You can test the initialization and tool calling:
+
+### Client (`client/simpleStreamableHttp.ts`)
+
+A client that connects to the server, initializes it, and demonstrates how to:
+
+- List available tools and call the `greet` tool
+- List available prompts and get the `greeting-template` prompt
+- List available resources
+
+#### Running the client
 
 ```bash
-# Initialize the server and get the session ID from headers
+npx tsx src/examples/client/simpleStreamableHttp.ts
+```
+
+Make sure the server is running before starting the client.
+
+
+### Useful commands for testing
+
+#### Initialize
+Streamable HTTP transport requires to do the initialization first.
+
+```bash
+# First initialize the server and save the session ID to a variable
 SESSION_ID=$(curl -X POST \
   -H "Content-Type: application/json" \
   -H "Accept: application/json" \
@@ -105,8 +98,24 @@ SESSION_ID=$(curl -X POST \
     "id": "1"
   }' \
   -i http://localhost:3000/mcp 2>&1 | grep -i "mcp-session-id" | cut -d' ' -f2 | tr -d '\r')
-echo "Session ID: $SESSION_ID"
+echo "Session ID: $SESSION_ID
 
+```
+
+Once thre is a session we can send POST requests
+
+#### List tools
+```bash
+# Then list tools using the saved session ID 
+curl -X POST -H "Content-Type: application/json" -H "Accept: application/json, text/event-stream" \
+  -H "mcp-session-id: $SESSION_ID" \
+  -d '{"jsonrpc":"2.0","method":"tools/list","params":{},"id":"2"}' \
+  http://localhost:3000/mcp
+```
+
+#### Call tool 
+
+```bash
 # Call the greet tool using the saved session ID
 curl -X POST \
   -H "Content-Type: application/json" \
@@ -126,22 +135,3 @@ curl -X POST \
   }' \
   http://localhost:3000/mcp
 ```
-
-
-### Client (`client/simpleStreamableHttp.ts`)
-
-A client that connects to the server, initializes it, and demonstrates how to:
-
-- List available tools and call the `greet` tool
-- List available prompts and get the `greeting-template` prompt
-- List available resources
-
-#### Running the client
-
-```bash
-npx tsx src/examples/client/simpleStreamableHttp.ts
-```
-
-Make sure the server is running before starting the client.
-
-
