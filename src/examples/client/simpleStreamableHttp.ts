@@ -30,7 +30,6 @@ async function main(): Promise<void> {
   // Connect the client using the transport and initialize the server
   await client.connect(transport);
   console.log('Connected to MCP server');
-  // Open a standalone SSE stream to receive server-initiated messages
   console.log('Opening SSE stream to receive server notifications...');
   try {
     await transport.openSseStream();

@@ -174,7 +174,7 @@ app.post('/mcp', async (req: Request, res: Response) => {
   }
 });
 
-// Handle GET requests for SSE streams (now using built-in support from StreamableHTTP)
+// Handle GET requests for SSE streams (using built-in support from StreamableHTTP)
 app.get('/mcp', async (req: Request, res: Response) => {
   const sessionId = req.headers['mcp-session-id'] as string | undefined;
   if (!sessionId || !transports[sessionId]) {

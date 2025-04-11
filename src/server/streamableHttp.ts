@@ -136,7 +136,7 @@ export class StreamableHTTPServerTransport implements Transport {
     // or else return HTTP 405 Method Not Allowed
     const headers: Record<string, string> = {
       "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache",
+      "Cache-Control": "no-cache, no-transform",
       Connection: "keep-alive",
     };
 

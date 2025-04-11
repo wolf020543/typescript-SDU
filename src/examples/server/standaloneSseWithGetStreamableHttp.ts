@@ -8,12 +8,6 @@ import { ReadResourceResult } from '../../types.js';
 const server = new McpServer({
   name: 'resource-list-changed-notification-server',
   version: '1.0.0',
-}, {
-  capabilities: {
-    resources: {
-      listChanged: true, // Support notifications for resource list changes
-    },
-  }
 });
 
 // Store transports by session ID to send notifications
