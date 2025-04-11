@@ -68,7 +68,7 @@ export class StreamableHTTPServerTransport implements Transport {
   private _requestResponseMap: Map<RequestId, JSONRPCMessage> = new Map();
   private _initialized: boolean = false;
   private _enableJsonResponse: boolean = false;
-  private _sseStreamKey = "standalone-sse";
+  private _standaloneSSE: ServerResponse | undefined;
 
 
   sessionId?: string | undefined;
@@ -148,9 +148,8 @@ export class StreamableHTTPServerTransport implements Transport {
     // Resumability will be supported in the future
 
     // Check if there's already an active standalone SSE stream for this session
-    const existingStream = this._responseMapping.get(this._sseStreamKey);
 
-    if (existingStream !== undefined) {
+    if (this._standaloneSSE !== undefined) {
       // Only one GET SSE stream is allowed per session
       res.writeHead(409).end(JSON.stringify({
         jsonrpc: "2.0",
@@ -166,14 +165,12 @@ export class StreamableHTTPServerTransport implements Transport {
     // otherwise the client will just wait for the first message
     res.writeHead(200, headers).flushHeaders();
 
-    // Store the response for this request so we can use it for standalone server notifications
-    // This response doesn't have an associated request ID, so we'll use a special string to track it
-    this._responseMapping.set(this._sseStreamKey, res);
+    // Assing the response to the standalone SSE stream
+    this._standaloneSSE = res;
 
     // Set up close handler for client disconnects
     res.on("close", () => {
-      // Clean up resources associated with this connection
-      this._responseMapping.delete(this._sseStreamKey);
+      this._standaloneSSE = undefined;
     });
   }
 
@@ -461,14 +458,13 @@ export class StreamableHTTPServerTransport implements Transport {
         throw new Error("Cannot send a response on a standalone SSE stream unless resuming a previous client request");
       }
 
-      const standaloneStream = this._responseMapping.get(this._sseStreamKey);
-      if (standaloneStream === undefined) {
+      if (this._standaloneSSE === undefined) {
         // The spec says the server MAY send messages on the stream, so it's ok to discard if no stream
         return;
       }
 
       // Send the message to the standalone SSE stream
-      standaloneStream.write(`event: message\ndata: ${JSON.stringify(message)}\n\n`);
+      this._standaloneSSE.write(`event: message\ndata: ${JSON.stringify(message)}\n\n`);
       return;
     }
 
