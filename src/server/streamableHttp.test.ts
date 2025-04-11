@@ -72,8 +72,11 @@ async function createTestServer(config: TestServerConfig = {}): Promise<{
  * Helper to stop test server
  */
 async function stopTestServer({ server, transport }: { server: Server; transport: StreamableHTTPServerTransport }): Promise<void> {
+  // First close the transport to ensure all SSE streams are closed
   await transport.close();
-  await new Promise<void>((resolve) => server.close(() => resolve()));
+
+  // Close the server without waiting indefinitely
+  server.close();
 }
 
 /**
@@ -649,8 +652,8 @@ describe("StreamableHTTPServerTransport", () => {
 
     expect(deleteResponse.status).toBe(200);
 
-    // Clean up
-    await new Promise<void>((resolve) => tempServer.close(() => resolve()));
+    // Clean up - don't wait indefinitely for server close
+    tempServer.close();
   });
 
   it("should reject DELETE requests with invalid session ID", async () => {
