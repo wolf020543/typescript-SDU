@@ -578,7 +578,7 @@ describe("StreamableHTTPServerTransport", () => {
 
       expect(mockResponse.writeHead).toHaveBeenCalledWith(200, expect.objectContaining({
         "Content-Type": "text/event-stream",
-        "Cache-Control": "no-cache",
+        "Cache-Control": "no-cache, no-transform",
         "Connection": "keep-alive",
         "mcp-session-id": transport.sessionId,
       }));

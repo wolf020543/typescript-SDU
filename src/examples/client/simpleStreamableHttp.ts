@@ -25,20 +25,10 @@ async function main(): Promise<void> {
   const transport = new StreamableHTTPClientTransport(
     new URL('http://localhost:3000/mcp')
   );
-  let supportsStandaloneSse = false;
-
-  // Connect the client using the transport and initialize the server
+  
+  // Connect the client using the transport and initialize the server  
   await client.connect(transport);
   console.log('Connected to MCP server');
-  console.log('Opening SSE stream to receive server notifications...');
-  try {
-    await transport.openSseStream();
-    supportsStandaloneSse = true;
-    console.log('SSE stream established successfully. Waiting for notifications...');
-  }
-  catch (error) {
-    console.error('Failed to open SSE stream:', error);
-  }
 
   // Set up notification handlers for server-initiated messages
   client.setNotificationHandler(LoggingMessageNotificationSchema, (notification) => {
@@ -136,11 +126,8 @@ async function main(): Promise<void> {
   } catch (error) {
     console.log(`Resources not supported by this server (${error})`);
   }
-  if (supportsStandaloneSse) {
-    // Instead of closing immediately, keep the connection open to receive notifications
-    console.log('\nKeeping connection open to receive notifications. Press Ctrl+C to exit.');
-  }
-
+  // Keep the connection open to receive notifications
+  console.log('\nKeeping connection open to receive notifications. Press Ctrl+C to exit.');
 }
 
 main().catch((error: unknown) => {
