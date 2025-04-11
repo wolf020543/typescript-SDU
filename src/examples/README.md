@@ -16,7 +16,7 @@ This directory contains example implementations of MCP clients and servers using
 Multi node with state management example will be added soon after we add support.
 
 
-### Simple Server with Streamable Http transport (`server/simpleStreamableHttp.ts`)
+### Simple server with Streamable HTTP transport (`server/simpleStreamableHttp.ts`)
 
 A simple MCP server that uses the Streamable HTTP transport, implemented with Express. The server provides:
 
@@ -32,7 +32,7 @@ npx tsx src/examples/server/simpleStreamableHttp.ts
 
 The server will start on port 3000. You can test the initialization and tool listing:
 
-### Server supporting with SSE via GET (`server/standaloneSseWithGetStreamableHttp.ts`)
+### Server supporting SSE via GET (`server/standaloneSseWithGetStreamableHttp.ts`)
 
 An MCP server that demonstrates how to support SSE notifications via GET requests using the Streamable HTTP transport with Express. The server dynamically adds resources at regular intervals and supports notifications for resource list changes (server notifications are available through the standalone SSE connection established by GET request).
 
@@ -46,8 +46,9 @@ The server will start on port 3000 and automatically create new resources every 
 
 ### Server with JSON response mode (`server/jsonResponseStreamableHttp.ts`)
 
-This is not recommented way to use the transport, as its quite limiting and not supporting features like logging and progress notifications on tool execution.
 A simple MCP server that uses the Streamable HTTP transport with JSON response mode enabled, implemented with Express. The server provides a simple `greet` tool that returns a greeting for a name.
+
+_NOTE: This demonstrates a server that does not use SSE at all. Note that this limits its support for MCP features; for example, it cannot provide logging and progress notifications for tool execution._
 
 #### Running the server
 
@@ -101,8 +102,7 @@ SESSION_ID=$(curl -X POST \
 echo "Session ID: $SESSION_ID
 
 ```
-
-Once thre is a session we can send POST requests
+Once a session is established, we can send POST requests:
 
 #### List tools
 ```bash
