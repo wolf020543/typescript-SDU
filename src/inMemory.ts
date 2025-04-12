@@ -1,5 +1,5 @@
 import { Transport } from "./shared/transport.js";
-import { JSONRPCMessage } from "./types.js";
+import { JSONRPCMessage, RequestId } from "./types.js";
 import { AuthInfo } from "./server/auth/types.js";
 
 interface QueuedMessage {
@@ -49,7 +49,7 @@ export class InMemoryTransport implements Transport {
    * Sends a message with optional auth info.
    * This is useful for testing authentication scenarios.
    */
-  async send(message: JSONRPCMessage, options?: { authInfo?: AuthInfo }): Promise<void> {
+  async send(message: JSONRPCMessage, options?: { relatedRequestId?: RequestId, authInfo?: AuthInfo }): Promise<void> {
     if (!this._otherTransport) {
       throw new Error("Not connected");
     }
