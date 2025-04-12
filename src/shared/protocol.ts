@@ -246,11 +246,11 @@ export abstract class Protocol<
       this._onerror(error);
     };
 
-    this._transport.onmessage = (message, authInfo) => {
+    this._transport.onmessage = (message, extra) => {
       if (!("method" in message)) {
         this._onresponse(message);
       } else if ("id" in message) {
-        this._onrequest(message, authInfo);
+        this._onrequest(message, extra);
       } else {
         this._onnotification(message);
       }
@@ -296,7 +296,7 @@ export abstract class Protocol<
       );
   }
 
-  private _onrequest(request: JSONRPCRequest, authInfo?: AuthInfo): void {
+  private _onrequest(request: JSONRPCRequest, extra?: { authInfo?: AuthInfo }): void {
     const handler =
       this._requestHandlers.get(request.method) ?? this.fallbackRequestHandler;
 
@@ -321,16 +321,17 @@ export abstract class Protocol<
     const abortController = new AbortController();
     this._requestHandlerAbortControllers.set(request.id, abortController);
 
-    // Create extra object with both abort signal and sessionId from transport
-    const extra: RequestHandlerExtra = {
+    // Create fullExtra object with both abort signal and sessionId from transport
+    // in addition to any authInfo provided
+    const fullExtra: RequestHandlerExtra = {
       signal: abortController.signal,
       sessionId: this._transport?.sessionId,
-      authInfo,
+      authInfo: extra?.authInfo,
     };
 
     // Starting with Promise.resolve() puts any synchronous errors into the monad as well.
     Promise.resolve()
-      .then(() => handler(request, extra))
+      .then(() => handler(request, fullExtra))
       .then(
         (result) => {
           if (abortController.signal.aborted) {

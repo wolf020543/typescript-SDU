@@ -52,12 +52,12 @@ describe("InMemoryTransport", () => {
 
     let receivedMessage: JSONRPCMessage | undefined;
     let receivedAuthInfo: AuthInfo | undefined;
-    serverTransport.onmessage = (msg, auth) => {
+    serverTransport.onmessage = (msg, extra) => {
       receivedMessage = msg;
-      receivedAuthInfo = auth;
+      receivedAuthInfo = extra?.authInfo;
     };
 
-    await clientTransport.sendWithAuth(message, authInfo);
+    await clientTransport.send(message, { authInfo });
     expect(receivedMessage).toEqual(message);
     expect(receivedAuthInfo).toEqual(authInfo);
   });

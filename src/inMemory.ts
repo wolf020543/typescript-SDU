@@ -4,7 +4,7 @@ import { AuthInfo } from "./server/auth/types.js";
 
 interface QueuedMessage {
   message: JSONRPCMessage;
-  authInfo?: AuthInfo;
+  extra?: { authInfo?: AuthInfo };
 }
 
 /**
@@ -16,7 +16,7 @@ export class InMemoryTransport implements Transport {
 
   onclose?: () => void;
   onerror?: (error: Error) => void;
-  onmessage?: (message: JSONRPCMessage, authInfo?: AuthInfo) => void;
+  onmessage?: (message: JSONRPCMessage, extra?: { authInfo?: AuthInfo }) => void;
   sessionId?: string;
 
   /**
@@ -34,7 +34,7 @@ export class InMemoryTransport implements Transport {
     // Process any messages that were queued before start was called
     while (this._messageQueue.length > 0) {
       const queuedMessage = this._messageQueue.shift()!;
-      this.onmessage?.(queuedMessage.message, queuedMessage.authInfo);
+      this.onmessage?.(queuedMessage.message, queuedMessage.extra);
     }
   }
 
@@ -45,23 +45,19 @@ export class InMemoryTransport implements Transport {
     this.onclose?.();
   }
 
-  async send(message: JSONRPCMessage): Promise<void> {
-    return this.sendWithAuth(message);
-  }
-
   /**
    * Sends a message with optional auth info.
    * This is useful for testing authentication scenarios.
    */
-  async send(message: JSONRPCMessage, options?: { authInfo?: AuthInfo }): Promise<void>
+  async send(message: JSONRPCMessage, options?: { authInfo?: AuthInfo }): Promise<void> {
     if (!this._otherTransport) {
       throw new Error("Not connected");
     }
 
     if (this._otherTransport.onmessage) {
-      this._otherTransport.onmessage(message, authInfo);
+      this._otherTransport.onmessage(message, { authInfo: options?.authInfo });
     } else {
-      this._otherTransport._messageQueue.push({ message, authInfo });
+      this._otherTransport._messageQueue.push({ message, extra: { authInfo: options?.authInfo } });
     }
   }
 }
