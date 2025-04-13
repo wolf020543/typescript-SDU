@@ -21,4 +21,9 @@ export interface AuthInfo {
    * When the token expires (in seconds since epoch).
    */
   expiresAt?: number;
+
+  /**
+   * Additional arbitrary properties that may be included.
+   */
+  [key: string]: unknown;
 }
