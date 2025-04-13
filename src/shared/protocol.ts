@@ -87,6 +87,18 @@ export type RequestOptions = {
    * May be used to indicate to the transport which incoming request to associate this outgoing request with.
    */
   relatedRequestId?: RequestId;
+
+  /**
+   * May be used to indicate to the transport which last event ID to associate this outgoing request with.
+   * This is used to resume a long-running requests that may have been interrupted and a new instance of a client is being created.
+   */
+  lastEventId?: string;
+
+  /**
+   * A callback that is invoked when the last event ID is updated.
+   * This is used to notidy the client that the last event ID has changed, so that client can update its state accordingly.
+   */
+  onLastEventIdUpdate?: (event: string) => void;
 };
 
 /**
@@ -501,7 +513,7 @@ export abstract class Protocol<
     resultSchema: T,
     options?: RequestOptions,
   ): Promise<z.infer<T>> {
-    const { relatedRequestId } = options ?? {};
+    const { relatedRequestId, lastEventId, onLastEventIdUpdate } = options ?? {};
 
     return new Promise((resolve, reject) => {
       if (!this._transport) {
@@ -543,7 +555,7 @@ export abstract class Protocol<
               requestId: messageId,
               reason: String(reason),
             },
-          }, { relatedRequestId })
+          }, { relatedRequestId, lastEventId, onLastEventIdUpdate })
           .catch((error) =>
             this._onerror(new Error(`Failed to send cancellation: ${error}`)),
           );
@@ -581,7 +593,7 @@ export abstract class Protocol<
 
       this._setupTimeout(messageId, timeout, options?.maxTotalTimeout, timeoutHandler, options?.resetTimeoutOnProgress ?? false);
 
-      this._transport.send(jsonrpcRequest, { relatedRequestId }).catch((error) => {
+      this._transport.send(jsonrpcRequest, { relatedRequestId, lastEventId, onLastEventIdUpdate }).catch((error) => {
         this._cleanupTimeout(messageId);
         reject(error);
       });

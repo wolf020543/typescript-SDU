@@ -18,7 +18,7 @@ export interface Transport {
    * 
    * If present, `relatedRequestId` is used to indicate to the transport which incoming request to associate this outgoing message with.
    */
-  send(message: JSONRPCMessage, options?: { relatedRequestId?: RequestId }): Promise<void>;
+  send(message: JSONRPCMessage, options?: { relatedRequestId?: RequestId, lastEventId?: string, onLastEventIdUpdate?: (event: string) => void }): Promise<void>;
 
   /**
    * Closes the connection.

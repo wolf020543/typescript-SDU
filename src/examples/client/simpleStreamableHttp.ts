@@ -29,6 +29,8 @@ let notificationCount = 0;
 let client: Client | null = null;
 let transport: StreamableHTTPClientTransport | null = null;
 let serverUrl = 'http://localhost:3000/mcp';
+let notificationsToolLastEventId: string | undefined = undefined;
+let sessionId: string | undefined = undefined;
 
 async function main(): Promise<void> {
   console.log('MCP Interactive Client');
@@ -186,7 +188,10 @@ async function connect(url?: string): Promise<void> {
     }
 
     transport = new StreamableHTTPClientTransport(
-      new URL(serverUrl)
+      new URL(serverUrl),
+      {
+        sessionId: sessionId
+      }
     );
 
     // Set up notification handlers
@@ -218,6 +223,8 @@ async function connect(url?: string): Promise<void> {
 
     // Connect the client
     await client.connect(transport);
+    sessionId = transport.sessionId
+    console.log('Transport created with session ID:', sessionId);
     console.log('Connected to MCP server');
   } catch (error) {
     console.error('Failed to connect:', error);
@@ -291,7 +298,12 @@ async function callTool(name: string, args: Record<string, unknown>): Promise<vo
     };
 
     console.log(`Calling tool '${name}' with args:`, args);
-    const result = await client.request(request, CallToolResultSchema);
+    const onLastEventIdUpdate = (event: string) => {
+      notificationsToolLastEventId = event;
+    };
+    const result = await client.request(request, CallToolResultSchema, {
+      lastEventId: notificationsToolLastEventId, onLastEventIdUpdate
+    });
 
     console.log('Tool result:');
     result.content.forEach(item => {

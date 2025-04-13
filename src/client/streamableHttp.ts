@@ -71,6 +71,11 @@ export type StreamableHTTPClientTransportOptions = {
    * Options to configure the reconnection behavior.
    */
   reconnectionOptions?: StreamableHTTPReconnectionOptions;
+  /**
+   * Session ID for the connection. This is used to identify the session on the server.
+   * When not provided and connecting to a server that supports session IDs, the server will generate a new session ID.
+   */
+  sessionId?: string;
 };
 
 /**
@@ -98,6 +103,7 @@ export class StreamableHTTPClientTransport implements Transport {
     this._requestInit = opts?.requestInit;
     this._authProvider = opts?.authProvider;
     this._reconnectionOptions = opts?.reconnectionOptions || this._defaultReconnectionOptions;
+    this._sessionId = opts?.sessionId;
   }
 
   private async _authThenStart(): Promise<void> {
@@ -240,7 +246,7 @@ export class StreamableHTTPClientTransport implements Transport {
     }, delay);
   }
 
-  private _handleSseStream(stream: ReadableStream<Uint8Array> | null): void {
+  private _handleSseStream(stream: ReadableStream<Uint8Array> | null, onLastEventIdUpdate?: (event: string) => void): void {
     if (!stream) {
       return;
     }
@@ -266,6 +272,7 @@ export class StreamableHTTPClientTransport implements Transport {
           // Update last event ID if provided
           if (event.id) {
             lastEventId = event.id;
+            onLastEventIdUpdate?.(lastEventId);
           }
 
           if (!event.event || event.event === "message") {
@@ -330,8 +337,16 @@ export class StreamableHTTPClientTransport implements Transport {
     this.onclose?.();
   }
 
-  async send(message: JSONRPCMessage | JSONRPCMessage[]): Promise<void> {
+  async send(message: JSONRPCMessage | JSONRPCMessage[], options?: { lastEventId?: string, onLastEventIdUpdate?: (event: string) => void }): Promise<void> {
     try {
+      // If client passes in a lastEventId in the request options, we need to reconnect the SSE stream
+      const { lastEventId, onLastEventIdUpdate } = options ?? {};
+      if (lastEventId) {
+        // If we have at last event ID, we need to reconnect the SSE stream
+        this._startOrAuthStandaloneSSE(lastEventId).catch(err => this.onerror?.(err));
+        return;
+      }
+
       const headers = await this._commonHeaders();
       headers.set("content-type", "application/json");
       headers.set("accept", "application/json, text/event-stream");
@@ -393,7 +408,7 @@ export class StreamableHTTPClientTransport implements Transport {
           // Handle SSE stream responses for requests
           // We use the same handler as standalone streams, which now supports
           // reconnection with the last event ID
-          this._handleSseStream(response.body);
+          this._handleSseStream(response.body, onLastEventIdUpdate);
         } else if (contentType?.includes("application/json")) {
           // For non-streaming servers, we might get direct JSON responses
           const data = await response.json();
@@ -415,5 +430,9 @@ export class StreamableHTTPClientTransport implements Transport {
       this.onerror?.(error as Error);
       throw error;
     }
+  }
+
+  get sessionId(): string | undefined {
+    return this._sessionId;
   }
 }
