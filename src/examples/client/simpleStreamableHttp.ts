@@ -405,10 +405,32 @@ async function cleanup(): Promise<void> {
     }
   }
 
+
+  process.stdin.setRawMode(false);
   readline.close();
   console.log('\nGoodbye!');
   process.exit(0);
 }
+
+// Set up raw mode for keyboard input to capture Escape key
+process.stdin.setRawMode(true);
+process.stdin.on('data', async (data) => {
+  // Check for Escape key (27)
+  if (data.length === 1 && data[0] === 27) {
+    console.log('\nESC key pressed. Disconnecting from server...');
+
+    // Abort current operation and disconnect from server
+    if (client && transport) {
+      await disconnect();
+      console.log('Disconnected. Press Enter to continue.');
+    } else {
+      console.log('Not connected to server.');
+    }
+
+    // Re-display the prompt
+    process.stdout.write('> ');
+  }
+});
 
 // Handle Ctrl+C
 process.on('SIGINT', async () => {
