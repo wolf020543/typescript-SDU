@@ -275,17 +275,21 @@ describe("StreamableHTTPClientTransport", () => {
     })).toBe(true);
   });
 
-  it("should include last-event-id header when resuming a broken connection", async () => {
-    // First make a successful connection that provides an event ID
+  it("should handle reconnection with last-event-id for resumability", async () => {
+    // Set up a stream that will send an event with ID then error
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       start(controller) {
         const event = "id: event-123\nevent: message\ndata: {\"jsonrpc\": \"2.0\", \"method\": \"serverNotification\", \"params\": {}}\n\n";
         controller.enqueue(encoder.encode(event));
-        controller.close();
+        // Simulate network error
+        setTimeout(() => {
+          controller.error(new Error("Network error"));
+        }, 10);
       }
     });
 
+    // Mock the initial connection
     (global.fetch as jest.Mock).mockResolvedValueOnce({
       ok: true,
       status: 200,
@@ -293,23 +297,33 @@ describe("StreamableHTTPClientTransport", () => {
       body: stream
     });
 
+    const errorSpy = jest.fn();
+    transport.onerror = errorSpy;
+    
     await transport.start();
     await transport["_startOrAuthStandaloneSSE"]();
+    
+    // Let the stream process and error
     await new Promise(resolve => setTimeout(resolve, 50));
-
-    // Now simulate attempting to reconnect
+    
+    // Verify error was caught
+    expect(errorSpy).toHaveBeenCalled();
+    
+    // Mock the reconnection (the transport should try to reconnect after error)
     (global.fetch as jest.Mock).mockResolvedValueOnce({
       ok: true,
       status: 200,
       headers: new Headers({ "content-type": "text/event-stream" }),
       body: null
     });
-
-    await transport["_startOrAuthStandaloneSSE"]();
-
-    // Check that Last-Event-ID was included
+    
+    // Allow time for automatic reconnection
+    await new Promise(resolve => setTimeout(resolve, 1100)); // > 1 second delay
+    
+    // Verify that the client attempted to reconnect with the last-event-id
     const calls = (global.fetch as jest.Mock).mock.calls;
     const lastCall = calls[calls.length - 1];
+    expect(lastCall[1].method).toBe("GET");
     expect(lastCall[1].headers.get("last-event-id")).toBe("event-123");
   });
 

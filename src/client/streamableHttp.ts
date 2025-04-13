@@ -49,7 +49,6 @@ export class StreamableHTTPClientTransport implements Transport {
   private _requestInit?: RequestInit;
   private _authProvider?: OAuthClientProvider;
   private _sessionId?: string;
-  private _lastEventId?: string;
 
   onclose?: () => void;
   onerror?: (error: Error) => void;
@@ -102,16 +101,16 @@ export class StreamableHTTPClientTransport implements Transport {
     );
   }
 
-  private async _startOrAuthStandaloneSSE(): Promise<void> {
+  private async _startOrAuthStandaloneSSE(lastEventId?: string): Promise<void> {
     try {
       // Try to open an initial SSE stream with GET to listen for server messages
       // This is optional according to the spec - server may not support it
       const headers = await this._commonHeaders();
       headers.set("Accept", "text/event-stream");
 
-      // Include Last-Event-ID header for resumable streams
-      if (this._lastEventId) {
-        headers.set("last-event-id", this._lastEventId);
+      // Include Last-Event-ID header for resumable streams if provided
+      if (lastEventId) {
+        headers.set("last-event-id", lastEventId);
       }
 
       const response = await fetch(this._url, {
@@ -150,31 +149,61 @@ export class StreamableHTTPClientTransport implements Transport {
       return;
     }
 
+    let lastEventId: string | undefined;
+
     const processStream = async () => {
       // Create a pipeline: binary stream -> text decoder -> SSE parser
       const eventStream = stream
         .pipeThrough(new TextDecoderStream())
         .pipeThrough(new EventSourceParserStream());
 
-      for await (const event of eventStream) {
-        // Update last event ID if provided
-        if (event.id) {
-          this._lastEventId = event.id;
-        }
-        // Handle message events (default event type is undefined per docs)
-        // or explicit 'message' event type
-        if (!event.event || event.event === "message") {
-          try {
-            const message = JSONRPCMessageSchema.parse(JSON.parse(event.data));
-            this.onmessage?.(message);
-          } catch (error) {
-            this.onerror?.(error as Error);
+      try {
+        for await (const event of eventStream) {
+          // Update last event ID if provided
+          if (event.id) {
+            lastEventId = event.id;
           }
+
+          // Handle message events (default event type is undefined per docs)
+          // or explicit 'message' event type
+          if (!event.event || event.event === "message") {
+            try {
+              const message = JSONRPCMessageSchema.parse(JSON.parse(event.data));
+              this.onmessage?.(message);
+            } catch (error) {
+              this.onerror?.(error as Error);
+            }
+          }
+        }
+      } catch (error) {
+        // Handle stream errors - likely a network disconnect
+        this.onerror?.(new Error(`SSE stream disconnected: ${error instanceof Error ? error.message : String(error)}`));
+
+        // Attempt to reconnect if the stream disconnects unexpectedly
+        // Wait a short time before reconnecting to avoid rapid reconnection loops
+        if (this._abortController && !this._abortController.signal.aborted) {
+          setTimeout(() => {
+            // Use the last event ID to resume where we left off
+            this._startOrAuthStandaloneSSE(lastEventId).catch(reconnectError => {
+              this.onerror?.(new Error(`Failed to reconnect SSE stream: ${reconnectError instanceof Error ? reconnectError.message : String(reconnectError)}`));
+            });
+          }, 1000); // 1 second delay before reconnection attempt
         }
       }
     };
 
-    processStream().catch(err => this.onerror?.(err));
+    processStream().catch(err => {
+      this.onerror?.(err);
+
+      // Try to reconnect on unexpected errors
+      if (this._abortController && !this._abortController.signal.aborted) {
+        setTimeout(() => {
+          this._startOrAuthStandaloneSSE(lastEventId).catch(reconnectError => {
+            this.onerror?.(new Error(`Failed to reconnect SSE stream: ${reconnectError instanceof Error ? reconnectError.message : String(reconnectError)}`));
+          });
+        }, 1000);
+      }
+    });
   }
 
   async start() {
@@ -252,7 +281,7 @@ export class StreamableHTTPClientTransport implements Transport {
         // if the accepted notification is initialized, we start the SSE stream
         // if it's supported by the server
         if (isJSONRPCNotification(message) && message.method === "notifications/initialized") {
-          // We don't need to handle 405 here anymore as it's handled in _startOrAuthStandaloneSSE
+          // Start without a lastEventId since this is a fresh connection
           this._startOrAuthStandaloneSSE().catch(err => this.onerror?.(err));
         }
         return;
@@ -268,6 +297,9 @@ export class StreamableHTTPClientTransport implements Transport {
 
       if (hasRequests) {
         if (contentType?.includes("text/event-stream")) {
+          // Handle SSE stream responses for requests
+          // We use the same handler as standalone streams, which now supports
+          // reconnection with the last event ID
           this._handleSseStream(response.body);
         } else if (contentType?.includes("application/json")) {
           // For non-streaming servers, we might get direct JSON responses
