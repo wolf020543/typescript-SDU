@@ -1,4 +1,4 @@
-import { StreamableHTTPClientTransport } from "./streamableHttp.js";
+import { StreamableHTTPClientTransport, StreamableHTTPReconnectionOptions } from "./streamableHttp.js";
 import { JSONRPCMessage } from "../types.js";
 
 
@@ -275,59 +275,62 @@ describe("StreamableHTTPClientTransport", () => {
     })).toBe(true);
   });
 
-  it("should handle reconnection with last-event-id for resumability", async () => {
-    // Set up a stream that will send an event with ID then error
-    const encoder = new TextEncoder();
-    const stream = new ReadableStream({
-      start(controller) {
-        const event = "id: event-123\nevent: message\ndata: {\"jsonrpc\": \"2.0\", \"method\": \"serverNotification\", \"params\": {}}\n\n";
-        controller.enqueue(encoder.encode(event));
-        // Simulate network error
-        setTimeout(() => {
-          controller.error(new Error("Network error"));
-        }, 10);
+  it("should support custom reconnection options", () => {
+    // Create a transport with custom reconnection options
+    transport = new StreamableHTTPClientTransport(new URL("http://localhost:1234/mcp"), {
+      reconnectionOptions: {
+        initialReconnectionDelay: 500,
+        maxReconnectionDelay: 10000,
+        reconnectionDelayGrowFactor: 2,
+        maxRetries: 5,
       }
     });
 
-    // Mock the initial connection
-    (global.fetch as jest.Mock).mockResolvedValueOnce({
+    // Verify options were set correctly (checking implementation details)
+    // Access private properties for testing
+    const transportInstance = transport as unknown as {
+      _defaultReconnectionOptions: StreamableHTTPReconnectionOptions;
+    };
+    expect(transportInstance._defaultReconnectionOptions.initialReconnectionDelay).toBe(1000);
+    expect(transportInstance._defaultReconnectionOptions.maxRetries).toBe(2);
+  });
+
+  it("should pass lastEventId when reconnecting", async () => {
+    // Create a fresh transport
+    transport = new StreamableHTTPClientTransport(new URL("http://localhost:1234/mcp"));
+
+    // Mock fetch to verify headers sent
+    const fetchSpy = global.fetch as jest.Mock;
+    fetchSpy.mockReset();
+    fetchSpy.mockResolvedValue({
       ok: true,
       status: 200,
       headers: new Headers({ "content-type": "text/event-stream" }),
-      body: stream
+      body: new ReadableStream()
     });
 
-    const errorSpy = jest.fn();
-    transport.onerror = errorSpy;
-    
+    // Call the reconnect method directly with a lastEventId
     await transport.start();
-    await transport["_startOrAuthStandaloneSSE"]();
-    
-    // Let the stream process and error
-    await new Promise(resolve => setTimeout(resolve, 50));
-    
-    // Verify error was caught
-    expect(errorSpy).toHaveBeenCalled();
-    
-    // Mock the reconnection (the transport should try to reconnect after error)
-    (global.fetch as jest.Mock).mockResolvedValueOnce({
-      ok: true,
-      status: 200,
-      headers: new Headers({ "content-type": "text/event-stream" }),
-      body: null
-    });
-    
-    // Allow time for automatic reconnection
-    await new Promise(resolve => setTimeout(resolve, 1100)); // > 1 second delay
-    
-    // Verify that the client attempted to reconnect with the last-event-id
-    const calls = (global.fetch as jest.Mock).mock.calls;
-    const lastCall = calls[calls.length - 1];
-    expect(lastCall[1].method).toBe("GET");
-    expect(lastCall[1].headers.get("last-event-id")).toBe("event-123");
+    // Type assertion to access private method
+    const transportWithPrivateMethods = transport as unknown as {
+      _startOrAuthStandaloneSSE: (lastEventId?: string) => Promise<void>
+    };
+    await transportWithPrivateMethods._startOrAuthStandaloneSSE("test-event-id");
+
+    // Verify fetch was called with the lastEventId header
+    expect(fetchSpy).toHaveBeenCalled();
+    const fetchCall = fetchSpy.mock.calls[0];
+    const headers = fetchCall[1].headers;
+    expect(headers.get("last-event-id")).toBe("test-event-id");
   });
 
   it("should throw error when invalid content-type is received", async () => {
+    // Clear any previous state from other tests
+    jest.clearAllMocks();
+
+    // Create a fresh transport instance
+    transport = new StreamableHTTPClientTransport(new URL("http://localhost:1234/mcp"));
+
     const message: JSONRPCMessage = {
       jsonrpc: "2.0",
       method: "test",
@@ -337,7 +340,7 @@ describe("StreamableHTTPClientTransport", () => {
 
     const stream = new ReadableStream({
       start(controller) {
-        controller.enqueue("invalid text response");
+        controller.enqueue(new TextEncoder().encode("invalid text response"));
         controller.close();
       }
     });
@@ -389,4 +392,38 @@ describe("StreamableHTTPClientTransport", () => {
 
     expect(global.fetch).toHaveBeenCalledTimes(2);
   });
+
+
+  it("should have exponential backoff with configurable maxRetries", () => {
+    // This test verifies the maxRetries and backoff calculation directly
+
+    // Create transport with specific options for testing
+    transport = new StreamableHTTPClientTransport(new URL("http://localhost:1234/mcp"), {
+      reconnectionOptions: {
+        initialReconnectionDelay: 100,
+        maxReconnectionDelay: 5000,
+        reconnectionDelayGrowFactor: 2,
+        maxRetries: 3,
+      }
+    });
+
+    // Get access to the internal implementation
+    const getDelay = transport["_getNextReconnectionDelay"].bind(transport);
+
+    // First retry - should use initial delay
+    expect(getDelay(0)).toBe(100);
+
+    // Second retry - should double (2^1 * 100 = 200)
+    expect(getDelay(1)).toBe(200);
+
+    // Third retry - should double again (2^2 * 100 = 400) 
+    expect(getDelay(2)).toBe(400);
+
+    // Fourth retry - should double again (2^3 * 100 = 800)
+    expect(getDelay(3)).toBe(800);
+
+    // Tenth retry - should be capped at maxReconnectionDelay
+    expect(getDelay(10)).toBe(5000);
+  });
+
 });

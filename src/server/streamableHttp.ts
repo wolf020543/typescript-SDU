@@ -237,13 +237,17 @@ export class StreamableHTTPServerTransport implements Transport {
       const events = await this._eventStore.getEventsAfter(lastEventId);
       const streamId = this._eventStore.getStreamIdFromEventId(lastEventId);
 
-      const oldResStream = this._streamMapping.get(streamId);
       this._streamMapping.set(streamId, res);
-      if (oldResStream) {
-        // If we have an old response stream, close it
-        oldResStream.end();
-      }
+      const headers: Record<string, string> = {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache, no-transform",
+        Connection: "keep-alive",
+      };
 
+      if (this.sessionId !== undefined) {
+        headers["mcp-session-id"] = this.sessionId;
+      }
+      res.writeHead(200, headers).flushHeaders();
       for (const { eventId, message } of events) {
         this.writeSSEEvent(res, message, eventId);
       }

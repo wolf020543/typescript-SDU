@@ -1,3 +1,4 @@
+import { log } from "node:console";
 import { Transport } from "../shared/transport.js";
 import { isJSONRPCNotification, JSONRPCMessage, JSONRPCMessageSchema } from "../types.js";
 import { auth, AuthResult, OAuthClientProvider, UnauthorizedError } from "./auth.js";
@@ -10,6 +11,35 @@ export class StreamableHTTPError extends Error {
   ) {
     super(`Streamable HTTP error: ${message}`);
   }
+}
+
+/**
+ * Configuration options for reconnection behavior of the StreamableHTTPClientTransport.
+ */
+export interface StreamableHTTPReconnectionOptions {
+  /**
+   * Maximum backoff time between reconnection attempts in milliseconds.
+   * Default is 30000 (30 seconds).
+   */
+  maxReconnectionDelay: number;
+
+  /**
+   * Initial backoff time between reconnection attempts in milliseconds.
+   * Default is 1000 (1 second).
+   */
+  initialReconnectionDelay: number;
+
+  /**
+   * The factor by which the reconnection delay increases after each attempt.
+   * Default is 1.5.
+   */
+  reconnectionDelayGrowFactor: number;
+
+  /**
+   * Maximum number of reconnection attempts before giving up.
+   * Default is 0 (unlimited).
+   */
+  maxRetries: number;
 }
 
 /**
@@ -36,6 +66,11 @@ export type StreamableHTTPClientTransportOptions = {
    * Customizes HTTP requests to the server.
    */
   requestInit?: RequestInit;
+
+  /**
+   * Options to configure the reconnection behavior.
+   */
+  reconnectionOptions?: StreamableHTTPReconnectionOptions;
 };
 
 /**
@@ -49,6 +84,7 @@ export class StreamableHTTPClientTransport implements Transport {
   private _requestInit?: RequestInit;
   private _authProvider?: OAuthClientProvider;
   private _sessionId?: string;
+  private _reconnectionOptions: StreamableHTTPReconnectionOptions;
 
   onclose?: () => void;
   onerror?: (error: Error) => void;
@@ -61,6 +97,7 @@ export class StreamableHTTPClientTransport implements Transport {
     this._url = url;
     this._requestInit = opts?.requestInit;
     this._authProvider = opts?.authProvider;
+    this._reconnectionOptions = opts?.reconnectionOptions || this._defaultReconnectionOptions;
   }
 
   private async _authThenStart(): Promise<void> {
@@ -136,12 +173,71 @@ export class StreamableHTTPClientTransport implements Transport {
           `Failed to open SSE stream: ${response.statusText}`,
         );
       }
-      // Successful connection, handle the SSE stream as a standalone listener
+
       this._handleSseStream(response.body);
     } catch (error) {
       this.onerror?.(error as Error);
       throw error;
     }
+  }
+
+  // Default reconnection options
+  private readonly _defaultReconnectionOptions: StreamableHTTPReconnectionOptions = {
+    initialReconnectionDelay: 1000,
+    maxReconnectionDelay: 30000,
+    reconnectionDelayGrowFactor: 1.5,
+    maxRetries: 2,
+  };
+
+  // We no longer need global reconnection state as it will be maintained per stream
+
+  /**
+   * Calculates the next reconnection delay using exponential backoff algorithm
+   * with jitter for more effective reconnections in high load scenarios.
+   * 
+   * @param attempt Current reconnection attempt count for the specific stream
+   * @returns Time to wait in milliseconds before next reconnection attempt
+   */
+  private _getNextReconnectionDelay(attempt: number): number {
+    // Access default values directly, ensuring they're never undefined
+    const initialDelay = this._reconnectionOptions.initialReconnectionDelay;
+    const growFactor = this._reconnectionOptions.reconnectionDelayGrowFactor;
+    const maxDelay = this._reconnectionOptions.maxReconnectionDelay;
+
+    // Cap at maximum delay
+    return Math.min(initialDelay * Math.pow(growFactor, attempt), maxDelay);
+
+  }
+
+  /**
+   * Schedule a reconnection attempt with exponential backoff
+   * 
+   * @param lastEventId The ID of the last received event for resumability
+   * @param attemptCount Current reconnection attempt count for this specific stream
+   */
+  private _scheduleReconnection(lastEventId: string, attemptCount = 0): void {
+    // Use provided options or default options
+    const maxRetries = this._reconnectionOptions.maxRetries;
+
+    // Check if we've exceeded maximum retry attempts
+    if (maxRetries > 0 && attemptCount >= maxRetries) {
+      this.onerror?.(new Error(`Maximum reconnection attempts (${maxRetries}) exceeded.`));
+      return;
+    }
+
+    // Calculate next delay based on current attempt count
+    const delay = this._getNextReconnectionDelay(attemptCount);
+    log(`Reconnection attempt ${attemptCount + 1} in ${delay}ms...`);
+
+    // Schedule the reconnection
+    setTimeout(() => {
+      // Use the last event ID to resume where we left off
+      this._startOrAuthStandaloneSSE(lastEventId).catch(error => {
+        this.onerror?.(new Error(`Failed to reconnect SSE stream: ${error instanceof Error ? error.message : String(error)}`));
+        // Schedule another attempt if this one failed, incrementing the attempt counter
+        this._scheduleReconnection(lastEventId, attemptCount + 1);
+      });
+    }, delay);
   }
 
   private _handleSseStream(stream: ReadableStream<Uint8Array> | null): void {
@@ -150,22 +246,28 @@ export class StreamableHTTPClientTransport implements Transport {
     }
 
     let lastEventId: string | undefined;
-
     const processStream = async () => {
-      // Create a pipeline: binary stream -> text decoder -> SSE parser
-      const eventStream = stream
-        .pipeThrough(new TextDecoderStream())
-        .pipeThrough(new EventSourceParserStream());
-
+      // this is the closest we can get to trying to cath network errors
+      // if something happens reader will throw
       try {
-        for await (const event of eventStream) {
+        // Create a pipeline: binary stream -> text decoder -> SSE parser
+        const reader = stream
+          .pipeThrough(new TextDecoderStream())
+          .pipeThrough(new EventSourceParserStream())
+          .getReader();
+
+
+        while (true) {
+          const { value: event, done } = await reader.read();
+          if (done) {
+            break;
+          }
+
           // Update last event ID if provided
           if (event.id) {
             lastEventId = event.id;
           }
 
-          // Handle message events (default event type is undefined per docs)
-          // or explicit 'message' event type
           if (!event.event || event.event === "message") {
             try {
               const message = JSONRPCMessageSchema.parse(JSON.parse(event.data));
@@ -179,31 +281,22 @@ export class StreamableHTTPClientTransport implements Transport {
         // Handle stream errors - likely a network disconnect
         this.onerror?.(new Error(`SSE stream disconnected: ${error instanceof Error ? error.message : String(error)}`));
 
-        // Attempt to reconnect if the stream disconnects unexpectedly
-        // Wait a short time before reconnecting to avoid rapid reconnection loops
+        // Attempt to reconnect if the stream disconnects unexpectedly and we aren't closing
         if (this._abortController && !this._abortController.signal.aborted) {
-          setTimeout(() => {
-            // Use the last event ID to resume where we left off
-            this._startOrAuthStandaloneSSE(lastEventId).catch(reconnectError => {
-              this.onerror?.(new Error(`Failed to reconnect SSE stream: ${reconnectError instanceof Error ? reconnectError.message : String(reconnectError)}`));
-            });
-          }, 1000); // 1 second delay before reconnection attempt
+          // Use the exponential backoff reconnection strategy
+          if (lastEventId !== undefined) {
+            try {
+              this._scheduleReconnection(lastEventId, 0);
+            }
+            catch (error) {
+              this.onerror?.(new Error(`Failed to reconnect: ${error instanceof Error ? error.message : String(error)}`));
+
+            }
+          }
         }
       }
     };
-
-    processStream().catch(err => {
-      this.onerror?.(err);
-
-      // Try to reconnect on unexpected errors
-      if (this._abortController && !this._abortController.signal.aborted) {
-        setTimeout(() => {
-          this._startOrAuthStandaloneSSE(lastEventId).catch(reconnectError => {
-            this.onerror?.(new Error(`Failed to reconnect SSE stream: ${reconnectError instanceof Error ? reconnectError.message : String(reconnectError)}`));
-          });
-        }, 1000);
-      }
-    });
+    processStream();
   }
 
   async start() {

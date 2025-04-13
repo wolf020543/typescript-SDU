@@ -52,7 +52,6 @@ function printHelp(): void {
   console.log('  greet [name]               - Call the greet tool');
   console.log('  multi-greet [name]         - Call the multi-greet tool with notifications');
   console.log('  start-notifications [interval] [count] - Start periodic notifications');
-  console.log('  simulate-disconnect [delay] - Simulate network disconnection after delay seconds');
   console.log('  list-prompts               - List available prompts');
   console.log('  get-prompt [name] [args]   - Get a prompt with optional JSON arguments');
   console.log('  list-resources             - List available resources');
@@ -112,12 +111,6 @@ function commandLoop(): void {
           const interval = args[1] ? parseInt(args[1], 10) : 2000;
           const count = args[2] ? parseInt(args[2], 10) : 0;
           await startNotifications(interval, count);
-          break;
-        }
-
-        case 'simulate-disconnect': {
-          const delay = args[1] ? parseInt(args[1], 10) : 5;
-          simulateDisconnect(delay);
           break;
         }
 
@@ -188,6 +181,9 @@ async function connect(url?: string): Promise<void> {
       name: 'example-client',
       version: '1.0.0'
     });
+    client.onerror = (error) => {
+      console.error('\x1b[31mClient error:', error, '\x1b[0m');
+    }
 
     transport = new StreamableHTTPClientTransport(
       new URL(serverUrl)
@@ -322,29 +318,6 @@ async function callMultiGreetTool(name: string): Promise<void> {
 async function startNotifications(interval: number, count: number): Promise<void> {
   console.log(`Starting notification stream: interval=${interval}ms, count=${count || 'unlimited'}`);
   await callTool('start-notification-stream', { interval, count });
-}
-
-function simulateDisconnect(delaySeconds: number): void {
-  if (!transport) {
-    console.log('Not connected.');
-    return;
-  }
-
-  console.log(`Will simulate network disconnect in ${delaySeconds} seconds...`);
-  setTimeout(async () => {
-    if (!transport) return;
-
-    console.log('\nSimulating network disconnect...');
-    await transport.close();
-    console.log('Transport closed. Client should automatically attempt to reconnect...');
-
-    // Keep the client object but null the transport
-    // This simulates a network disconnection without explicit user disconnect
-    transport = null;
-
-    // Re-display the prompt
-    process.stdout.write('> ');
-  }, delaySeconds * 1000);
 }
 
 async function listPrompts(): Promise<void> {
