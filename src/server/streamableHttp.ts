@@ -371,7 +371,7 @@ export class StreamableHTTPServerTransport implements Transport {
    * Returns true if the session is valid, false otherwise
    */
   private validateSession(req: IncomingMessage, res: ServerResponse): boolean {
-    if (!this._initialized) {
+    if (this.sessionId && !this._initialized) {
       // If the server has not been initialized yet, reject all requests
       res.writeHead(400).end(JSON.stringify({
         jsonrpc: "2.0",
