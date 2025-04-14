@@ -23,9 +23,8 @@ export interface AuthInfo {
   expiresAt?: number;
 
   /**
-   * Additional custom claims associated with the token.
+   * Additional data associated with the token.
    * This field should be used for any additional data that needs to be attached to the auth info.
-   * Using this field instead of arbitrary keys ensures compatibility with future interface changes.
-   */
-  customClaims?: Record<string, unknown>;
+  */
+  extra?: Record<string, unknown>;
 }
