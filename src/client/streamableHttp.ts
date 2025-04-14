@@ -123,7 +123,7 @@ export class StreamableHTTPClientTransport implements Transport {
       throw new UnauthorizedError();
     }
 
-    return await this._startOrAuthStandaloneSSE();
+    return await this._startOrAuthSse();
   }
 
   private async _commonHeaders(): Promise<Headers> {
@@ -144,7 +144,7 @@ export class StreamableHTTPClientTransport implements Transport {
     );
   }
 
-  private async _startOrAuthStandaloneSSE(lastEventId?: string): Promise<void> {
+  private async _startOrAuthSse(lastEventId?: string): Promise<void> {
     try {
       // Try to open an initial SSE stream with GET to listen for server messages
       // This is optional according to the spec - server may not support it
@@ -238,7 +238,7 @@ export class StreamableHTTPClientTransport implements Transport {
     // Schedule the reconnection
     setTimeout(() => {
       // Use the last event ID to resume where we left off
-      this._startOrAuthStandaloneSSE(lastEventId).catch(error => {
+      this._startOrAuthSse(lastEventId).catch(error => {
         this.onerror?.(new Error(`Failed to reconnect SSE stream: ${error instanceof Error ? error.message : String(error)}`));
         // Schedule another attempt if this one failed, incrementing the attempt counter
         this._scheduleReconnection(lastEventId, attemptCount + 1);
@@ -343,7 +343,7 @@ export class StreamableHTTPClientTransport implements Transport {
       const { lastEventId, onLastEventIdUpdate } = options ?? {};
       if (lastEventId) {
         // If we have at last event ID, we need to reconnect the SSE stream
-        this._startOrAuthStandaloneSSE(lastEventId).catch(err => this.onerror?.(err));
+        this._startOrAuthSse(lastEventId).catch(err => this.onerror?.(err));
         return;
       }
 
@@ -390,7 +390,7 @@ export class StreamableHTTPClientTransport implements Transport {
         // if it's supported by the server
         if (isJSONRPCNotification(message) && message.method === "notifications/initialized") {
           // Start without a lastEventId since this is a fresh connection
-          this._startOrAuthStandaloneSSE().catch(err => this.onerror?.(err));
+          this._startOrAuthSse().catch(err => this.onerror?.(err));
         }
         return;
       }

@@ -346,7 +346,8 @@ export class StreamableHTTPServerTransport implements Transport {
       );
       const mcpSessionId = req.headers["mcp-session-id"] as string | undefined;
       if (isInitializationRequest) {
-        // if generateSessionId is not set, the server does not support session management
+        // If it's a server with session management and the session ID is already set we should reject the request
+        // to avoid re-initialization.
         if (this._initialized && this.sessionId !== undefined && mcpSessionId !== this.sessionId) {
           res.writeHead(400).end(JSON.stringify({
             jsonrpc: "2.0",

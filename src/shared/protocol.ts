@@ -87,16 +87,15 @@ export type RequestOptions = {
    * May be used to indicate to the transport which incoming request to associate this outgoing request with.
    */
   relatedRequestId?: RequestId;
-
   /**
-   * May be used to indicate to the transport which last event ID to associate this outgoing request with.
-   * This is used to resume a long-running requests that may have been interrupted and a new instance of a client is being created.
+   * The last event ID to associate with the request.
+   * Used to resume long-running requests that were interrupted when creating a new client instance.
    */
   lastEventId?: string;
 
   /**
    * A callback that is invoked when the last event ID is updated.
-   * This is used to notidy the client that the last event ID has changed, so that client can update its state accordingly.
+   * This is used to notify the client that the last event ID has changed, so the client can update its state accordingly.
    */
   onLastEventIdUpdate?: (event: string) => void;
 };
