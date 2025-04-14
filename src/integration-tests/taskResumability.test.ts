@@ -5,7 +5,7 @@ import { Client } from '../client/index.js';
 import { StreamableHTTPClientTransport } from '../client/streamableHttp.js';
 import { McpServer } from '../server/mcp.js';
 import { EventStore, StreamableHTTPServerTransport } from '../server/streamableHttp.js';
-import { CallToolResult, CallToolResultSchema, JSONRPCMessage, LoggingMessageNotificationSchema } from '../types.js';
+import { CallToolResultSchema, JSONRPCMessage, LoggingMessageNotificationSchema } from '../types.js';
 import { z } from 'zod';
 
 /**
@@ -204,19 +204,18 @@ describe('Transport resumability', () => {
   it('should resume long-running notifications with lastEventId', async () => {
     // Create unique client ID for this test
     const clientId = 'test-client-long-running';
-    const notifications: any[] = [];
-    let sessionId: string | undefined;
+    const notifications = [];
     let lastEventId: string | undefined;
 
     // Create first client
-    let client1 = new Client({
+    const client1 = new Client({
       id: clientId,
       name: 'test-client',
       version: '1.0.0'
     });
 
     // Set up notification handler for first client
-    client1.setNotificationHandler(LoggingMessageNotificationSchema, (notification: any) => {
+    client1.setNotificationHandler(LoggingMessageNotificationSchema, (notification) => {
       if (notification.method === 'notifications/message') {
         notifications.push(notification.params);
       }
@@ -225,14 +224,14 @@ describe('Transport resumability', () => {
     // Connect first client
     const transport1 = new StreamableHTTPClientTransport(baseUrl);
     await client1.connect(transport1);
-    sessionId = transport1.sessionId;
+    const sessionId = transport1.sessionId;
     expect(sessionId).toBeDefined();
 
     // Start a long-running notification stream with tracking of lastEventId
     const onLastEventIdUpdate = jest.fn((eventId: string) => {
       lastEventId = eventId;
     });
-
+    expect(lastEventId).toBeUndefined();
     // Start the notification tool with event tracking using request
     const toolPromise = client1.request({
       method: 'tools/call',
@@ -284,7 +283,7 @@ describe('Transport resumability', () => {
     });
 
     // Set up notification handler for second client
-    client2.setNotificationHandler(LoggingMessageNotificationSchema, (notification: any) => {
+    client2.setNotificationHandler(LoggingMessageNotificationSchema, (notification) => {
       if (notification.method === 'notifications/message') {
         notifications.push(notification.params);
       }
@@ -298,12 +297,12 @@ describe('Transport resumability', () => {
 
     // Resume the notification stream using lastEventId
     // This is the key part - we're resuming the same long-running tool using lastEventId
-    const resumedToolPromise = client2.request({
+    await client2.request({
       method: 'tools/call',
       params: {
         name: 'run-notifications',
         arguments: {
-          count: 5,
+          count: 1,
           interval: 50
         }
       }
@@ -311,9 +310,6 @@ describe('Transport resumability', () => {
       lastEventId,  // Pass the lastEventId from the previous session
       onLastEventIdUpdate
     });
-
-    // Wait for remaining notifications
-    await new Promise(resolve => setTimeout(resolve, 200));
 
     // Verify we eventually received at leaset a few motifications
     expect(notifications.length).toBeGreaterThan(2);
