@@ -164,7 +164,7 @@ describe("StreamableHTTPClientTransport", () => {
     // We expect the 405 error to be caught and handled gracefully
     // This should not throw an error that breaks the transport
     await transport.start();
-    await expect(transport["_startOrAuthSse"]()).resolves.not.toThrow("Failed to open SSE stream: Method Not Allowed");
+    await expect(transport["_startOrAuthSse"]({})).resolves.not.toThrow("Failed to open SSE stream: Method Not Allowed");
     // Check that GET was attempted
     expect(global.fetch).toHaveBeenCalledWith(
       expect.anything(),
@@ -208,7 +208,7 @@ describe("StreamableHTTPClientTransport", () => {
     transport.onmessage = messageSpy;
 
     await transport.start();
-    await transport["_startOrAuthSse"]();
+    await transport["_startOrAuthSse"]({});
 
     // Give time for the SSE event to be processed
     await new Promise(resolve => setTimeout(resolve, 50));
@@ -289,10 +289,10 @@ describe("StreamableHTTPClientTransport", () => {
     // Verify options were set correctly (checking implementation details)
     // Access private properties for testing
     const transportInstance = transport as unknown as {
-      _defaultReconnectionOptions: StreamableHTTPReconnectionOptions;
+      _reconnectionOptions: StreamableHTTPReconnectionOptions;
     };
-    expect(transportInstance._defaultReconnectionOptions.initialReconnectionDelay).toBe(1000);
-    expect(transportInstance._defaultReconnectionOptions.maxRetries).toBe(2);
+    expect(transportInstance._reconnectionOptions.initialReconnectionDelay).toBe(500);
+    expect(transportInstance._reconnectionOptions.maxRetries).toBe(5);
   });
 
   it("should pass lastEventId when reconnecting", async () => {
@@ -313,9 +313,9 @@ describe("StreamableHTTPClientTransport", () => {
     await transport.start();
     // Type assertion to access private method
     const transportWithPrivateMethods = transport as unknown as {
-      _startOrAuthSse: (lastEventId?: string) => Promise<void>
+      _startOrAuthSse: (options: { lastEventId?: string }) => Promise<void>
     };
-    await transportWithPrivateMethods._startOrAuthSse("test-event-id");
+    await transportWithPrivateMethods._startOrAuthSse({ lastEventId: "test-event-id" });
 
     // Verify fetch was called with the lastEventId header
     expect(fetchSpy).toHaveBeenCalled();
@@ -382,7 +382,7 @@ describe("StreamableHTTPClientTransport", () => {
 
     await transport.start();
 
-    await transport["_startOrAuthSse"]();
+    await transport["_startOrAuthSse"]({});
     expect((actualReqInit.headers as Headers).get("x-custom-header")).toBe("CustomValue");
 
     requestInit.headers["X-Custom-Header"] = "SecondCustomValue";

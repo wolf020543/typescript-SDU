@@ -14,11 +14,11 @@ import { z } from 'zod';
 class InMemoryEventStore implements EventStore {
   private events: Map<string, { streamId: string, message: JSONRPCMessage }> = new Map();
 
-  generateEventId(streamId: string): string {
+  private generateEventId(streamId: string): string {
     return `${streamId}_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
   }
 
-  getStreamIdFromEventId(eventId: string): string {
+  private getStreamIdFromEventId(eventId: string): string {
     const parts = eventId.split('_');
     return parts.length > 0 ? parts[0] : '';
   }
@@ -29,14 +29,18 @@ class InMemoryEventStore implements EventStore {
     return eventId;
   }
 
-  async getEventsAfter(lastEventId: string): Promise<Array<{ eventId: string, message: JSONRPCMessage }>> {
+  async replayEventsAfter(lastEventId: string,
+    { send }: { send: (eventId: string, message: JSONRPCMessage) => Promise<void> }
+  ): Promise<string> {
     if (!lastEventId || !this.events.has(lastEventId)) {
-      return [];
+      return '';
     }
 
     // Extract the stream ID from the event ID
     const streamId = this.getStreamIdFromEventId(lastEventId);
-    const result: Array<{ eventId: string, message: JSONRPCMessage }> = [];
+    if (!streamId) {
+      return '';
+    }
     let foundLastEvent = false;
 
     // Sort events by eventId for chronological ordering
@@ -55,11 +59,11 @@ class InMemoryEventStore implements EventStore {
       }
 
       if (foundLastEvent) {
-        result.push({ eventId, message });
+        await send(eventId, message);
       }
     }
 
-    return result;
+    return streamId;
   }
 }
 

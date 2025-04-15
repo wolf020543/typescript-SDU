@@ -12,18 +12,18 @@ class InMemoryEventStore implements EventStore {
   /**
    * Generates a unique event ID for a given stream ID
    */
-  generateEventId(streamId: string): string {
+  private generateEventId(streamId: string): string {
     return `${streamId}_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
   }
 
-  getStreamIdFromEventId(eventId: string): string {
+  private getStreamIdFromEventId(eventId: string): string {
     const parts = eventId.split('_');
     return parts.length > 0 ? parts[0] : '';
   }
 
-
   /**
    * Stores an event with a generated event ID
+   * Implements EventStore.storeEvent
    */
   async storeEvent(streamId: string, message: JSONRPCMessage): Promise<string> {
     const eventId = this.generateEventId(streamId);
@@ -33,17 +33,26 @@ class InMemoryEventStore implements EventStore {
   }
 
   /**
-   * Retrieves events that occurred after a specific event
+   * Replays events that occurred after a specific event ID
+   * Implements EventStore.replayEventsAfter
    */
-  async getEventsAfter(lastEventId: string): Promise<Array<{ eventId: string, message: JSONRPCMessage }>> {
+  async replayEventsAfter(lastEventId: string, 
+    { send }: { send: (eventId: string, message: JSONRPCMessage) => Promise<void> }
+  ): Promise<string> {
     if (!lastEventId || !this.events.has(lastEventId)) {
-      return [];
+      console.log(`No events found for lastEventId: ${lastEventId}`);
+      return '';
     }
 
     // Extract the stream ID from the event ID
-    const streamId = lastEventId.split('_')[0];
-    const result: Array<{ eventId: string, message: JSONRPCMessage }> = [];
+    const streamId = this.getStreamIdFromEventId(lastEventId);
+    if (!streamId) {
+      console.log(`Could not extract streamId from lastEventId: ${lastEventId}`);
+      return '';
+    }
+
     let foundLastEvent = false;
+    let eventCount = 0;
 
     // Sort events by eventId for chronological ordering
     const sortedEvents = [...this.events.entries()].sort((a, b) => a[0].localeCompare(b[0]));
@@ -54,21 +63,21 @@ class InMemoryEventStore implements EventStore {
         continue;
       }
 
-      // Start collecting events after we find the lastEventId
+      // Start sending events after we find the lastEventId
       if (eventId === lastEventId) {
         foundLastEvent = true;
         continue;
       }
 
       if (foundLastEvent) {
-        result.push({ eventId, message });
+        await send(eventId, message);
+        eventCount++;
       }
     }
 
-    console.log(`Found ${result.length} events after ${lastEventId} for replay`);
-    return result;
+    console.log(`Replayed ${eventCount} events after ${lastEventId} for stream ${streamId}`);
+    return streamId;
   }
-
 }
 
 // Create an MCP server with implementation details
