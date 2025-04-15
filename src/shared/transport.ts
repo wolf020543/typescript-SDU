@@ -1,3 +1,4 @@
+import { AuthInfo } from "../server/auth/types.js";
 import { JSONRPCMessage, RequestId } from "../types.js";
 
 /**
@@ -41,8 +42,11 @@ export interface Transport {
 
   /**
    * Callback for when a message (request or response) is received over the connection.
+   * 
+   * Includes the authInfo if the transport is authenticated.
+   * 
    */
-  onmessage?: (message: JSONRPCMessage) => void;
+  onmessage?: (message: JSONRPCMessage, extra?: { authInfo?: AuthInfo }) => void;
 
   /**
    * The session ID generated for this connection.
