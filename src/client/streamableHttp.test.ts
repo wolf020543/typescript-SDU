@@ -313,9 +313,9 @@ describe("StreamableHTTPClientTransport", () => {
     await transport.start();
     // Type assertion to access private method
     const transportWithPrivateMethods = transport as unknown as {
-      _startOrAuthSse: (options: { lastEventId?: string }) => Promise<void>
+      _startOrAuthSse: (options: { resumptionToken?: string }) => Promise<void>
     };
-    await transportWithPrivateMethods._startOrAuthSse({ lastEventId: "test-event-id" });
+    await transportWithPrivateMethods._startOrAuthSse({ resumptionToken: "test-event-id" });
 
     // Verify fetch was called with the lastEventId header
     expect(fetchSpy).toHaveBeenCalled();
