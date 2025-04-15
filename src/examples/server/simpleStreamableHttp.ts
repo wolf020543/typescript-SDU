@@ -181,14 +181,18 @@ server.tool(
 
     while (count === 0 || counter < count) {
       counter++;
-      await sendNotification({
-        method: "notifications/message",
-        params: {
-          level: "info",
-          data: `Periodic notification #${counter} at ${new Date().toISOString()}`
-        }
-      });
-
+      try {
+        await sendNotification({
+          method: "notifications/message",
+          params: {
+            level: "info",
+            data: `Periodic notification #${counter} at ${new Date().toISOString()}`
+          }
+        });
+      }
+      catch (error) {
+        console.error("Error sending notification:", error);
+      }
       // Wait for the specified interval
       await sleep(interval);
     }

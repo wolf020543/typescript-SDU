@@ -22,7 +22,7 @@ import {
   Result,
   ServerCapabilities,
 } from "../types.js";
-import { Transport } from "./transport.js";
+import { Transport, TransportSendOptions } from "./transport.js";
 import { AuthInfo } from "../server/auth/types.js";
 
 /**
@@ -83,12 +83,7 @@ export type RequestOptions = {
    * If not specified, there is no maximum total timeout.
    */
   maxTotalTimeout?: number;
-
-  /**
-   * May be used to indicate to the transport which incoming request to associate this outgoing request with.
-   */
-  relatedRequestId?: RequestId;
-};
+} & TransportSendOptions;
 
 /**
  * Options that can be given per notification.
@@ -507,7 +502,7 @@ export abstract class Protocol<
     resultSchema: T,
     options?: RequestOptions,
   ): Promise<z.infer<T>> {
-    const { relatedRequestId } = options ?? {};
+    const { relatedRequestId, resumptionToken, onresumptiontoken } = options ?? {};
 
     return new Promise((resolve, reject) => {
       if (!this._transport) {
@@ -549,7 +544,7 @@ export abstract class Protocol<
               requestId: messageId,
               reason: String(reason),
             },
-          }, { relatedRequestId })
+          }, { relatedRequestId, resumptionToken, onresumptiontoken })
           .catch((error) =>
             this._onerror(new Error(`Failed to send cancellation: ${error}`)),
           );
@@ -587,7 +582,7 @@ export abstract class Protocol<
 
       this._setupTimeout(messageId, timeout, options?.maxTotalTimeout, timeoutHandler, options?.resetTimeoutOnProgress ?? false);
 
-      this._transport.send(jsonrpcRequest, { relatedRequestId }).catch((error) => {
+      this._transport.send(jsonrpcRequest, { relatedRequestId, resumptionToken, onresumptiontoken }).catch((error) => {
         this._cleanupTimeout(messageId);
         reject(error);
       });

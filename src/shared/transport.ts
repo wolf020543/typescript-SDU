@@ -2,6 +2,29 @@ import { AuthInfo } from "../server/auth/types.js";
 import { JSONRPCMessage, RequestId } from "../types.js";
 
 /**
+ * Options for sending a JSON-RPC message.
+ */
+export type TransportSendOptions = {
+  /** 
+   * If present, `relatedRequestId` is used to indicate to the transport which incoming request to associate this outgoing message with.
+   */
+  relatedRequestId?: RequestId;
+
+  /**
+   * The resumption token used to continue long-running requests that were interrupted.
+   *
+   * This allows clients to reconnect and continue from where they left off, if supported by the transport.
+   */
+  resumptionToken?: string;
+
+  /**
+   * A callback that is invoked when the resumption token changes, if supported by the transport.
+   *
+   * This allows clients to persist the latest token for potential reconnection.
+   */
+  onresumptiontoken?: (token: string) => void;
+}
+/**
  * Describes the minimal contract for a MCP transport that a client or server can communicate over.
  */
 export interface Transport {
@@ -19,7 +42,7 @@ export interface Transport {
    * 
    * If present, `relatedRequestId` is used to indicate to the transport which incoming request to associate this outgoing message with.
    */
-  send(message: JSONRPCMessage, options?: { relatedRequestId?: RequestId }): Promise<void>;
+  send(message: JSONRPCMessage, options?: TransportSendOptions): Promise<void>;
 
   /**
    * Closes the connection.

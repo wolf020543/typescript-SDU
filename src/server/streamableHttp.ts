@@ -202,7 +202,6 @@ export class StreamableHTTPServerTransport implements Transport {
 
     // Assign the response to the standalone SSE stream
     this._streamMapping.set(this._standaloneSseStreamId, res);
-
     // Set up close handler for client disconnects
     res.on("close", () => {
       this._streamMapping.delete(this._standaloneSseStreamId);
@@ -333,6 +332,8 @@ export class StreamableHTTPServerTransport implements Transport {
         msg => 'method' in msg && msg.method === 'initialize'
       );
       if (isInitializationRequest) {
+        // If it's a server with session management and the session ID is already set we should reject the request
+        // to avoid re-initialization.
         if (this._initialized) {
           res.writeHead(400).end(JSON.stringify({
             jsonrpc: "2.0",
@@ -404,17 +405,8 @@ export class StreamableHTTPServerTransport implements Transport {
             this._requestToStreamMapping.set(message.id, streamId);
           }
         }
-
         // Set up close handler for client disconnects
         res.on("close", () => {
-          // find a stream ID for this response
-          // Remove all entries that reference this response
-          for (const [id, stream] of this._requestToStreamMapping.entries()) {
-            if (streamId === stream) {
-              this._requestToStreamMapping.delete(id);
-              this._requestResponseMap.delete(id);
-            }
-          }
           this._streamMapping.delete(streamId);
         });
 
@@ -562,7 +554,7 @@ export class StreamableHTTPServerTransport implements Transport {
     // Get the response for this request
     const streamId = this._requestToStreamMapping.get(requestId);
     const response = this._streamMapping.get(streamId!);
-    if (!streamId || !response) {
+    if (!streamId) {
       throw new Error(`No connection established for request ID: ${String(requestId)}`);
     }
 
@@ -573,9 +565,10 @@ export class StreamableHTTPServerTransport implements Transport {
       if (this._eventStore) {
         eventId = await this._eventStore.storeEvent(streamId, message);
       }
-
-      // Write the event to the response stream
-      this.writeSSEEvent(response, message, eventId);
+      if (response) {
+        // Write the event to the response stream
+        this.writeSSEEvent(response, message, eventId);
+      }
     }
 
     if (isJSONRPCResponse(message)) {
@@ -588,6 +581,9 @@ export class StreamableHTTPServerTransport implements Transport {
       const allResponsesReady = relatedIds.every(id => this._requestResponseMap.has(id));
 
       if (allResponsesReady) {
+        if (!response) {
+          throw new Error(`No connection established for request ID: ${String(requestId)}`);
+        }
         if (this._enableJsonResponse) {
           // All responses ready, send as JSON
           const headers: Record<string, string> = {
