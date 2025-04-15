@@ -1,8 +1,15 @@
-import { log } from "node:console";
 import { Transport } from "../shared/transport.js";
 import { isJSONRPCNotification, JSONRPCMessage, JSONRPCMessageSchema } from "../types.js";
 import { auth, AuthResult, OAuthClientProvider, UnauthorizedError } from "./auth.js";
 import { EventSourceParserStream } from "eventsource-parser/stream";
+
+// Default reconnection options for StreamableHTTP connections
+const DEFAULT_STREAMABLE_HTTP_RECONNECTION_OPTIONS: StreamableHTTPReconnectionOptions = {
+  initialReconnectionDelay: 1000,
+  maxReconnectionDelay: 30000,
+  reconnectionDelayGrowFactor: 1.5,
+  maxRetries: 2,
+};
 
 export class StreamableHTTPError extends Error {
   constructor(
@@ -11,6 +18,16 @@ export class StreamableHTTPError extends Error {
   ) {
     super(`Streamable HTTP error: ${message}`);
   }
+}
+
+/**
+ * Options for starting or authenticating an SSE connection
+ */
+export interface StartSSEOptions {
+  /**
+   * The ID of the last received event, used for resuming a disconnected stream
+   */
+  lastEventId?: string;
 }
 
 /**
@@ -37,7 +54,7 @@ export interface StreamableHTTPReconnectionOptions {
 
   /**
    * Maximum number of reconnection attempts before giving up.
-   * Default is 0 (unlimited).
+   * Default is 2.
    */
   maxRetries: number;
 }
@@ -97,7 +114,7 @@ export class StreamableHTTPClientTransport implements Transport {
     this._url = url;
     this._requestInit = opts?.requestInit;
     this._authProvider = opts?.authProvider;
-    this._reconnectionOptions = opts?.reconnectionOptions || this._defaultReconnectionOptions;
+    this._reconnectionOptions = opts?.reconnectionOptions ?? DEFAULT_STREAMABLE_HTTP_RECONNECTION_OPTIONS;
   }
 
   private async _authThenStart(): Promise<void> {
@@ -117,7 +134,7 @@ export class StreamableHTTPClientTransport implements Transport {
       throw new UnauthorizedError();
     }
 
-    return await this._startOrAuthStandaloneSSE();
+    return await this._startOrAuthStandaloneSSE({ lastEventId: undefined });
   }
 
   private async _commonHeaders(): Promise<Headers> {
@@ -138,7 +155,9 @@ export class StreamableHTTPClientTransport implements Transport {
     );
   }
 
-  private async _startOrAuthStandaloneSSE(lastEventId?: string): Promise<void> {
+
+  private async _startOrAuthStandaloneSSE(options: StartSSEOptions): Promise<void> {
+    const { lastEventId } = options;
     try {
       // Try to open an initial SSE stream with GET to listen for server messages
       // This is optional according to the spec - server may not support it
@@ -181,19 +200,9 @@ export class StreamableHTTPClientTransport implements Transport {
     }
   }
 
-  // Default reconnection options
-  private readonly _defaultReconnectionOptions: StreamableHTTPReconnectionOptions = {
-    initialReconnectionDelay: 1000,
-    maxReconnectionDelay: 30000,
-    reconnectionDelayGrowFactor: 1.5,
-    maxRetries: 2,
-  };
-
-  // We no longer need global reconnection state as it will be maintained per stream
 
   /**
-   * Calculates the next reconnection delay using exponential backoff algorithm
-   * with jitter for more effective reconnections in high load scenarios.
+   * Calculates the next reconnection delay using  backoff algorithm
    * 
    * @param attempt Current reconnection attempt count for the specific stream
    * @returns Time to wait in milliseconds before next reconnection attempt
@@ -227,12 +236,11 @@ export class StreamableHTTPClientTransport implements Transport {
 
     // Calculate next delay based on current attempt count
     const delay = this._getNextReconnectionDelay(attemptCount);
-    log(`Reconnection attempt ${attemptCount + 1} in ${delay}ms...`);
 
     // Schedule the reconnection
     setTimeout(() => {
       // Use the last event ID to resume where we left off
-      this._startOrAuthStandaloneSSE(lastEventId).catch(error => {
+      this._startOrAuthStandaloneSSE({ lastEventId }).catch(error => {
         this.onerror?.(new Error(`Failed to reconnect SSE stream: ${error instanceof Error ? error.message : String(error)}`));
         // Schedule another attempt if this one failed, incrementing the attempt counter
         this._scheduleReconnection(lastEventId, attemptCount + 1);
@@ -247,7 +255,7 @@ export class StreamableHTTPClientTransport implements Transport {
 
     let lastEventId: string | undefined;
     const processStream = async () => {
-      // this is the closest we can get to trying to cath network errors
+      // this is the closest we can get to trying to catch network errors
       // if something happens reader will throw
       try {
         // Create a pipeline: binary stream -> text decoder -> SSE parser
@@ -279,7 +287,7 @@ export class StreamableHTTPClientTransport implements Transport {
         }
       } catch (error) {
         // Handle stream errors - likely a network disconnect
-        this.onerror?.(new Error(`SSE stream disconnected: ${error instanceof Error ? error.message : String(error)}`));
+        this.onerror?.(new Error(`SSE stream disconnected: ${error}`));
 
         // Attempt to reconnect if the stream disconnects unexpectedly and we aren't closing
         if (this._abortController && !this._abortController.signal.aborted) {
@@ -375,7 +383,7 @@ export class StreamableHTTPClientTransport implements Transport {
         // if it's supported by the server
         if (isJSONRPCNotification(message) && message.method === "notifications/initialized") {
           // Start without a lastEventId since this is a fresh connection
-          this._startOrAuthStandaloneSSE().catch(err => this.onerror?.(err));
+          this._startOrAuthStandaloneSSE({ lastEventId: undefined }).catch(err => this.onerror?.(err));
         }
         return;
       }
@@ -390,9 +398,6 @@ export class StreamableHTTPClientTransport implements Transport {
 
       if (hasRequests) {
         if (contentType?.includes("text/event-stream")) {
-          // Handle SSE stream responses for requests
-          // We use the same handler as standalone streams, which now supports
-          // reconnection with the last event ID
           this._handleSseStream(response.body);
         } else if (contentType?.includes("application/json")) {
           // For non-streaming servers, we might get direct JSON responses
