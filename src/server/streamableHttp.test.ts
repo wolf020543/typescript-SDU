@@ -1000,7 +1000,7 @@ describe("StreamableHTTPServerTransport with resumability", () => {
     const eventId = idMatch![1];
     expect(storedEvents.has(eventId)).toBe(true);
     const storedEvent = storedEvents.get(eventId);
-    expect(eventId.startsWith('standalonesse')).toBe(true);
+    expect(eventId.startsWith('_GET_stream')).toBe(true);
     expect(storedEvent?.message).toMatchObject(notification);
   });
 

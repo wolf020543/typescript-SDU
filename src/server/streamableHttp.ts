@@ -96,7 +96,7 @@ export class StreamableHTTPServerTransport implements Transport {
   private _requestResponseMap: Map<RequestId, JSONRPCMessage> = new Map();
   private _initialized: boolean = false;
   private _enableJsonResponse: boolean = false;
-  private _standaloneSseStreamId: string = 'standalonesse';
+  private _standaloneSseStreamId: string = '_GET_stream';
   private _eventStore?: EventStore;
 
   sessionId?: string | undefined;
