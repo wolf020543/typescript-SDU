@@ -1,45 +1,30 @@
 import { IncomingMessage, ServerResponse } from "node:http";
 import { Transport } from "../shared/transport.js";
-import { isJSONRPCNotification, isJSONRPCRequest, isJSONRPCResponse, JSONRPCMessage, JSONRPCMessageSchema, RequestId } from "../types.js";
+import { isJSONRPCRequest, isJSONRPCResponse, JSONRPCMessage, JSONRPCMessageSchema, RequestId } from "../types.js";
 import getRawBody from "raw-body";
 import contentType from "content-type";
 import { randomUUID } from "node:crypto";
 
 const MAXIMUM_MESSAGE_SIZE = "4mb";
 
+export type StreamId = string;
+export type EventId = string;
+
 /**
  * Interface for resumability support via event storage
  */
 export interface EventStore {
-  /**
-   * Generates a unique event ID for a given stream ID
-   * @param streamId The stream ID to include in the event ID
-   * @returns A unique event ID that includes the stream ID
-   */
-  generateEventId(streamId: string): string;
-
   /**
    * Stores an event for later retrieval
    * @param streamId ID of the stream the event belongs to
    * @param message The JSON-RPC message to store
    * @returns The generated event ID for the stored event
    */
-  storeEvent(streamId: string, message: JSONRPCMessage): Promise<string>;
+  storeEvent(streamId: StreamId, message: JSONRPCMessage): Promise<EventId>;
 
-  /**
-   * Retrieves events for a stream starting from a given event ID
-   * @param lastEventId The event ID to start from
-   * @returns Array of stored events with their event IDs
-   */
-  getEventsAfter(lastEventId: string): Promise<Array<{ eventId: string, message: JSONRPCMessage }>>;
-
-  /**
-   * Extracts the stream ID from an event ID
-   * This is necessary for resumability to identify which stream the event belongs to
-   * @param eventId The event ID to extract stream ID from
-   * @returns The stream ID portion of the event ID
-   */
-  getStreamIdFromEventId(eventId: string): string;
+  replayEventsAfter(lastEventId: EventId, { send }: {
+    send: (eventId: EventId, message: JSONRPCMessage) => Promise<void>
+  }): Promise<StreamId>;
 }
 
 /**
@@ -232,12 +217,7 @@ export class StreamableHTTPServerTransport implements Transport {
     if (!this._eventStore) {
       return;
     }
-
     try {
-      const events = await this._eventStore.getEventsAfter(lastEventId);
-      const streamId = this._eventStore.getStreamIdFromEventId(lastEventId);
-
-      this._streamMapping.set(streamId, res);
       const headers: Record<string, string> = {
         "Content-Type": "text/event-stream",
         "Cache-Control": "no-cache, no-transform",
@@ -248,9 +228,16 @@ export class StreamableHTTPServerTransport implements Transport {
         headers["mcp-session-id"] = this.sessionId;
       }
       res.writeHead(200, headers).flushHeaders();
-      for (const { eventId, message } of events) {
-        this.writeSSEEvent(res, message, eventId);
-      }
+
+      const streamId = await this._eventStore?.replayEventsAfter(lastEventId, {
+        send: async (eventId: string, message: JSONRPCMessage) => {
+          if (!this.writeSSEEvent(res, message, eventId)) {
+            this.onerror?.(new Error("Failed replay events"));
+            res.end();
+          }
+        }
+      });
+      this._streamMapping.set(streamId, res);
     } catch (error) {
       this.onerror?.(error as Error);
     }

@@ -1,7 +1,7 @@
 import { createServer, type Server, IncomingMessage, ServerResponse } from "node:http";
 import { AddressInfo } from "node:net";
 import { randomUUID } from "node:crypto";
-import { EventStore, StreamableHTTPServerTransport } from "./streamableHttp.js";
+import { EventStore, StreamableHTTPServerTransport, EventId, StreamId } from "./streamableHttp.js";
 import { McpServer } from "./mcp.js";
 import { CallToolResult, JSONRPCMessage } from "../types.js";
 import { z } from "zod";
@@ -912,31 +912,25 @@ describe("StreamableHTTPServerTransport with resumability", () => {
 
   // Simple implementation of EventStore
   const eventStore: EventStore = {
-    generateEventId(streamId: string): string {
-      return `${streamId}_${randomUUID()}`;
-    },
-    getStreamIdFromEventId(eventId: string): string {
-      return eventId.split('_')[0]; // Extract stream ID from the event ID
-    },
+
     async storeEvent(streamId: string, message: JSONRPCMessage): Promise<string> {
-      const eventId = this.generateEventId(streamId);
+      const eventId = `${streamId}_${randomUUID()}`;
       storedEvents.set(eventId, { eventId, message });
       return eventId;
     },
 
-    async getEventsAfter(lastEventId: string): Promise<Array<{ eventId: string, message: JSONRPCMessage }>> {
-      const streamId = lastEventId.split('_')[0]; // Extract stream ID from the event ID
-      const result: Array<{ eventId: string, message: JSONRPCMessage }> = [];
-
+    async replayEventsAfter(lastEventId: EventId, { send }: {
+      send: (eventId: EventId, message: JSONRPCMessage) => Promise<void>
+    }): Promise<StreamId> {
+      const streamId = lastEventId.split('_')[0];
+      // Extract stream ID from the event ID
       // For test simplicity, just return all events with matching streamId that aren't the lastEventId
-      // This avoids issues with event ordering in tests
       for (const [eventId, { message }] of storedEvents.entries()) {
         if (eventId.startsWith(streamId) && eventId !== lastEventId) {
-          result.push({ eventId, message });
+          await send(eventId, message);
         }
       }
-
-      return result;
+      return streamId;
     },
   };
 
