@@ -1,7 +1,7 @@
 import { createServer, type Server, IncomingMessage, ServerResponse } from "node:http";
 import { AddressInfo } from "node:net";
 import { randomUUID } from "node:crypto";
-import { StreamableHTTPServerTransport } from "./streamableHttp.js";
+import { EventStore, StreamableHTTPServerTransport, EventId, StreamId } from "./streamableHttp.js";
 import { McpServer } from "./mcp.js";
 import { CallToolResult, JSONRPCMessage } from "../types.js";
 import { z } from "zod";
@@ -13,6 +13,7 @@ interface TestServerConfig {
   sessionIdGenerator?: () => string | undefined;
   enableJsonResponse?: boolean;
   customRequestHandler?: (req: IncomingMessage, res: ServerResponse, parsedBody?: unknown) => Promise<void>;
+  eventStore?: EventStore;
 }
 
 /**
@@ -26,7 +27,7 @@ async function createTestServer(config: TestServerConfig = {}): Promise<{
 }> {
   const mcpServer = new McpServer(
     { name: "test-server", version: "1.0.0" },
-    { capabilities: {} }
+    { capabilities: { logging: {} } }
   );
 
   mcpServer.tool(
@@ -40,7 +41,8 @@ async function createTestServer(config: TestServerConfig = {}): Promise<{
 
   const transport = new StreamableHTTPServerTransport({
     sessionIdGenerator: config.sessionIdGenerator ?? (() => randomUUID()),
-    enableJsonResponse: config.enableJsonResponse ?? false
+    enableJsonResponse: config.enableJsonResponse ?? false,
+    eventStore: config.eventStore
   });
 
   await mcpServer.connect(transport);
@@ -89,7 +91,10 @@ const TEST_MESSAGES = {
     params: {
       clientInfo: { name: "test-client", version: "1.0" },
       protocolVersion: "2025-03-26",
+      capabilities: {
+      },
     },
+
     id: "init-1",
   } as JSONRPCMessage,
 
@@ -893,6 +898,165 @@ describe("StreamableHTTPServerTransport with pre-parsed body", () => {
     expect(text).toContain('"id":"preparsed-wins"');
     expect(text).toContain('"tools"');
     expect(text).not.toContain('"ignored-id"');
+  });
+});
+
+// Test resumability support
+describe("StreamableHTTPServerTransport with resumability", () => {
+  let server: Server;
+  let transport: StreamableHTTPServerTransport;
+  let baseUrl: URL;
+  let sessionId: string;
+  let mcpServer: McpServer;
+  const storedEvents: Map<string, { eventId: string, message: JSONRPCMessage }> = new Map();
+
+  // Simple implementation of EventStore
+  const eventStore: EventStore = {
+
+    async storeEvent(streamId: string, message: JSONRPCMessage): Promise<string> {
+      const eventId = `${streamId}_${randomUUID()}`;
+      storedEvents.set(eventId, { eventId, message });
+      return eventId;
+    },
+
+    async replayEventsAfter(lastEventId: EventId, { send }: {
+      send: (eventId: EventId, message: JSONRPCMessage) => Promise<void>
+    }): Promise<StreamId> {
+      const streamId = lastEventId.split('_')[0];
+      // Extract stream ID from the event ID
+      // For test simplicity, just return all events with matching streamId that aren't the lastEventId
+      for (const [eventId, { message }] of storedEvents.entries()) {
+        if (eventId.startsWith(streamId) && eventId !== lastEventId) {
+          await send(eventId, message);
+        }
+      }
+      return streamId;
+    },
+  };
+
+  beforeEach(async () => {
+    storedEvents.clear();
+    const result = await createTestServer({
+      sessionIdGenerator: () => randomUUID(),
+      eventStore
+    });
+
+    server = result.server;
+    transport = result.transport;
+    baseUrl = result.baseUrl;
+    mcpServer = result.mcpServer;
+
+    // Verify resumability is enabled on the transport
+    expect((transport)['_eventStore']).toBeDefined();
+
+    // Initialize the server
+    const initResponse = await sendPostRequest(baseUrl, TEST_MESSAGES.initialize);
+    sessionId = initResponse.headers.get("mcp-session-id") as string;
+    expect(sessionId).toBeDefined();
+  });
+
+  afterEach(async () => {
+    await stopTestServer({ server, transport });
+    storedEvents.clear();
+  });
+
+  it("should store and include event IDs in server SSE messages", async () => {
+    // Open a standalone SSE stream
+    const sseResponse = await fetch(baseUrl, {
+      method: "GET",
+      headers: {
+        Accept: "text/event-stream",
+        "mcp-session-id": sessionId,
+      },
+    });
+
+    expect(sseResponse.status).toBe(200);
+    expect(sseResponse.headers.get("content-type")).toBe("text/event-stream");
+
+    // Send a notification that should be stored with an event ID
+    const notification: JSONRPCMessage = {
+      jsonrpc: "2.0",
+      method: "notifications/message",
+      params: { level: "info", data: "Test notification with event ID" },
+    };
+
+    // Send the notification via transport
+    await transport.send(notification);
+
+    // Read from the stream and verify we got the notification with an event ID
+    const reader = sseResponse.body?.getReader();
+    const { value } = await reader!.read();
+    const text = new TextDecoder().decode(value);
+
+    // The response should contain an event ID
+    expect(text).toContain('id: ');
+    expect(text).toContain('"method":"notifications/message"');
+
+    // Extract the event ID
+    const idMatch = text.match(/id: ([^\n]+)/);
+    expect(idMatch).toBeTruthy();
+
+    // Verify the event was stored
+    const eventId = idMatch![1];
+    expect(storedEvents.has(eventId)).toBe(true);
+    const storedEvent = storedEvents.get(eventId);
+    expect(eventId.startsWith('_GET_stream')).toBe(true);
+    expect(storedEvent?.message).toMatchObject(notification);
+  });
+
+
+  it("should store and replay MCP server tool notifications", async () => {
+    // Establish a standalone SSE stream
+    const sseResponse = await fetch(baseUrl, {
+      method: "GET",
+      headers: {
+        Accept: "text/event-stream",
+        "mcp-session-id": sessionId,
+      },
+    });
+    expect(sseResponse.status).toBe(200);   // Send a server notification through the MCP server
+    await mcpServer.server.sendLoggingMessage({ level: "info", data: "First notification from MCP server" });
+
+    // Read the notification from the SSE stream
+    const reader = sseResponse.body?.getReader();
+    const { value } = await reader!.read();
+    const text = new TextDecoder().decode(value);
+
+    // Verify the notification was sent with an event ID
+    expect(text).toContain('id: ');
+    expect(text).toContain('First notification from MCP server');
+
+    // Extract the event ID
+    const idMatch = text.match(/id: ([^\n]+)/);
+    expect(idMatch).toBeTruthy();
+    const firstEventId = idMatch![1];
+
+    // Send a second notification 
+    await mcpServer.server.sendLoggingMessage({ level: "info", data: "Second notification from MCP server" });
+
+    // Close the first SSE stream to simulate a disconnect
+    await reader!.cancel();
+
+    // Reconnect with the Last-Event-ID to get missed messages
+    const reconnectResponse = await fetch(baseUrl, {
+      method: "GET",
+      headers: {
+        Accept: "text/event-stream",
+        "mcp-session-id": sessionId,
+        "last-event-id": firstEventId
+      },
+    });
+
+    expect(reconnectResponse.status).toBe(200);
+
+    // Read the replayed notification
+    const reconnectReader = reconnectResponse.body?.getReader();
+    const reconnectData = await reconnectReader!.read();
+    const reconnectText = new TextDecoder().decode(reconnectData.value);
+
+    // Verify we received the second notification that was sent after our stored eventId
+    expect(reconnectText).toContain('Second notification from MCP server');
+    expect(reconnectText).toContain('id: ');
   });
 });
 
