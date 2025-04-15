@@ -88,6 +88,7 @@ export type StreamableHTTPClientTransportOptions = {
    * Options to configure the reconnection behavior.
    */
   reconnectionOptions?: StreamableHTTPReconnectionOptions;
+
   /**
    * Session ID for the connection. This is used to identify the session on the server.
    * When not provided and connecting to a server that supports session IDs, the server will generate a new session ID.
@@ -345,10 +346,11 @@ export class StreamableHTTPClientTransport implements Transport {
     this.onclose?.();
   }
 
-  async send(message: JSONRPCMessage | JSONRPCMessage[], options?: { lastEventId?: string, onLastEventIdUpdate?: (event: string) => void }): Promise<void> {
+  async send(message: JSONRPCMessage | JSONRPCMessage[], options?: { resumptionToken?: string, onresumptiontoken?: (event: string) => void }): Promise<void> {
     try {
       // If client passes in a lastEventId in the request options, we need to reconnect the SSE stream
-      const { lastEventId, onLastEventIdUpdate } = options ?? {};
+      const lastEventId = options?.resumptionToken
+      const onLastEventIdUpdate = options?.onresumptiontoken;
       if (lastEventId) {
         // If we have at last event ID, we need to reconnect the SSE stream
         this._startOrAuthSse({ lastEventId }).catch(err => this.onerror?.(err));

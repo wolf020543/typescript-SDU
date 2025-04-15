@@ -302,7 +302,7 @@ async function callTool(name: string, args: Record<string, unknown>): Promise<vo
       notificationsToolLastEventId = event;
     };
     const result = await client.request(request, CallToolResultSchema, {
-      lastEventId: notificationsToolLastEventId, onLastEventIdUpdate
+      resumptionToken: notificationsToolLastEventId, onresumptiontoken: onLastEventIdUpdate
     });
 
     console.log('Tool result:');

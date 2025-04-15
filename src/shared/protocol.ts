@@ -87,17 +87,20 @@ export type RequestOptions = {
    * May be used to indicate to the transport which incoming request to associate this outgoing request with.
    */
   relatedRequestId?: RequestId;
-  /**
-   * The last event ID to associate with the request.
-   * Used to resume long-running requests that were interrupted when creating a new client instance.
-   */
-  lastEventId?: string;
 
   /**
-   * A callback that is invoked when the last event ID is updated.
-   * This is used to notify the client that the last event ID has changed, so the client can update its state accordingly.
+   * The resumption token used to continue long-running requests that were interrupted.
+   *
+   * This allows clients to reconnect and continue from where they left off, if supported by the transport.
    */
-  onLastEventIdUpdate?: (event: string) => void;
+  resumptionToken?: string;
+
+  /**
+   * A callback that is invoked when the resumption token changes, if supported by the transport.
+   *
+   * This allows clients to persist the latest token for potential reconnection.
+   */
+  onresumptiontoken?: (token: string) => void;
 };
 
 /**
@@ -512,7 +515,7 @@ export abstract class Protocol<
     resultSchema: T,
     options?: RequestOptions,
   ): Promise<z.infer<T>> {
-    const { relatedRequestId, lastEventId, onLastEventIdUpdate } = options ?? {};
+    const { relatedRequestId, resumptionToken, onresumptiontoken } = options ?? {};
 
     return new Promise((resolve, reject) => {
       if (!this._transport) {
@@ -554,7 +557,7 @@ export abstract class Protocol<
               requestId: messageId,
               reason: String(reason),
             },
-          }, { relatedRequestId, lastEventId, onLastEventIdUpdate })
+          }, { relatedRequestId, resumptionToken, onresumptiontoken })
           .catch((error) =>
             this._onerror(new Error(`Failed to send cancellation: ${error}`)),
           );
@@ -592,7 +595,7 @@ export abstract class Protocol<
 
       this._setupTimeout(messageId, timeout, options?.maxTotalTimeout, timeoutHandler, options?.resetTimeoutOnProgress ?? false);
 
-      this._transport.send(jsonrpcRequest, { relatedRequestId, lastEventId, onLastEventIdUpdate }).catch((error) => {
+      this._transport.send(jsonrpcRequest, { relatedRequestId, resumptionToken, onresumptiontoken }).catch((error) => {
         this._cleanupTimeout(messageId);
         reject(error);
       });

@@ -247,8 +247,8 @@ describe('Transport resumability', () => {
         }
       }
     }, CallToolResultSchema, {
-      lastEventId,
-      onLastEventIdUpdate
+      resumptionToken: lastEventId,
+      onresumptiontoken: onLastEventIdUpdate
     });
 
     // Wait for some notifications to arrive (not all)
@@ -311,8 +311,8 @@ describe('Transport resumability', () => {
         }
       }
     }, CallToolResultSchema, {
-      lastEventId,  // Pass the lastEventId from the previous session
-      onLastEventIdUpdate
+      resumptionToken: lastEventId,  // Pass the lastEventId from the previous session
+      onresumptiontoken: onLastEventIdUpdate
     });
 
     // Verify we eventually received at leaset a few motifications
