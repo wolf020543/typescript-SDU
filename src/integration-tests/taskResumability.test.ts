@@ -260,8 +260,7 @@ describe('Transport resumability', () => {
     expect(onLastEventIdUpdate).toHaveBeenCalled();
     expect(lastEventId).toBeDefined();
 
-    // Store original notification count for later comparison
-    const firstClientNotificationCount = notifications.length;
+
     // Disconnect first client without waiting for completion
     // When we close the connection, it will cause a ConnectionClosed error for
     // any in-progress requests, which is expected behavior
