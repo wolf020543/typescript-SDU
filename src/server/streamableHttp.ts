@@ -382,10 +382,8 @@ export class StreamableHTTPServerTransport implements Transport {
 
       // check if it contains requests
       const hasRequests = messages.some(isJSONRPCRequest);
-      const hasOnlyNotificationsOrResponses = messages.every(msg =>
-        isJSONRPCNotification(msg) || isJSONRPCResponse(msg));
 
-      if (hasOnlyNotificationsOrResponses) {
+      if (!hasRequests) {
         // if it only contains notifications or responses, return 202
         res.writeHead(202).end();
 
