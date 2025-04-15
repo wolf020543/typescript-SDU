@@ -23,17 +23,20 @@ export class StreamableHTTPError extends Error {
 /**
  * Options for starting or authenticating an SSE connection
  */
-export interface StartSSEOptions {
+interface StartSSEOptions {
   /**
    * The ID of the last received event, used for resuming a disconnected stream
    */
   lastEventId?: string;
+
   /**
    * The callback function that is invoked when the last event ID changes
    */
   onLastEventIdUpdate?: (event: string) => void
+
   /**
-  * When reconnecting to a long-running SSE stream, we need to make sure that message id matches
+  * Override Message ID to associate with the replay message
+  * so that response can be associate with the new resumed request.
   */
   replayMessageId?: string | number;
 }
@@ -358,7 +361,7 @@ export class StreamableHTTPClientTransport implements Transport {
     this.onclose?.();
   }
 
-  async send(message: JSONRPCMessage | JSONRPCMessage[], options?: { resumptionToken?: string, onresumptiontoken?: (event: string) => void }): Promise<void> {
+  async send(message: JSONRPCMessage | JSONRPCMessage[], options?: { resumptionToken?: string, onresumptiontoken?: (token: string) => void }): Promise<void> {
     try {
       // If client passes in a lastEventId in the request options, we need to reconnect the SSE stream
       const lastEventId = options?.resumptionToken
