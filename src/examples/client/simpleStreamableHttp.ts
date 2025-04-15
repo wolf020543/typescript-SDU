@@ -111,7 +111,7 @@ function commandLoop(): void {
 
         case 'start-notifications': {
           const interval = args[1] ? parseInt(args[1], 10) : 2000;
-          const count = args[2] ? parseInt(args[2], 10) : 0;
+          const count = args[2] ? parseInt(args[2], 10) : 10;
           await startNotifications(interval, count);
           break;
         }

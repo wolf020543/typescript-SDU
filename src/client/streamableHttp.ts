@@ -1,5 +1,5 @@
 import { Transport } from "../shared/transport.js";
-import { isJSONRPCNotification, JSONRPCMessage, JSONRPCMessageSchema } from "../types.js";
+import { isJSONRPCNotification, isJSONRPCRequest, isJSONRPCResponse, JSONRPCMessage, JSONRPCMessageSchema } from "../types.js";
 import { auth, AuthResult, OAuthClientProvider, UnauthorizedError } from "./auth.js";
 import { EventSourceParserStream } from "eventsource-parser/stream";
 
@@ -28,6 +28,14 @@ export interface StartSSEOptions {
    * The ID of the last received event, used for resuming a disconnected stream
    */
   lastEventId?: string;
+  /**
+   * The callback function that is invoked when the last event ID changes
+   */
+  onLastEventIdUpdate?: (event: string) => void
+  /**
+  * When reconnecting to a long-running SSE stream, we need to make sure that message id matches
+  */
+  replayMessageId?: string | number;
 }
 
 /**
@@ -200,7 +208,7 @@ export class StreamableHTTPClientTransport implements Transport {
         );
       }
 
-      this._handleSseStream(response.body);
+      this._handleSseStream(response.body, options);
     } catch (error) {
       this.onerror?.(error as Error);
       throw error;
@@ -231,7 +239,7 @@ export class StreamableHTTPClientTransport implements Transport {
    * @param lastEventId The ID of the last received event for resumability
    * @param attemptCount Current reconnection attempt count for this specific stream
    */
-  private _scheduleReconnection(lastEventId: string, attemptCount = 0): void {
+  private _scheduleReconnection(options: StartSSEOptions, attemptCount = 0): void {
     // Use provided options or default options
     const maxRetries = this._reconnectionOptions.maxRetries;
 
@@ -247,18 +255,19 @@ export class StreamableHTTPClientTransport implements Transport {
     // Schedule the reconnection
     setTimeout(() => {
       // Use the last event ID to resume where we left off
-      this._startOrAuthSse({ lastEventId }).catch(error => {
+      this._startOrAuthSse(options).catch(error => {
         this.onerror?.(new Error(`Failed to reconnect SSE stream: ${error instanceof Error ? error.message : String(error)}`));
         // Schedule another attempt if this one failed, incrementing the attempt counter
-        this._scheduleReconnection(lastEventId, attemptCount + 1);
+        this._scheduleReconnection(options, attemptCount + 1);
       });
     }, delay);
   }
 
-  private _handleSseStream(stream: ReadableStream<Uint8Array> | null, onLastEventIdUpdate?: (event: string) => void): void {
+  private _handleSseStream(stream: ReadableStream<Uint8Array> | null, options: StartSSEOptions): void {
     if (!stream) {
       return;
     }
+    const { onLastEventIdUpdate, replayMessageId } = options;
 
     let lastEventId: string | undefined;
     const processStream = async () => {
@@ -287,6 +296,9 @@ export class StreamableHTTPClientTransport implements Transport {
           if (!event.event || event.event === "message") {
             try {
               const message = JSONRPCMessageSchema.parse(JSON.parse(event.data));
+              if (replayMessageId !== undefined && isJSONRPCResponse(message)) {
+                message.id = replayMessageId;
+              }
               this.onmessage?.(message);
             } catch (error) {
               this.onerror?.(error as Error);
@@ -302,7 +314,7 @@ export class StreamableHTTPClientTransport implements Transport {
           // Use the exponential backoff reconnection strategy
           if (lastEventId !== undefined) {
             try {
-              this._scheduleReconnection(lastEventId, 0);
+              this._scheduleReconnection(options, 0);
             }
             catch (error) {
               this.onerror?.(new Error(`Failed to reconnect: ${error instanceof Error ? error.message : String(error)}`));
@@ -352,8 +364,9 @@ export class StreamableHTTPClientTransport implements Transport {
       const lastEventId = options?.resumptionToken
       const onLastEventIdUpdate = options?.onresumptiontoken;
       if (lastEventId) {
+
         // If we have at last event ID, we need to reconnect the SSE stream
-        this._startOrAuthSse({ lastEventId }).catch(err => this.onerror?.(err));
+        this._startOrAuthSse({ lastEventId, replayMessageId: isJSONRPCRequest(message) ? message.id : undefined }).catch(err => this.onerror?.(err));
         return;
       }
 
@@ -418,7 +431,7 @@ export class StreamableHTTPClientTransport implements Transport {
           // Handle SSE stream responses for requests
           // We use the same handler as standalone streams, which now supports
           // reconnection with the last event ID
-          this._handleSseStream(response.body, onLastEventIdUpdate);
+          this._handleSseStream(response.body, { onLastEventIdUpdate });
         } else if (contentType?.includes("application/json")) {
           // For non-streaming servers, we might get direct JSON responses
           const data = await response.json();
