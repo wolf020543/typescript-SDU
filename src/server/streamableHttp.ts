@@ -331,11 +331,10 @@ export class StreamableHTTPServerTransport implements Transport {
       const isInitializationRequest = messages.some(
         msg => 'method' in msg && msg.method === 'initialize'
       );
-      const mcpSessionId = req.headers["mcp-session-id"] as string | undefined;
       if (isInitializationRequest) {
         // If it's a server with session management and the session ID is already set we should reject the request
         // to avoid re-initialization.
-        if (this._initialized && this.sessionId !== undefined && mcpSessionId !== this.sessionId) {
+        if (this._initialized) {
           res.writeHead(400).end(JSON.stringify({
             jsonrpc: "2.0",
             error: {
@@ -357,7 +356,7 @@ export class StreamableHTTPServerTransport implements Transport {
           }));
           return;
         }
-        this.sessionId = mcpSessionId ?? this.sessionIdGenerator();
+        this.sessionId = this.sessionIdGenerator();
         this._initialized = true;
 
       }
