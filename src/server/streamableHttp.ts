@@ -480,11 +480,7 @@ export class StreamableHTTPServerTransport implements Transport {
       }));
       return false;
     }
-    if (this.sessionId === undefined) {
-      // If the session ID is not set, the session management is disabled
-      // and we don't need to validate the session ID
-      return true;
-    }
+
     const sessionId = req.headers["mcp-session-id"];
 
     if (!sessionId) {
