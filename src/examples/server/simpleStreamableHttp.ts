@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { McpServer } from '../../server/mcp.js';
 import { EventStore, StreamableHTTPServerTransport } from '../../server/streamableHttp.js';
 import { z } from 'zod';
-import { CallToolResult, GetPromptResult, JSONRPCMessage, ReadResourceResult } from '../../types.js';
+import { CallToolResult, GetPromptResult, isInitializeRequest, JSONRPCMessage, ReadResourceResult } from '../../types.js';
 
 // Create a simple in-memory EventStore for resumability
 class InMemoryEventStore implements EventStore {
@@ -36,7 +36,7 @@ class InMemoryEventStore implements EventStore {
    * Replays events that occurred after a specific event ID
    * Implements EventStore.replayEventsAfter
    */
-  async replayEventsAfter(lastEventId: string, 
+  async replayEventsAfter(lastEventId: string,
     { send }: { send: (eventId: string, message: JSONRPCMessage) => Promise<void> }
   ): Promise<string> {
     if (!lastEventId || !this.events.has(lastEventId)) {
@@ -247,19 +247,28 @@ app.post('/mcp', async (req: Request, res: Response) => {
       transport = new StreamableHTTPServerTransport({
         sessionIdGenerator: () => randomUUID(),
         eventStore, // Enable resumability
+        onsessioninitialized: (sessionId) => {
+          // Store the transport by session ID when session is initialized
+          // This avoids race conditions where requests might come in before the session is stored
+          console.log(`Session initialized with ID: ${sessionId}`);
+          transports[sessionId] = transport;
+        }
       });
+
+      // Set up onclose handler to clean up transport when closed
+      transport.onclose = () => {
+        const sid = transport.sessionId;
+        if (sid && transports[sid]) {
+          console.log(`Transport closed for session ${sid}, removing from transports map`);
+          delete transports[sid];
+        }
+      };
 
       // Connect the transport to the MCP server BEFORE handling the request
       // so responses can flow back through the same transport
       await server.connect(transport);
 
-      // After handling the request, if we get a session ID back, store the transport
       await transport.handleRequest(req, res, req.body);
-
-      // Store the transport by session ID for future requests
-      if (transport.sessionId) {
-        transports[transport.sessionId] = transport;
-      }
       return; // Already handled
     } else {
       // Invalid request - no session ID or not initialization request
@@ -312,13 +321,26 @@ app.get('/mcp', async (req: Request, res: Response) => {
   await transport.handleRequest(req, res);
 });
 
-// Helper function to detect initialize requests
-function isInitializeRequest(body: unknown): boolean {
-  if (Array.isArray(body)) {
-    return body.some(msg => typeof msg === 'object' && msg !== null && 'method' in msg && msg.method === 'initialize');
+// Handle DELETE requests for session termination (according to MCP spec)
+app.delete('/mcp', async (req: Request, res: Response) => {
+  const sessionId = req.headers['mcp-session-id'] as string | undefined;
+  if (!sessionId || !transports[sessionId]) {
+    res.status(400).send('Invalid or missing session ID');
+    return;
   }
-  return typeof body === 'object' && body !== null && 'method' in body && body.method === 'initialize';
-}
+
+  console.log(`Received session termination request for session ${sessionId}`);
+
+  try {
+    const transport = transports[sessionId];
+    await transport.handleRequest(req, res);
+  } catch (error) {
+    console.error('Error handling session termination:', error);
+    if (!res.headersSent) {
+      res.status(500).send('Error processing session termination');
+    }
+  }
+});
 
 // Start the server
 const PORT = 3000;
@@ -351,6 +373,18 @@ app.listen(PORT, () => {
 // Handle server shutdown
 process.on('SIGINT', async () => {
   console.log('Shutting down server...');
+
+  // Close all active transports to properly clean up resources
+  for (const sessionId in transports) {
+    try {
+      console.log(`Closing transport for session ${sessionId}`);
+      await transports[sessionId].close();
+      delete transports[sessionId];
+    } catch (error) {
+      console.error(`Error closing transport for session ${sessionId}:`, error);
+    }
+  }
   await server.close();
+  console.log('Server shutdown complete');
   process.exit(0);
 });
