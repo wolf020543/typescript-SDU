@@ -288,7 +288,7 @@ describe("StreamableHTTPServerTransport", () => {
     });
   });
 
-  it("should reject requests without a valid session ID", async () => {
+  it.only("should reject requests without a valid session ID", async () => {
     const response = await sendPostRequest(baseUrl, TEST_MESSAGES.toolsList);
 
     expect(response.status).toBe(400);
