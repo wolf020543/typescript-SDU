@@ -4,6 +4,7 @@ import {
   CallToolRequest,
   CallToolResultSchema,
   LoggingMessageNotificationSchema,
+  CallToolResult,
 } from '../../types.js';
 
 /**
@@ -23,12 +24,12 @@ interface ClientConfig {
   id: string;
   name: string;
   toolName: string;
-  toolArguments: Record<string, any>;
+  toolArguments: Record<string, string | number | boolean>;
 }
 
-async function createAndRunClient(config: ClientConfig): Promise<{ id: string; result: any }> {
+async function createAndRunClient(config: ClientConfig): Promise<{ id: string; result: CallToolResult }> {
   console.log(`[${config.id}] Creating client: ${config.name}`);
-  
+
   const client = new Client({
     name: config.name,
     version: '1.0.0'
@@ -101,7 +102,7 @@ async function main(): Promise<void> {
         }
       },
       {
-        id: 'client2', 
+        id: 'client2',
         name: 'basic-client-2',
         toolName: 'start-notification-stream',
         toolArguments: {

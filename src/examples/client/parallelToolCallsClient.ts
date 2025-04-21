@@ -3,9 +3,9 @@ import { StreamableHTTPClientTransport } from '../../client/streamableHttp.js';
 import {
   ListToolsRequest,
   ListToolsResultSchema,
-  CallToolRequest,
   CallToolResultSchema,
   LoggingMessageNotificationSchema,
+  CallToolResult,
 } from '../../types.js';
 
 /**
@@ -57,11 +57,11 @@ async function main(): Promise<void> {
     // 2. Start multiple notification tools in parallel
     console.log('\n=== Starting Multiple Notification Streams in Parallel ===');
     const toolResults = await startParallelNotificationTools(client);
-    
+
     // Log the results from each tool call
     for (const [caller, result] of Object.entries(toolResults)) {
       console.log(`\n=== Tool result for ${caller} ===`);
-      result.content.forEach((item: { type: string; text: any; }) => {
+      result.content.forEach((item: { type: string; text?: string; }) => {
         if (item.type === 'text') {
           console.log(`  ${item.text}`);
         } else {
@@ -113,7 +113,7 @@ async function listTools(client: Client): Promise<void> {
  * Start multiple notification tools in parallel with different configurations
  * Each tool call includes a caller parameter to identify its notifications
  */
-async function startParallelNotificationTools(client: Client): Promise<Record<string, any>> {
+async function startParallelNotificationTools(client: Client): Promise<Record<string, CallToolResult>> {
   try {
     // Define multiple tool calls with different configurations
     const toolCalls = [
@@ -162,7 +162,7 @@ async function startParallelNotificationTools(client: Client): Promise<Record<st
     ];
 
     console.log(`Starting ${toolCalls.length} notification tools in parallel...`);
-    
+
     // Start all tool calls in parallel
     const toolPromises = toolCalls.map(({ caller, request }) => {
       console.log(`Starting tool call for ${caller}...`);
@@ -176,9 +176,9 @@ async function startParallelNotificationTools(client: Client): Promise<Record<st
 
     // Wait for all tool calls to complete
     const results = await Promise.all(toolPromises);
-    
+
     // Organize results by caller
-    const resultsByTool: Record<string, any> = {};
+    const resultsByTool: Record<string, CallToolResult> = {};
     results.forEach(({ caller, result }) => {
       resultsByTool[caller] = result;
     });
