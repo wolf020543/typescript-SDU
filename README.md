@@ -221,7 +221,6 @@ import express from "express";
 import { randomUUID } from "node:crypto";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
-import { InMemoryEventStore } from "@modelcontextprotocol/sdk/inMemory.js";
 
 
 const app = express();
@@ -244,7 +243,6 @@ app.post('/mcp', async (req, res) => {
     const eventStore = new InMemoryEventStore();
     transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: () => randomUUID(),
-      eventStore, // Enable resumability
       onsessioninitialized: (sessionId) => {
         // Store the transport by session ID
         transports[sessionId] = transport;
@@ -773,7 +771,6 @@ import express from "express";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
-import { InMemoryEventStore } from "@modelcontextprotocol/sdk/inMemory.js";
 
 const server = new McpServer({
   name: "backwards-compatible-server",
