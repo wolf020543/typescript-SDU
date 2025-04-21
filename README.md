@@ -312,19 +312,19 @@ For simpler use cases where session management isn't needed:
 const app = express();
 app.use(express.json());
 
-const transport: StreamableHTTPServerTransport = new StreamableHTTPServerTransport({
-  sessionIdGenerator: undefined, // set to undefined for stateless servers
-});
-
-// Setup routes for the server
-const setupServer = async () => {
-  await server.connect(transport);
-};
-
 app.post('/mcp', async (req: Request, res: Response) => {
-  console.log('Received MCP request:', req.body);
   try {
-      await transport.handleRequest(req, res, req.body);
+    const server = getServer(); 
+    const transport: StreamableHTTPServerTransport = new StreamableHTTPServerTransport({
+      sessionIdGenerator: undefined,
+    });
+    await server.connect(transport);
+    await transport.handleRequest(req, res, req.body);
+    res.on('close', () => {
+      console.log('Request closed');
+      transport.close();
+      server.close();
+    });
   } catch (error) {
     console.error('Error handling MCP request:', error);
     if (!res.headersSent) {
@@ -364,15 +364,11 @@ app.delete('/mcp', async (req: Request, res: Response) => {
   }));
 });
 
+
 // Start the server
 const PORT = 3000;
-setupServer().then(() => {
-  app.listen(PORT, () => {
-    console.log(`MCP Streamable HTTP Server listening on port ${PORT}`);
-  });
-}).catch(error => {
-  console.error('Failed to set up the server:', error);
-  process.exit(1);
+app.listen(PORT, () => {
+  console.log(`MCP Stateless Streamable HTTP Server listening on port ${PORT}`);
 });
 
 ```

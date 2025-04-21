@@ -96,9 +96,6 @@ const getServer = () => {
 const app = express();
 app.use(express.json());
 
-
-
-
 app.post('/mcp', async (req: Request, res: Response) => {
   const server = getServer();
   try {
