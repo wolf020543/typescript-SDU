@@ -221,8 +221,8 @@ import express from "express";
 import { randomUUID } from "node:crypto";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
-import { InMemoryEventStore } from "@modelcontextprotocol/sdk/examples/shared/inMemoryEventStore.js";
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js"
+
 
 
 const app = express();
@@ -245,7 +245,6 @@ app.post('/mcp', async (req, res) => {
     const eventStore = new InMemoryEventStore();
     transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: () => randomUUID(),
-      eventStore, // Enable resumability
       onsessioninitialized: (sessionId) => {
         // Store the transport by session ID
         transports[sessionId] = transport;
@@ -313,19 +312,23 @@ For simpler use cases where session management isn't needed:
 const app = express();
 app.use(express.json());
 
-const transport: StreamableHTTPServerTransport = new StreamableHTTPServerTransport({
-  sessionIdGenerator: undefined, // set to undefined for stateless servers
-});
-
-// Setup routes for the server
-const setupServer = async () => {
-  await server.connect(transport);
-};
-
 app.post('/mcp', async (req: Request, res: Response) => {
-  console.log('Received MCP request:', req.body);
+  // In stateless mode, create a new instance of transport and server for each request
+  // to ensure complete isolation. A single instance would cause request ID collisions
+  // when multiple clients connect concurrently.
+  
   try {
-      await transport.handleRequest(req, res, req.body);
+    const server = getServer(); 
+    const transport: StreamableHTTPServerTransport = new StreamableHTTPServerTransport({
+      sessionIdGenerator: undefined,
+    });
+    await server.connect(transport);
+    await transport.handleRequest(req, res, req.body);
+    res.on('close', () => {
+      console.log('Request closed');
+      transport.close();
+      server.close();
+    });
   } catch (error) {
     console.error('Error handling MCP request:', error);
     if (!res.headersSent) {
@@ -365,15 +368,11 @@ app.delete('/mcp', async (req: Request, res: Response) => {
   }));
 });
 
+
 // Start the server
 const PORT = 3000;
-setupServer().then(() => {
-  app.listen(PORT, () => {
-    console.log(`MCP Streamable HTTP Server listening on port ${PORT}`);
-  });
-}).catch(error => {
-  console.error('Failed to set up the server:', error);
-  process.exit(1);
+app.listen(PORT, () => {
+  console.log(`MCP Stateless Streamable HTTP Server listening on port ${PORT}`);
 });
 
 ```
@@ -774,7 +773,6 @@ import express from "express";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
-import { InMemoryEventStore } from "@modelcontextprotocol/sdk/inMemory.js";
 
 const server = new McpServer({
   name: "backwards-compatible-server",

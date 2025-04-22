@@ -15,60 +15,63 @@ import { CallToolResult } from '../../types.js';
  */
 
 // Create an MCP server instance
-const server = new McpServer({
-  name: 'simple-sse-server',
-  version: '1.0.0',
-}, { capabilities: { logging: {} } });
+const getServer = () => {
+  const server = new McpServer({
+    name: 'simple-sse-server',
+    version: '1.0.0',
+  }, { capabilities: { logging: {} } });
 
-server.tool(
-  'start-notification-stream',
-  'Starts sending periodic notifications',
-  {
-    interval: z.number().describe('Interval in milliseconds between notifications').default(1000),
-    count: z.number().describe('Number of notifications to send').default(10),
-  },
-  async ({ interval, count }, { sendNotification }): Promise<CallToolResult> => {
-    const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-    let counter = 0;
+  server.tool(
+    'start-notification-stream',
+    'Starts sending periodic notifications',
+    {
+      interval: z.number().describe('Interval in milliseconds between notifications').default(1000),
+      count: z.number().describe('Number of notifications to send').default(10),
+    },
+    async ({ interval, count }, { sendNotification }): Promise<CallToolResult> => {
+      const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+      let counter = 0;
 
-    // Send the initial notification
-    await sendNotification({
-      method: "notifications/message",
-      params: {
-        level: "info",
-        data: `Starting notification stream with ${count} messages every ${interval}ms`
-      }
-    });
-
-    // Send periodic notifications
-    while (counter < count) {
-      counter++;
-      await sleep(interval);
-
-      try {
-        await sendNotification({
-          method: "notifications/message",
-          params: {
-            level: "info",
-            data: `Notification #${counter} at ${new Date().toISOString()}`
-          }
-        });
-      }
-      catch (error) {
-        console.error("Error sending notification:", error);
-      }
-    }
-
-    return {
-      content: [
-        {
-          type: 'text',
-          text: `Completed sending ${count} notifications every ${interval}ms`,
+      // Send the initial notification
+      await sendNotification({
+        method: "notifications/message",
+        params: {
+          level: "info",
+          data: `Starting notification stream with ${count} messages every ${interval}ms`
         }
-      ],
-    };
-  }
-);
+      });
+
+      // Send periodic notifications
+      while (counter < count) {
+        counter++;
+        await sleep(interval);
+
+        try {
+          await sendNotification({
+            method: "notifications/message",
+            params: {
+              level: "info",
+              data: `Notification #${counter} at ${new Date().toISOString()}`
+            }
+          });
+        }
+        catch (error) {
+          console.error("Error sending notification:", error);
+        }
+      }
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Completed sending ${count} notifications every ${interval}ms`,
+          }
+        ],
+      };
+    }
+  );
+  return server;
+};
 
 const app = express();
 app.use(express.json());
@@ -96,6 +99,7 @@ app.get('/mcp', async (req: Request, res: Response) => {
     };
 
     // Connect the transport to the MCP server
+    const server = getServer();
     await server.connect(transport);
 
     // Start the SSE transport to begin streaming
@@ -163,7 +167,6 @@ process.on('SIGINT', async () => {
       console.error(`Error closing transport for session ${sessionId}:`, error);
     }
   }
-  await server.close();
   console.log('Server shutdown complete');
   process.exit(0);
 });
