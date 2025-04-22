@@ -40,7 +40,7 @@ export interface StreamableHTTPServerTransportOptions {
  * 
  * // Stateless mode - explicitly set session ID to undefined
  * const statelessTransport = new StreamableHTTPServerTransport({
- *   sessionIdGenerator: () => undefined,
+ *   sessionIdGenerator: undefined,
  * });
  * 
  * // Using with pre-parsed request body
