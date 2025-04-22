@@ -404,7 +404,7 @@ describe("tool()", () => {
     ])
   });
 
-  test("should register tool with args schema", async () => {
+  test("should register tool with params", async () => {
     const mcpServer = new McpServer({
       name: "test server",
       version: "1.0",
