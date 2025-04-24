@@ -136,7 +136,7 @@ export class StreamableHTTPServerTransport implements Transport {
   /**
    * Handles an incoming HTTP request, whether GET or POST
    */
-  async handleRequest(req: IncomingMessage, res: ServerResponse, parsedBody?: unknown): Promise<void> {
+  async handleRequest(req: IncomingMessage & { auth?: AuthInfo }, res: ServerResponse, parsedBody?: unknown): Promise<void> {
     if (req.method === "POST") {
       await this.handlePostRequest(req, res, parsedBody);
     } else if (req.method === "GET") {
