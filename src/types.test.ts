@@ -1,4 +1,4 @@
-import { LATEST_PROTOCOL_VERSION, SUPPORTED_PROTOCOL_VERSIONS} from "./types.js";
+import { LATEST_PROTOCOL_VERSION, SUPPORTED_PROTOCOL_VERSIONS } from "./types.js";
 
 describe("Types", () => {
 
