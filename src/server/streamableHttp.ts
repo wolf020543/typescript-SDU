@@ -587,7 +587,7 @@ export class StreamableHTTPServerTransport implements Transport {
       }
     }
 
-    if (isJSONRPCResponse(message)) {
+    if (isJSONRPCResponse(message) || isJSONRPCError(message)) {
       this._requestResponseMap.set(requestId, message);
       const relatedIds = Array.from(this._requestToStreamMapping.entries())
         .filter(([_, streamId]) => this._streamMapping.get(streamId) === response)
