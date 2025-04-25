@@ -93,7 +93,7 @@ export interface StreamableHTTPServerTransportOptions {
  * - State is maintained in-memory (connections, message history)
  * 
  * In stateless mode:
- * - Session ID is only included in initialization responses
+ * - No Session ID is included in any responses
  * - No session validation is performed
  */
 export class StreamableHTTPServerTransport implements Transport {
