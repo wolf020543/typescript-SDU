@@ -222,8 +222,6 @@ test("should connect new client to old, supported server version", async () => {
     server.connect(serverTransport),
   ]);
 
-  // These should work
-  // Connection should succeed with the older version
   expect(client.getServerVersion()).toEqual({
     name: "old server",
     version: "1.0",
@@ -287,8 +285,6 @@ test("should negotiate version when client is old, and newer server supports its
     server.connect(serverTransport),
   ]);
 
-  // These should work
-  // Connection should succeed with the older version
   expect(client.getServerVersion()).toEqual({
     name: "new server",
     version: "1.0",
@@ -347,9 +343,6 @@ test("should throw when client is old, and server doesn't support its version", 
         enforceStrictCapabilities: true,
       },
   );
-
-  let closed = false;
-  clientTransport.onerror = () => {closed = true};
 
   await Promise.all([
     expect(client.connect(clientTransport)).rejects.toThrow(
