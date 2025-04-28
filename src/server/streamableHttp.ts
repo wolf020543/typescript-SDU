@@ -166,7 +166,7 @@ export class StreamableHTTPServerTransport implements Transport {
     }
 
     // If an Mcp-Session-Id is returned by the server during initialization,
-    // clients using the Streamable HTTP transport MUST include it 
+    // clients using the Streamable HTTP transport MUST include it
     // in the Mcp-Session-Id header on all of their subsequent HTTP requests.
     if (!this.validateSession(req, res)) {
       return;
@@ -180,7 +180,7 @@ export class StreamableHTTPServerTransport implements Transport {
       }
     }
 
-    // The server MUST either return Content-Type: text/event-stream in response to this HTTP GET, 
+    // The server MUST either return Content-Type: text/event-stream in response to this HTTP GET,
     // or else return HTTP 405 Method Not Allowed
     const headers: Record<string, string> = {
       "Content-Type": "text/event-stream",
