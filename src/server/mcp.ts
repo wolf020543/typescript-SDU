@@ -663,8 +663,11 @@ export class McpServer {
     // Helper to check if an object is a Zod schema (ZodRawShape)
     const isZodRawShape = (obj: unknown): obj is ZodRawShape => {
       if (typeof obj !== "object" || obj === null) return false;
-      // Check that at least one property is a ZodType instance
-      return Object.values(obj as object).some(v => v instanceof ZodType);
+
+      const isEmptyObject = z.object({}).strict().safeParse(obj).success;
+
+      // Check if object is empty or at least one property is a ZodType instance
+      return isEmptyObject || Object.values(obj as object).some(v => v instanceof ZodType);
     };
 
     let description: string | undefined;
