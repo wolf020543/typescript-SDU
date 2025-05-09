@@ -925,19 +925,18 @@ const EMPTY_OBJECT_JSON_SCHEMA = {
 function isZodRawShape(obj: unknown): obj is ZodRawShape {
   if (typeof obj !== "object" || obj === null) return false;
 
-  const isEmptyObject = z.object({}).strict().safeParse(obj).success;
+  const isEmptyObject = Object.keys(obj).length === 0;
 
   // Check if object is empty or at least one property is a ZodType instance
-  return isEmptyObject || Object.values(obj as object).some(isZodType);
+  // Note: use heuristic check to avoid instanceof failure across different Zod versions
+  return isEmptyObject || Object.values(obj as object).some(isZodTypeLike);
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function isZodType(value: any): value is ZodType {
+function isZodTypeLike(value: unknown): value is ZodType {
   return value !== null &&
     typeof value === 'object' &&
-    typeof value.parse === 'function' &&
-    typeof value.safeParse === 'function' &&
-    typeof value._def === 'object';
+    'parse' in value && typeof value.parse === 'function' &&
+    'safeParse' in value && typeof value.safeParse === 'function';
 }
 
 /**
