@@ -659,16 +659,6 @@ export class McpServer {
     if (this._registeredTools[name]) {
       throw new Error(`Tool ${name} is already registered`);
     }
-    
-    // Helper to check if an object is a Zod schema (ZodRawShape)
-    const isZodRawShape = (obj: unknown): obj is ZodRawShape => {
-      if (typeof obj !== "object" || obj === null) return false;
-
-      const isEmptyObject = z.object({}).strict().safeParse(obj).success;
-
-      // Check if object is empty or at least one property is a ZodType instance
-      return isEmptyObject || Object.values(obj as object).some(v => v instanceof ZodType);
-    };
 
     let description: string | undefined;
     if (typeof rest[0] === "string") {
@@ -930,6 +920,25 @@ export type RegisteredTool = {
 const EMPTY_OBJECT_JSON_SCHEMA = {
   type: "object" as const,
 };
+
+// Helper to check if an object is a Zod schema (ZodRawShape)
+function isZodRawShape(obj: unknown): obj is ZodRawShape {
+  if (typeof obj !== "object" || obj === null) return false;
+
+  const isEmptyObject = z.object({}).strict().safeParse(obj).success;
+
+  // Check if object is empty or at least one property is a ZodType instance
+  return isEmptyObject || Object.values(obj as object).some(isZodType);
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function isZodType(value: any): value is ZodType {
+  return value !== null &&
+    typeof value === 'object' &&
+    typeof value.parse === 'function' &&
+    typeof value.safeParse === 'function' &&
+    typeof value._def === 'object';
+}
 
 /**
  * Additional, optional information for annotating a resource.

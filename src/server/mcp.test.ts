@@ -1,7 +1,6 @@
 import { McpServer } from "./mcp.js";
 import { Client } from "../client/index.js";
 import { InMemoryTransport } from "../inMemory.js";
-import { z } from "zod";
 import {
   ListToolsResultSchema,
   CallToolResultSchema,
@@ -17,6 +16,9 @@ import {
 import { ResourceTemplate } from "./mcp.js";
 import { completable } from "./completable.js";
 import { UriTemplate } from "../shared/uriTemplate.js";
+// Note: deliberately using a different Zod version to the one bundled
+// with the SDK as that's what our users are likely to be doing
+import { z } from "./__tests__/vendor/zod@3.24.4.umd.js";
 
 describe("McpServer", () => {
   test("should expose underlying Server instance", () => {
