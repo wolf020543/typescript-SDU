@@ -12,7 +12,7 @@ describe('McpServer outputSchema support', () => {
   beforeEach(async () => {
     server = new McpServer({ name: 'test', version: '1.0' });
     client = new Client({ name: 'test-client', version: '1.0' });
-    
+
     [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
   });
 
@@ -85,7 +85,7 @@ describe('McpServer outputSchema support', () => {
         'structured-tool',
         { input: z.string() },
         outputSchema,
-        () => ({ 
+        () => ({
           structuredContent: { result: 'test', count: 42 }
         })
       );
@@ -118,7 +118,7 @@ describe('McpServer outputSchema support', () => {
         'structured-tool',
         { input: z.string() },
         outputSchema,
-        () => ({ 
+        () => ({
           structuredContent: { result: 'test' },
           content: [{ type: 'text', text: 'Custom text' }]
         })
@@ -149,7 +149,7 @@ describe('McpServer outputSchema support', () => {
         'broken-tool',
         { input: z.string() },
         outputSchema,
-        () => ({ 
+        () => ({
           content: [{ type: 'text', text: 'No structured content' }]
         })
       );
@@ -169,7 +169,7 @@ describe('McpServer outputSchema support', () => {
       server.tool(
         'broken-tool',
         { input: z.string() },
-        () => ({ 
+        () => ({
           structuredContent: { result: 'test' }
         })
       );

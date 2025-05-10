@@ -442,7 +442,7 @@ export class Client<
         try {
           // Validate the structured content (which is already an object) against the schema
           const validationResult = outputSchema.safeParse(result.structuredContent);
-          
+
           if (!validationResult.success) {
             throw new McpError(
               ErrorCode.InvalidParams,
@@ -485,10 +485,10 @@ export class Client<
     // Cache the tools and their output schemas for future validation
     this._cachedTools.clear();
     this._cachedToolOutputSchemas.clear();
-    
+
     for (const tool of result.tools) {
       this._cachedTools.set(tool.name, tool);
-      
+
       // If the tool has an outputSchema, create and cache the Zod schema
       if (tool.outputSchema) {
         try {

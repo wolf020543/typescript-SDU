@@ -121,12 +121,12 @@ export class McpServer {
                 : EMPTY_OBJECT_JSON_SCHEMA,
               annotations: tool.annotations,
             };
-            
+
             // Only include outputSchema if it's defined
             if (tool.outputSchema) {
               toolDefinition.outputSchema = tool.outputSchema;
             }
-            
+
             return toolDefinition;
           },
         ),
@@ -205,7 +205,7 @@ export class McpServer {
               `Tool ${request.params.name} has outputSchema but returned no structuredContent`,
             );
           }
-          
+
           // For backward compatibility, if structuredContent is provided but no content,
           // automatically serialize the structured content to text
           if (result.structuredContent && !result.content) {
@@ -224,7 +224,7 @@ export class McpServer {
               `Tool ${request.params.name} has no outputSchema but returned structuredContent`,
             );
           }
-          
+
           // Tool must have content if no outputSchema
           if (!result.content && !result.isError) {
             throw new McpError(
@@ -774,11 +774,11 @@ export class McpServer {
         // Check if the next arg is potentially annotations or outputSchema
         if (rest.length > 1 && typeof rest[0] === "object" && rest[0] !== null) {
           const nextArg = rest[0];
-          
+
           // Check if it's a JSON Schema (outputSchema)
           if (typeof nextArg === "object" && "type" in nextArg) {
             outputSchema = rest.shift() as Tool["outputSchema"];
-            
+
             // Check if there's still an annotations object
             if (rest.length > 1 && typeof rest[0] === "object" && rest[0] !== null && !(isZodRawShape(rest[0]))) {
               annotations = rest.shift() as ToolAnnotations;
@@ -1011,7 +1011,7 @@ export class ResourceTemplate {
  * Callback for a tool handler registered with Server.tool().
  *
  * Parameters will include tool arguments, if applicable, as well as other request handler context.
- * 
+ *
  * The callback should return:
  * - `structuredContent` if the tool has an outputSchema defined
  * - `content` if the tool does not have an outputSchema

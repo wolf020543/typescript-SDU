@@ -1,9 +1,8 @@
 import { z, ZodTypeAny } from "zod";
 
-export const LATEST_PROTOCOL_VERSION = "DRAFT-2025-v2";
+export const LATEST_PROTOCOL_VERSION = "2025-03-26";
 export const SUPPORTED_PROTOCOL_VERSIONS = [
   LATEST_PROTOCOL_VERSION,
-  "2025-03-26",
   "2024-11-05",
   "2024-10-07",
 ];
@@ -889,12 +888,12 @@ export const CallToolUnstructuredResultSchema = ResultSchema.extend({
    * If the Tool does not define an outputSchema, this field MUST be present in the result.
    */
   content: ContentListSchema,
-  
+
   /**
    * Structured output must not be provided in an unstructured tool result.
    */
   structuredContent: z.never().optional(),
-  
+
   /**
    * Whether the tool call ended in an error.
    *
@@ -910,7 +909,7 @@ export const CallToolStructuredResultSchema = ResultSchema.extend({
    * If the Tool defines an outputSchema, this field MUST be present in the result, and contain a JSON object that matches the schema.
    */
   structuredContent: z.object({}).passthrough(),
-  
+
   /**
    * A list of content objects that represent the result of the tool call.
    *
@@ -919,7 +918,7 @@ export const CallToolStructuredResultSchema = ResultSchema.extend({
    * Clients that support structured content should ignore this field.
    */
   content: z.optional(ContentListSchema),
-  
+
   /**
    * Whether the tool call ended in an error.
    *

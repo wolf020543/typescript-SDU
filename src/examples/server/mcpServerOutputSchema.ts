@@ -34,7 +34,7 @@ server.tool(
         },
         required: ["celsius", "fahrenheit"]
       },
-      conditions: { 
+      conditions: {
         type: "string",
         enum: ["sunny", "cloudy", "rainy", "stormy", "snowy"]
       },
@@ -57,7 +57,7 @@ server.tool(
     // Simulate weather API call
     const temp_c = Math.round((Math.random() * 35 - 5) * 10) / 10;
     const conditions = ["sunny", "cloudy", "rainy", "stormy", "snowy"][Math.floor(Math.random() * 5)];
-    
+
     return {
       structuredContent: {
         temperature: {
@@ -118,15 +118,15 @@ server.tool(
     const lines = csv_data.trim().split('\n');
     const headers = lines[0].split(delimiter).map(h => h.trim());
     const data = lines.slice(1).map(line => line.split(delimiter).map(cell => cell.trim()));
-    
+
     // Infer data types
     const dataTypes: { [key: string]: string } = {};
     const summary: { [key: string]: unknown } = {};
-    
+
     headers.forEach((header, idx) => {
       const values = data.map(row => row[idx]);
       const numericValues = values.filter(v => !isNaN(Number(v)) && v !== '');
-      
+
       if (numericValues.length === values.length) {
         dataTypes[header] = "number";
         const numbers = numericValues.map(Number);
@@ -140,7 +140,7 @@ server.tool(
         dataTypes[header] = "string";
       }
     });
-    
+
     return {
       structuredContent: {
         row_count: data.length,
@@ -174,7 +174,7 @@ server.tool(
 
 // Tool that can return both structured and unstructured content
 server.tool(
-  "hybrid_tool", 
+  "hybrid_tool",
   "Tool that returns both structured and readable content",
   {
     data: z.array(z.number()).describe("Array of numbers to analyze")
@@ -196,12 +196,12 @@ server.tool(
   async ({ data }) => {
     const mean = data.reduce((a, b) => a + b, 0) / data.length;
     const sorted = [...data].sort((a, b) => a - b);
-    const median = sorted.length % 2 === 0 
+    const median = sorted.length % 2 === 0
       ? (sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2
       : sorted[Math.floor(sorted.length / 2)];
     const variance = data.reduce((acc, val) => acc + Math.pow(val - mean, 2), 0) / data.length;
     const std_dev = Math.sqrt(variance);
-    
+
     return {
       structuredContent: {
         stats: {

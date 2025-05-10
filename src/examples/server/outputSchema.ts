@@ -38,8 +38,8 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
         type: "object",
         properties: {
           bmi: { type: "number", description: "Body Mass Index" },
-          category: { 
-            type: "string", 
+          category: {
+            type: "string",
             enum: ["underweight", "normal", "overweight", "obese"],
             description: "BMI category"
           },
@@ -102,22 +102,22 @@ server.setRequestHandler(CallToolRequestSchema, async (request: CallToolRequest)
   switch (request.params.name) {
     case "calculate_bmi": {
       const { height_cm, weight_kg } = request.params.arguments as { height_cm: number; weight_kg: number };
-      
+
       const height_m = height_cm / 100;
       const bmi = weight_kg / (height_m * height_m);
-      
+
       let category: string;
       if (bmi < 18.5) category = "underweight";
       else if (bmi < 25) category = "normal";
       else if (bmi < 30) category = "overweight";
       else category = "obese";
-      
+
       // Calculate healthy weight range for normal BMI (18.5-24.9)
       const min_healthy_bmi = 18.5;
       const max_healthy_bmi = 24.9;
       const min_healthy_weight = min_healthy_bmi * height_m * height_m;
       const max_healthy_weight = max_healthy_bmi * height_m * height_m;
-      
+
       // Return structured content matching the outputSchema
       return {
         structuredContent: {
@@ -130,31 +130,31 @@ server.setRequestHandler(CallToolRequestSchema, async (request: CallToolRequest)
         }
       };
     }
-    
+
     case "analyze_text": {
       const { text } = request.params.arguments as { text: string };
-      
+
       // Simple text analysis
       const words = text.trim().split(/\s+/);
       const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
       const wordsPerMinute = 200; // Average reading speed
-      
+
       // Very simple sentiment analysis (for demo purposes)
       const positiveWords = ["good", "great", "excellent", "happy", "positive", "amazing"];
       const negativeWords = ["bad", "poor", "terrible", "sad", "negative", "awful"];
-      
+
       let positiveCount = 0;
       let negativeCount = 0;
       words.forEach(word => {
         if (positiveWords.includes(word.toLowerCase())) positiveCount++;
         if (negativeWords.includes(word.toLowerCase())) negativeCount++;
       });
-      
+
       let sentiment: string;
       if (positiveCount > negativeCount) sentiment = "positive";
       else if (negativeCount > positiveCount) sentiment = "negative";
       else sentiment = "neutral";
-      
+
       // Extract key phrases (simple approach - just common bigrams)
       const keyPhrases: string[] = [];
       for (let i = 0; i < words.length - 1; i++) {
@@ -162,7 +162,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request: CallToolRequest)
           keyPhrases.push(`${words[i]} ${words[i + 1]}`);
         }
       }
-      
+
       return {
         structuredContent: {
           word_count: words.length,
@@ -174,21 +174,21 @@ server.setRequestHandler(CallToolRequestSchema, async (request: CallToolRequest)
         }
       };
     }
-    
+
     case "traditional_tool": {
       const { message } = request.params.arguments as { message: string };
-      
+
       // Traditional tool returns content array
       return {
         content: [
-          { 
-            type: "text", 
-            text: `Processed message: ${message.toUpperCase()}` 
+          {
+            type: "text",
+            text: `Processed message: ${message.toUpperCase()}`
           }
         ]
       };
     }
-    
+
     default:
       throw new McpError(
         ErrorCode.MethodNotFound,

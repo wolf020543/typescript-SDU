@@ -860,8 +860,8 @@ describe("tool()", () => {
     expect(result.structuredContent).toBeDefined();
     // For backward compatibility, content is auto-generated from structuredContent
     expect(result.content).toBeDefined();
-    
-    const structuredContent = result.structuredContent as { 
+
+    const structuredContent = result.structuredContent as {
       processedInput: string;
       resultType: string;
       timestamp: string;
