@@ -526,11 +526,11 @@ describe("tool()", () => {
 
     // new api
     mcpServer.tool("test (new api)", {
-      description: "Test description", 
-      callback: async ({}) => ({
+      description: "Test description",
+      callback: async () => ({
         content: [
           {
-            type: "text",
+            type: "text" as const,
             text: "Test response",
           },
         ],
@@ -583,11 +583,11 @@ describe("tool()", () => {
     }));
 
     mcpServer.tool("test (new api)", {
-      annotations: { title: "Test Tool", readOnlyHint: true }, 
-      callback: async ({}) => ({
+      annotations: { title: "Test Tool", readOnlyHint: true },
+      callback: async () => ({
         content: [
           {
-            type: "text",
+            type: "text" as const,
             text: "Test response",
           },
         ],
@@ -761,8 +761,8 @@ describe("tool()", () => {
       description: "A tool with everything but empty params",
       inputSchema: {},
       annotations: { title: "Complete Test Tool with empty params", readOnlyHint: true, openWorldHint: false },
-      callback: async ({}) => ({
-        content: [{ type: "text", text: "Test response" }]
+      callback: async () => ({
+        content: [{ type: "text" as const, text: "Test response" }]
       })
     });
 
