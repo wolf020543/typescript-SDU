@@ -21,6 +21,9 @@ import { Transport } from "../shared/transport.js";
 import { Server } from "../server/index.js";
 import { InMemoryTransport } from "../inMemory.js";
 
+/***
+ * Test: Initialize with Matching Protocol Version
+ */
 test("should initialize with matching protocol version", async () => {
   const clientTransport: Transport = {
     start: jest.fn().mockResolvedValue(undefined),
@@ -76,6 +79,9 @@ test("should initialize with matching protocol version", async () => {
   expect(client.getInstructions()).toEqual("test instructions");
 });
 
+/***
+ * Test: Initialize with Supported Older Protocol Version
+ */
 test("should initialize with supported older protocol version", async () => {
   const OLD_VERSION = SUPPORTED_PROTOCOL_VERSIONS[1];
   const clientTransport: Transport = {
@@ -124,6 +130,9 @@ test("should initialize with supported older protocol version", async () => {
   expect(client.getInstructions()).toBeUndefined();
 });
 
+/***
+ * Test: Reject Unsupported Protocol Version
+ */
 test("should reject unsupported protocol version", async () => {
   const clientTransport: Transport = {
     start: jest.fn().mockResolvedValue(undefined),
@@ -166,6 +175,9 @@ test("should reject unsupported protocol version", async () => {
   expect(clientTransport.close).toHaveBeenCalled();
 });
 
+/***
+ * Test: Connect New Client to Old Supported Server Version
+ */
 test("should connect new client to old, supported server version", async () => {
   const OLD_VERSION = SUPPORTED_PROTOCOL_VERSIONS[1];
   const server = new Server(
@@ -229,6 +241,9 @@ test("should connect new client to old, supported server version", async () => {
   });
 });
 
+/***
+ * Test: Version Negotiation with Old Client and Newer Server
+ */
 test("should negotiate version when client is old, and newer server supports its version", async () => {
   const OLD_VERSION = SUPPORTED_PROTOCOL_VERSIONS[1];
   const server = new Server(
@@ -292,6 +307,9 @@ test("should negotiate version when client is old, and newer server supports its
   });
 });
 
+/***
+ * Test: Throw when Old Client and Server Version Mismatch
+ */
 test("should throw when client is old, and server doesn't support its version", async () => {
   const OLD_VERSION = SUPPORTED_PROTOCOL_VERSIONS[1];
   const FUTURE_VERSION = "FUTURE_VERSION";
@@ -354,6 +372,9 @@ test("should throw when client is old, and server doesn't support its version", 
 
 });
 
+/***
+ * Test: Respect Server Capabilities
+ */
 test("should respect server capabilities", async () => {
   const server = new Server(
     {
@@ -434,6 +455,9 @@ test("should respect server capabilities", async () => {
   ).rejects.toThrow("Server does not support completions");
 });
 
+/***
+ * Test: Respect Client Notification Capabilities
+ */
 test("should respect client notification capabilities", async () => {
   const server = new Server(
     {
@@ -490,6 +514,9 @@ test("should respect client notification capabilities", async () => {
   );
 });
 
+/***
+ * Test: Respect Server Notification Capabilities
+ */
 test("should respect server notification capabilities", async () => {
   const server = new Server(
     {
@@ -536,6 +563,9 @@ test("should respect server notification capabilities", async () => {
   );
 });
 
+/***
+ * Test: Only Allow setRequestHandler for Declared Capabilities
+ */
 test("should only allow setRequestHandler for declared capabilities", () => {
   const client = new Client(
     {
@@ -567,9 +597,10 @@ test("should only allow setRequestHandler for declared capabilities", () => {
   }).toThrow("Client does not support roots capability");
 });
 
-/*
-  Test that custom request/notification/result schemas can be used with the Client class.
-  */
+/***
+ * Test: Type Checking
+ * Test that custom request/notification/result schemas can be used with the Client class.
+ */
 test("should typecheck", () => {
   const GetWeatherRequestSchema = RequestSchema.extend({
     method: z.literal("weather/get"),
@@ -646,6 +677,9 @@ test("should typecheck", () => {
     });
 });
 
+/***
+ * Test: Handle Client Cancelling a Request
+ */
 test("should handle client cancelling a request", async () => {
   const server = new Server(
     {
@@ -701,6 +735,9 @@ test("should handle client cancelling a request", async () => {
   await expect(listResourcesPromise).rejects.toBe("Cancelled by test");
 });
 
+/***
+ * Test: Handle Request Timeout
+ */
 test("should handle request timeout", async () => {
   const server = new Server(
     {
@@ -757,6 +794,9 @@ test("should handle request timeout", async () => {
 });
 
 describe('outputSchema validation', () => {
+  /***
+   * Test: Validate structuredContent Against outputSchema
+   */
   test('should validate structuredContent against outputSchema', async () => {
     const server = new Server({
       name: 'test-server',
@@ -828,6 +868,9 @@ describe('outputSchema validation', () => {
     expect(result.structuredContent).toEqual({ result: 'success', count: 42 });
   });
 
+  /***
+   * Test: Throw Error when structuredContent Does Not Match Schema
+   */
   test('should throw error when structuredContent does not match schema', async () => {
     const server = new Server({
       name: 'test-server',
@@ -901,6 +944,9 @@ describe('outputSchema validation', () => {
     );
   });
 
+  /***
+   * Test: Throw Error when Tool with outputSchema Returns No structuredContent
+   */
   test('should throw error when tool with outputSchema returns no structuredContent', async () => {
     const server = new Server({
       name: 'test-server',
@@ -972,6 +1018,9 @@ describe('outputSchema validation', () => {
     );
   });
 
+  /***
+   * Test: Handle Tools Without outputSchema Normally
+   */
   test('should handle tools without outputSchema normally', async () => {
     const server = new Server({
       name: 'test-server',
@@ -1036,6 +1085,9 @@ describe('outputSchema validation', () => {
     expect(result.content).toEqual([{ type: 'text', text: 'Normal response' }]);
   });
 
+  /***
+   * Test: Handle Complex JSON Schema Validation
+   */
   test('should handle complex JSON schema validation', async () => {
     const server = new Server({
       name: 'test-server',
@@ -1131,6 +1183,9 @@ describe('outputSchema validation', () => {
     expect(structuredContent.age).toBe(30);
   });
 
+  /***
+   * Test: Fail Validation with Additional Properties When Not Allowed
+   */
   test('should fail validation with additional properties when not allowed', async () => {
     const server = new Server({
       name: 'test-server',
@@ -1206,6 +1261,9 @@ describe('outputSchema validation', () => {
     );
   });
 
+  /***
+   * Test: Throw Error when Tool Without outputSchema Returns structuredContent
+   */
   test('should throw error when tool without outputSchema returns structuredContent', async () => {
     const server = new Server({
       name: 'test-server',

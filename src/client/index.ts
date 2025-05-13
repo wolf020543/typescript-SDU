@@ -44,7 +44,7 @@ import {
   McpError,
 } from "../types.js";
 import { z } from "zod";
-import { parseSchema } from "json-schema-to-zod";
+import { JsonSchema, parseSchema } from "json-schema-to-zod";
 
 export type ClientOptions = ProtocolOptions & {
   /**
@@ -91,7 +91,6 @@ export class Client<
   private _serverVersion?: Implementation;
   private _capabilities: ClientCapabilities;
   private _instructions?: string;
-  private _cachedTools: Map<string, Tool> = new Map();
   private _cachedToolOutputSchemas: Map<string, z.ZodTypeAny> = new Map();
 
   /**
@@ -427,7 +426,7 @@ export class Client<
     );
 
     // Check if the tool has an outputSchema
-    const outputSchema = this._cachedToolOutputSchemas.get(params.name);
+    const outputSchema = this.getToolOutputSchema(params.name);
     if (outputSchema) {
       // If tool has outputSchema, it MUST return structuredContent (unless it's an error)
       if (!result.structuredContent && !result.isError) {
@@ -472,6 +471,30 @@ export class Client<
     return result;
   }
 
+  private cacheToolOutputSchemas(tools: Tool[]) {
+    this._cachedToolOutputSchemas.clear();
+
+    for (const tool of tools) {
+      // If the tool has an outputSchema, create and cache the Zod schema
+      if (tool.outputSchema) {
+        try {
+          const zodSchemaCode = parseSchema(tool.outputSchema as JsonSchema);
+          // The library returns a string of Zod code, we need to evaluate it
+          // Using Function constructor to safely evaluate the Zod schema
+          const createSchema = new Function('z', `return ${zodSchemaCode}`);
+          const zodSchema = createSchema(z);
+          this._cachedToolOutputSchemas.set(tool.name, zodSchema);
+        } catch (error) {
+          console.warn(`Failed to create Zod schema for tool ${tool.name}: ${error}`);
+        }
+      }
+    }
+  }
+
+  private getToolOutputSchema(toolName: string): z.ZodTypeAny | undefined {
+    return this._cachedToolOutputSchemas.get(toolName);
+  }
+
   async listTools(
     params?: ListToolsRequest["params"],
     options?: RequestOptions,
@@ -483,26 +506,7 @@ export class Client<
     );
 
     // Cache the tools and their output schemas for future validation
-    this._cachedTools.clear();
-    this._cachedToolOutputSchemas.clear();
-
-    for (const tool of result.tools) {
-      this._cachedTools.set(tool.name, tool);
-
-      // If the tool has an outputSchema, create and cache the Zod schema
-      if (tool.outputSchema) {
-        try {
-          const zodSchemaCode = parseSchema(tool.outputSchema);
-          // The library returns a string of Zod code, we need to evaluate it
-          // Using Function constructor to safely evaluate the Zod schema
-          const createSchema = new Function('z', `return ${zodSchemaCode}`);
-          const zodSchema = createSchema(z);
-          this._cachedToolOutputSchemas.set(tool.name, zodSchema);
-        } catch (error) {
-          console.warn(`Failed to create Zod schema for tool ${tool.name}: ${error}`);
-        }
-      }
-    }
+    this.cacheToolOutputSchemas(result.tools);
 
     return result;
   }

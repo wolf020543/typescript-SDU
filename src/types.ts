@@ -838,7 +838,14 @@ export const ToolSchema = z
      * If set, a CallToolResult for this Tool MUST contain a structuredContent field whose contents validate against this schema.
      * If not set, a CallToolResult for this Tool MUST NOT contain a structuredContent field and MUST contain a content field.
      */
-    outputSchema: z.optional(z.object({}).passthrough()),
+    outputSchema: z.optional(
+        z.object({
+          type: z.literal("object"),
+          properties: z.optional(z.object({}).passthrough()),
+          required: z.optional(z.array(z.string())),
+        })
+        .passthrough()
+      ),
     /**
      * Optional additional tool information.
      */

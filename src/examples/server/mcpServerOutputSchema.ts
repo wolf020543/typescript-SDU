@@ -192,7 +192,7 @@ server.tool(
       }
     },
     required: ["stats"]
-  },
+  },  
   async ({ data }) => {
     const mean = data.reduce((a, b) => a + b, 0) / data.length;
     const sorted = [...data].sort((a, b) => a - b);

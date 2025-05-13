@@ -13,12 +13,16 @@ import {
   CompleteResultSchema,
   LoggingMessageNotificationSchema,
   Notification,
+  TextContent,
 } from "../types.js";
 import { ResourceTemplate } from "./mcp.js";
 import { completable } from "./completable.js";
 import { UriTemplate } from "../shared/uriTemplate.js";
 
 describe("McpServer", () => {
+  /***
+   * Test: Basic Server Instance
+   */
   test("should expose underlying Server instance", () => {
     const mcpServer = new McpServer({
       name: "test server",
@@ -28,6 +32,9 @@ describe("McpServer", () => {
     expect(mcpServer.server).toBeDefined();
   });
 
+  /***
+   * Test: Notification Sending via Server
+   */
   test("should allow sending notifications via Server", async () => {
     const mcpServer = new McpServer(
       {
@@ -75,6 +82,9 @@ describe("McpServer", () => {
 });
 
 describe("ResourceTemplate", () => {
+  /***
+   * Test: ResourceTemplate Creation with String Pattern
+   */
   test("should create ResourceTemplate with string pattern", () => {
     const template = new ResourceTemplate("test://{category}/{id}", {
       list: undefined,
@@ -83,6 +93,9 @@ describe("ResourceTemplate", () => {
     expect(template.listCallback).toBeUndefined();
   });
 
+  /***
+   * Test: ResourceTemplate Creation with UriTemplate Instance
+   */
   test("should create ResourceTemplate with UriTemplate", () => {
     const uriTemplate = new UriTemplate("test://{category}/{id}");
     const template = new ResourceTemplate(uriTemplate, { list: undefined });
@@ -90,6 +103,9 @@ describe("ResourceTemplate", () => {
     expect(template.listCallback).toBeUndefined();
   });
 
+  /***
+   * Test: ResourceTemplate with List Callback
+   */
   test("should create ResourceTemplate with list callback", async () => {
     const list = jest.fn().mockResolvedValue({
       resources: [{ name: "Test", uri: "test://example" }],
@@ -111,6 +127,9 @@ describe("ResourceTemplate", () => {
 });
 
 describe("tool()", () => {
+  /***
+   * Test: Zero-Argument Tool Registration
+   */
   test("should register zero-argument tool", async () => {
     const mcpServer = new McpServer({
       name: "test server",
@@ -178,6 +197,9 @@ describe("tool()", () => {
     ])
   });
 
+  /***
+   * Test: Updating Existing Tool
+   */
   test("should update existing tool", async () => {
     const mcpServer = new McpServer({
       name: "test server",
@@ -244,6 +266,9 @@ describe("tool()", () => {
     expect(notifications).toHaveLength(0)
   });
 
+  /***
+   * Test: Updating Tool with Schema
+   */
   test("should update tool with schema", async () => {
     const mcpServer = new McpServer({
       name: "test server",
@@ -339,6 +364,9 @@ describe("tool()", () => {
     expect(notifications).toHaveLength(0)
   });
 
+  /***
+   * Test: Tool List Changed Notifications
+   */
   test("should send tool list changed notifications when connected", async () => {
     const mcpServer = new McpServer({
       name: "test server",
@@ -404,6 +432,9 @@ describe("tool()", () => {
     ])
   });
 
+  /***
+   * Test: Tool Registration with Parameters
+   */
   test("should register tool with params", async () => {
     const mcpServer = new McpServer({
       name: "test server",
@@ -414,6 +445,7 @@ describe("tool()", () => {
       version: "1.0",
     });
 
+    // old api
     mcpServer.tool(
       "test",
       {
@@ -430,6 +462,17 @@ describe("tool()", () => {
       }),
     );
 
+    // new api
+    mcpServer.tool(
+      "test (new api)",
+      { 
+        inputSchema: { name: z.string(), value: z.number() }, 
+        callback: async ({ name, value }) => ({
+          content: [{ type: "text", text: `${name}: ${value}` }],
+        }),
+      }
+    );
+
     const [clientTransport, serverTransport] =
       InMemoryTransport.createLinkedPair();
 
@@ -445,7 +488,7 @@ describe("tool()", () => {
       ListToolsResultSchema,
     );
 
-    expect(result.tools).toHaveLength(1);
+    expect(result.tools).toHaveLength(2);
     expect(result.tools[0].name).toBe("test");
     expect(result.tools[0].inputSchema).toMatchObject({
       type: "object",
@@ -454,8 +497,13 @@ describe("tool()", () => {
         value: { type: "number" },
       },
     });
+    expect(result.tools[1].name).toBe("test (new api)");
+    expect(result.tools[1].inputSchema).toEqual(result.tools[0].inputSchema);
   });
 
+  /***
+   * Test: Tool Registration with Description
+   */
   test("should register tool with description", async () => {
     const mcpServer = new McpServer({
       name: "test server",
@@ -466,6 +514,7 @@ describe("tool()", () => {
       version: "1.0",
     });
 
+    // old api
     mcpServer.tool("test", "Test description", async () => ({
       content: [
         {
@@ -474,6 +523,20 @@ describe("tool()", () => {
         },
       ],
     }));
+
+    // new api
+    mcpServer.tool("test (new api)", {
+      description: "Test description", 
+      callback: async ({}) => ({
+        content: [
+          {
+            type: "text",
+            text: "Test response",
+          },
+        ],
+      })
+    });
+
 
     const [clientTransport, serverTransport] =
       InMemoryTransport.createLinkedPair();
@@ -490,11 +553,16 @@ describe("tool()", () => {
       ListToolsResultSchema,
     );
 
-    expect(result.tools).toHaveLength(1);
+    expect(result.tools).toHaveLength(2);
     expect(result.tools[0].name).toBe("test");
     expect(result.tools[0].description).toBe("Test description");
+    expect(result.tools[1].name).toBe("test (new api)");
+    expect(result.tools[1].description).toBe("Test description");
   });
-  
+
+  /***
+   * Test: Tool Registration with Annotations
+   */
   test("should register tool with annotations", async () => {
     const mcpServer = new McpServer({
       name: "test server",
@@ -514,6 +582,18 @@ describe("tool()", () => {
       ],
     }));
 
+    mcpServer.tool("test (new api)", {
+      annotations: { title: "Test Tool", readOnlyHint: true }, 
+      callback: async ({}) => ({
+        content: [
+          {
+            type: "text",
+            text: "Test response",
+          },
+        ],
+      }),
+    });
+
     const [clientTransport, serverTransport] =
       InMemoryTransport.createLinkedPair();
 
@@ -529,11 +609,16 @@ describe("tool()", () => {
       ListToolsResultSchema,
     );
 
-    expect(result.tools).toHaveLength(1);
+    expect(result.tools).toHaveLength(2);
     expect(result.tools[0].name).toBe("test");
     expect(result.tools[0].annotations).toEqual({ title: "Test Tool", readOnlyHint: true });
+    expect(result.tools[1].name).toBe("test (new api)");
+    expect(result.tools[1].annotations).toEqual({ title: "Test Tool", readOnlyHint: true });
   });
-  
+
+  /***
+   * Test: Tool Registration with Parameters and Annotations
+   */
   test("should register tool with params and annotations", async () => {
     const mcpServer = new McpServer({
       name: "test server",
@@ -553,6 +638,14 @@ describe("tool()", () => {
       })
     );
 
+    mcpServer.tool("test (new api)", {
+      inputSchema: { name: z.string() },
+      annotations: { title: "Test Tool", readOnlyHint: true },
+      callback: async ({ name }) => ({
+        content: [{ type: "text", text: `Hello, ${name}!` }]
+      })
+    });
+
     const [clientTransport, serverTransport] =
       InMemoryTransport.createLinkedPair();
 
@@ -566,15 +659,21 @@ describe("tool()", () => {
       ListToolsResultSchema,
     );
 
-    expect(result.tools).toHaveLength(1);
+    expect(result.tools).toHaveLength(2);
     expect(result.tools[0].name).toBe("test");
     expect(result.tools[0].inputSchema).toMatchObject({
       type: "object",
       properties: { name: { type: "string" } }
     });
     expect(result.tools[0].annotations).toEqual({ title: "Test Tool", readOnlyHint: true });
+    expect(result.tools[1].name).toBe("test (new api)");
+    expect(result.tools[1].inputSchema).toEqual(result.tools[0].inputSchema);
+    expect(result.tools[1].annotations).toEqual(result.tools[0].annotations);
   });
-  
+
+  /***
+   * Test: Tool Registration with Description, Parameters, and Annotations
+   */
   test("should register tool with description, params, and annotations", async () => {
     const mcpServer = new McpServer({
       name: "test server",
@@ -595,6 +694,15 @@ describe("tool()", () => {
       })
     );
 
+    mcpServer.tool("test (new api)", {
+      description: "A tool with everything",
+      inputSchema: { name: z.string() },
+      annotations: { title: "Complete Test Tool", readOnlyHint: true, openWorldHint: false },
+      callback: async ({ name }) => ({
+        content: [{ type: "text", text: `Hello, ${name}!` }]
+      })
+    });
+
     const [clientTransport, serverTransport] =
       InMemoryTransport.createLinkedPair();
 
@@ -608,7 +716,7 @@ describe("tool()", () => {
       ListToolsResultSchema,
     );
 
-    expect(result.tools).toHaveLength(1);
+    expect(result.tools).toHaveLength(2);
     expect(result.tools[0].name).toBe("test");
     expect(result.tools[0].description).toBe("A tool with everything");
     expect(result.tools[0].inputSchema).toMatchObject({
@@ -620,8 +728,15 @@ describe("tool()", () => {
       readOnlyHint: true,
       openWorldHint: false
     });
+    expect(result.tools[1].name).toBe("test (new api)");
+    expect(result.tools[1].description).toBe("A tool with everything");
+    expect(result.tools[1].inputSchema).toEqual(result.tools[0].inputSchema);
+    expect(result.tools[1].annotations).toEqual(result.tools[0].annotations);
   });
 
+  /***
+   * Test: Tool Registration with Description, Empty Parameters, and Annotations
+   */
   test("should register tool with description, empty params, and annotations", async () => {
     const mcpServer = new McpServer({
       name: "test server",
@@ -642,6 +757,15 @@ describe("tool()", () => {
       })
     );
 
+    mcpServer.tool("test (new api)", {
+      description: "A tool with everything but empty params",
+      inputSchema: {},
+      annotations: { title: "Complete Test Tool with empty params", readOnlyHint: true, openWorldHint: false },
+      callback: async ({}) => ({
+        content: [{ type: "text", text: "Test response" }]
+      })
+    });
+
     const [clientTransport, serverTransport] =
       InMemoryTransport.createLinkedPair();
 
@@ -655,7 +779,7 @@ describe("tool()", () => {
       ListToolsResultSchema,
     );
 
-    expect(result.tools).toHaveLength(1);
+    expect(result.tools).toHaveLength(2);
     expect(result.tools[0].name).toBe("test");
     expect(result.tools[0].description).toBe("A tool with everything but empty params");
     expect(result.tools[0].inputSchema).toMatchObject({
@@ -667,8 +791,15 @@ describe("tool()", () => {
       readOnlyHint: true,
       openWorldHint: false
     });
+    expect(result.tools[1].name).toBe("test (new api)");
+    expect(result.tools[1].description).toBe("A tool with everything but empty params");
+    expect(result.tools[1].inputSchema).toEqual(result.tools[0].inputSchema);
+    expect(result.tools[1].annotations).toEqual(result.tools[0].annotations);
   });
 
+  /***
+   * Test: Tool Argument Validation
+   */
   test("should validate tool args", async () => {
     const mcpServer = new McpServer({
       name: "test server",
@@ -703,6 +834,21 @@ describe("tool()", () => {
       }),
     );
 
+    mcpServer.tool("test (new api)", {
+      inputSchema: {
+        name: z.string(),
+        value: z.number(),
+      },
+      callback: async ({ name, value }) => ({
+        content: [
+          {
+            type: "text",
+            text: `${name}: ${value}`,
+          },
+        ],
+      }),
+    });
+
     const [clientTransport, serverTransport] =
       InMemoryTransport.createLinkedPair();
 
@@ -726,8 +872,27 @@ describe("tool()", () => {
         CallToolResultSchema,
       ),
     ).rejects.toThrow(/Invalid arguments/);
+
+    await expect(
+      client.request(
+        {
+          method: "tools/call",
+          params: {
+            name: "test (new api)",
+            arguments: {
+              name: "test",
+              value: "not a number",
+            },
+          },
+        },
+        CallToolResultSchema,
+      ),
+    ).rejects.toThrow(/Invalid arguments/);
   });
 
+  /***
+   * Test: Preventing Duplicate Tool Registration
+   */
   test("should prevent duplicate tool registration", () => {
     const mcpServer = new McpServer({
       name: "test server",
@@ -755,6 +920,9 @@ describe("tool()", () => {
     }).toThrow(/already registered/);
   });
 
+  /***
+   * Test: Multiple Tool Registration
+   */
   test("should allow registering multiple tools", () => {
     const mcpServer = new McpServer({
       name: "test server",
@@ -768,6 +936,9 @@ describe("tool()", () => {
     mcpServer.tool("tool2", () => ({ content: [] }));
   });
 
+  /***
+   * Test: Tool with Output Schema and Structured Content
+   */
   test("should support tool with outputSchema and structuredContent", async () => {
     const mcpServer = new McpServer({
       name: "test server",
@@ -787,34 +958,27 @@ describe("tool()", () => {
     );
 
     // Register a tool with outputSchema
-    const registeredTool = mcpServer.tool(
+    mcpServer.tool(
       "test",
-      "Test tool with structured output",
       {
-        input: z.string(),
+        description: "Test tool with structured output",
+        inputSchema: {
+          input: z.string(),
+        },
+        outputSchema: {
+            processedInput: z.string(),
+            resultType: z.string(),
+            timestamp: z.string()
+        },
+        callback: async ({ input }) => ({
+          structuredContent: {
+            processedInput: input,
+            resultType: "structured",
+            timestamp: "2023-01-01T00:00:00Z"
+          },
+        }),
       },
-      async ({ input }) => ({
-        // When outputSchema is defined, return structuredContent instead of content
-        structuredContent: {
-          processedInput: input,
-          resultType: "structured",
-          timestamp: "2023-01-01T00:00:00Z"
-        },
-      }),
     );
-
-    // Update the tool to add outputSchema
-    registeredTool.update({
-      outputSchema: {
-        type: "object",
-        properties: {
-          processedInput: { type: "string" },
-          resultType: { type: "string" },
-          timestamp: { type: "string", format: "date-time" }
-        },
-        required: ["processedInput", "resultType", "timestamp"]
-      }
-    });
 
     const [clientTransport, serverTransport] =
       InMemoryTransport.createLinkedPair();
@@ -833,17 +997,17 @@ describe("tool()", () => {
     );
 
     expect(listResult.tools).toHaveLength(1);
-    expect(listResult.tools[0].outputSchema).toEqual({
+    expect(listResult.tools[0].outputSchema).toMatchObject({
       type: "object",
       properties: {
         processedInput: { type: "string" },
         resultType: { type: "string" },
-        timestamp: { type: "string", format: "date-time" }
+        timestamp: { type: "string" }
       },
       required: ["processedInput", "resultType", "timestamp"]
     });
 
-    // Call the tool and verify it returns structuredContent
+    // Call the tool and verify it returns valid structuredContent
     const result = await client.request(
       {
         method: "tools/call",
@@ -858,9 +1022,6 @@ describe("tool()", () => {
     );
 
     expect(result.structuredContent).toBeDefined();
-    // For backward compatibility, content is auto-generated from structuredContent
-    expect(result.content).toBeDefined();
-
     const structuredContent = result.structuredContent as {
       processedInput: string;
       resultType: string;
@@ -869,8 +1030,85 @@ describe("tool()", () => {
     expect(structuredContent.processedInput).toBe("hello");
     expect(structuredContent.resultType).toBe("structured");
     expect(structuredContent.timestamp).toBe("2023-01-01T00:00:00Z");
+
+    // For backward compatibility, content is auto-generated from structuredContent
+    expect(result.content).toBeDefined();
+    expect(result.content!).toHaveLength(1);
+    expect(result.content![0]).toMatchObject({ type: "text" });
+    const textContent = result.content![0] as TextContent;
+    expect(JSON.parse(textContent.text)).toEqual(result.structuredContent);
   });
 
+  /***
+   * Test: Schema Validation Failure for Invalid Structured Content
+   */
+  test("should fail schema validation when tool returns invalid structuredContent", async () => {
+    const mcpServer = new McpServer({
+      name: "test server",
+      version: "1.0",
+    });
+
+    const client = new Client(
+      {
+        name: "test client",
+        version: "1.0",
+      },
+      {
+        capabilities: {
+          tools: {},
+        },
+      },
+    );
+
+    // Register a tool with outputSchema that returns invalid data
+    mcpServer.tool(
+      "test",
+      {
+        description: "Test tool with invalid structured output",
+        inputSchema: {
+          input: z.string(),
+        },
+        outputSchema: {
+          processedInput: z.string(),
+          resultType: z.string(),
+          timestamp: z.string()
+        },
+        callback: async ({ input }) => ({
+          structuredContent: {
+            processedInput: input,
+            resultType: "structured",
+            // Missing required 'timestamp' field
+            someExtraField: "unexpected" // Extra field not in schema
+          },
+        }),
+      },
+    );
+
+    const [clientTransport, serverTransport] =
+      InMemoryTransport.createLinkedPair();
+
+    await Promise.all([
+      client.connect(clientTransport),
+      mcpServer.server.connect(serverTransport),
+    ]);
+
+    // First call listTools to cache the outputSchema in the client
+    await client.listTools();
+
+    // Call the tool and expect it to throw a validation error
+    await expect(
+      client.callTool({
+        name: "test",
+        arguments: {
+          input: "hello",
+        },
+      }),
+    ).rejects.toThrow(/Structured content does not match the tool's output schema/);
+  });
+
+  /***
+   * Test: Pass Session ID to Tool Callback
+   */
   test("should pass sessionId to tool callback via RequestHandlerExtra", async () => {
     const mcpServer = new McpServer({
       name: "test server",
@@ -924,6 +1162,9 @@ describe("tool()", () => {
     expect(receivedSessionId).toBe("test-session-123");
   });
 
+  /***
+   * Test: Pass Request ID to Tool Callback
+   */
   test("should pass requestId to tool callback via RequestHandlerExtra", async () => {
     const mcpServer = new McpServer({
       name: "test server",
@@ -977,6 +1218,9 @@ describe("tool()", () => {
     expect(result.content && result.content[0].text).toContain("Received request ID:");
   });
 
+  /***
+   * Test: Send Notification within Tool Call
+   */
   test("should provide sendNotification within tool call", async () => {
     const mcpServer = new McpServer(
       {
@@ -1034,6 +1278,9 @@ describe("tool()", () => {
     expect(receivedLogMessage).toBe(loggingMessage);
   });
 
+  /***
+   * Test: Client to Server Tool Call
+   */
   test("should allow client to call server tools", async () => {
     const mcpServer = new McpServer({
       name: "test server",
@@ -1097,6 +1344,9 @@ describe("tool()", () => {
     ]);
   });
 
+  /***
+   * Test: Graceful Tool Error Handling
+   */
   test("should handle server tool errors gracefully", async () => {
     const mcpServer = new McpServer({
       name: "test server",
@@ -1146,6 +1396,9 @@ describe("tool()", () => {
     ]);
   });
 
+  /***
+   * Test: McpError for Invalid Tool Name
+   */
   test("should throw McpError for invalid tool name", async () => {
     const mcpServer = new McpServer({
       name: "test server",
@@ -1196,6 +1449,9 @@ describe("tool()", () => {
 });
 
 describe("resource()", () => {
+  /***
+   * Test: Resource Registration with URI and Read Callback
+   */
   test("should register resource with uri and readCallback", async () => {
     const mcpServer = new McpServer({
       name: "test server",
@@ -1235,6 +1491,9 @@ describe("resource()", () => {
     expect(result.resources[0].uri).toBe("test://resource");
   });
 
+  /***
+   * Test: Update Resource with URI
+   */
   test("should update resource with uri", async () => {
     const mcpServer = new McpServer({
       name: "test server",
@@ -1297,6 +1556,9 @@ describe("resource()", () => {
     expect(notifications).toHaveLength(0);
   });
 
+  /***
+   * Test: Update Resource Template
+   */
   test("should update resource template", async () => {
     const mcpServer = new McpServer({
       name: "test server",
@@ -1363,6 +1625,9 @@ describe("resource()", () => {
     expect(notifications).toHaveLength(0);
   });
 
+  /***
+   * Test: Resource List Changed Notification
+   */
   test("should send resource list changed notification when connected", async () => {
     const mcpServer = new McpServer({
       name: "test server",
@@ -1416,6 +1681,9 @@ describe("resource()", () => {
     ]);
   });
 
+  /***
+   * Test: Remove Resource and Send Notification
+   */
   test("should remove resource and send notification when connected", async () => {
     const mcpServer = new McpServer({
       name: "test server",
@@ -1477,6 +1745,9 @@ describe("resource()", () => {
     expect(result.resources[0].uri).toBe("test://resource2");
   });
 
+  /***
+   * Test: Remove Resource Template and Send Notification
+   */
   test("should remove resource template and send notification when connected", async () => {
     const mcpServer = new McpServer({
       name: "test server",
@@ -1541,6 +1812,9 @@ describe("resource()", () => {
     expect(result2.resourceTemplates).toHaveLength(0);
   });
 
+  /***
+   * Test: Resource Registration with Metadata
+   */
   test("should register resource with metadata", async () => {
     const mcpServer = new McpServer({
       name: "test server",
@@ -1588,6 +1862,9 @@ describe("resource()", () => {
     expect(result.resources[0].mimeType).toBe("text/plain");
   });
 
+  /***
+   * Test: Resource Template Registration
+   */
   test("should register resource template", async () => {
     const mcpServer = new McpServer({
       name: "test server",
@@ -1633,6 +1910,9 @@ describe("resource()", () => {
     );
   });
 
+  /***
+   * Test: Resource Template with List Callback
+   */
   test("should register resource template with listCallback", async () => {
     const mcpServer = new McpServer({
       name: "test server",
@@ -1691,6 +1971,9 @@ describe("resource()", () => {
     expect(result.resources[1].uri).toBe("test://resource/2");
   });
 
+  /***
+   * Test: Template Variables to Read Callback
+   */
   test("should pass template variables to readCallback", async () => {
     const mcpServer = new McpServer({
       name: "test server",
@@ -1737,6 +2020,9 @@ describe("resource()", () => {
     expect(result.contents[0].text).toBe("Category: books, ID: 123");
   });
 
+  /***
+   * Test: Preventing Duplicate Resource Registration
+   */
   test("should prevent duplicate resource registration", () => {
     const mcpServer = new McpServer({
       name: "test server",
@@ -1764,6 +2050,9 @@ describe("resource()", () => {
     }).toThrow(/already registered/);
   });
 
+  /***
+   * Test: Multiple Resource Registration
+   */
   test("should allow registering multiple resources", () => {
     const mcpServer = new McpServer({
       name: "test server",
@@ -1791,6 +2080,9 @@ describe("resource()", () => {
     }));
   });
 
+  /***
+   * Test: Preventing Duplicate Resource Template Registration
+   */
   test("should prevent duplicate resource template registration", () => {
     const mcpServer = new McpServer({
       name: "test server",
@@ -1826,6 +2118,9 @@ describe("resource()", () => {
     }).toThrow(/already registered/);
   });
 
+  /***
+   * Test: Graceful Resource Read Error Handling
+   */
   test("should handle resource read errors gracefully", async () => {
     const mcpServer = new McpServer({
       name: "test server",
@@ -1861,6 +2156,9 @@ describe("resource()", () => {
     ).rejects.toThrow(/Resource read failed/);
   });
 
+  /***
+   * Test: McpError for Invalid Resource URI
+   */
   test("should throw McpError for invalid resource URI", async () => {
     const mcpServer = new McpServer({
       name: "test server",
@@ -1901,6 +2199,9 @@ describe("resource()", () => {
     ).rejects.toThrow(/Resource test:\/\/nonexistent not found/);
   });
 
+  /***
+   * Test: Resource Template Parameter Completion
+   */
   test("should support completion of resource template parameters", async () => {
     const mcpServer = new McpServer({
       name: "test server",
@@ -1966,6 +2267,9 @@ describe("resource()", () => {
     expect(result.completion.total).toBe(3);
   });
 
+  /***
+   * Test: Filtered Resource Template Parameter Completion
+   */
   test("should support filtered completion of resource template parameters", async () => {
     const mcpServer = new McpServer({
       name: "test server",
@@ -2034,6 +2338,9 @@ describe("resource()", () => {
     expect(result.completion.total).toBe(2);
   });
 
+  /***
+   * Test: Pass Request ID to Resource Callback
+   */
   test("should pass requestId to resource callback via RequestHandlerExtra", async () => {
     const mcpServer = new McpServer({
       name: "test server",
@@ -2089,6 +2396,9 @@ describe("resource()", () => {
 });
 
 describe("prompt()", () => {
+  /***
+   * Test: Zero-Argument Prompt Registration
+   */
   test("should register zero-argument prompt", async () => {
     const mcpServer = new McpServer({
       name: "test server",
@@ -2130,6 +2440,9 @@ describe("prompt()", () => {
     expect(result.prompts[0].name).toBe("test");
     expect(result.prompts[0].arguments).toBeUndefined();
   });
+  /***
+   * Test: Updating Existing Prompt
+   */
   test("should update existing prompt", async () => {
     const mcpServer = new McpServer({
       name: "test server",
@@ -2198,6 +2511,9 @@ describe("prompt()", () => {
     expect(notifications).toHaveLength(0);
   });
 
+  /***
+   * Test: Updating Prompt with Schema
+   */
   test("should update prompt with schema", async () => {
     const mcpServer = new McpServer({
       name: "test server",
@@ -2291,6 +2607,9 @@ describe("prompt()", () => {
     expect(notifications).toHaveLength(0);
   });
 
+  /***
+   * Test: Prompt List Changed Notification
+   */
   test("should send prompt list changed notification when connected", async () => {
     const mcpServer = new McpServer({
       name: "test server",
@@ -2350,6 +2669,9 @@ describe("prompt()", () => {
     ]);
   });
 
+  /***
+   * Test: Remove Prompt and Send Notification
+   */
   test("should remove prompt and send notification when connected", async () => {
     const mcpServer = new McpServer({
       name: "test server",
@@ -2428,6 +2750,9 @@ describe("prompt()", () => {
     expect(result.prompts[0].name).toBe("prompt2");
   });
 
+  /***
+   * Test: Prompt Registration with Arguments Schema
+   */
   test("should register prompt with args schema", async () => {
     const mcpServer = new McpServer({
       name: "test server",
@@ -2480,6 +2805,9 @@ describe("prompt()", () => {
     ]);
   });
 
+  /***
+   * Test: Prompt Registration with Description
+   */
   test("should register prompt with description", async () => {
     const mcpServer = new McpServer({
       name: "test server",
@@ -2522,6 +2850,9 @@ describe("prompt()", () => {
     expect(result.prompts[0].description).toBe("Test description");
   });
 
+  /***
+   * Test: Prompt Argument Validation
+   */
   test("should validate prompt args", async () => {
     const mcpServer = new McpServer({
       name: "test server",
@@ -2584,6 +2915,9 @@ describe("prompt()", () => {
     ).rejects.toThrow(/Invalid arguments/);
   });
 
+  /***
+   * Test: Preventing Duplicate Prompt Registration
+   */
   test("should prevent duplicate prompt registration", () => {
     const mcpServer = new McpServer({
       name: "test server",
@@ -2617,6 +2951,9 @@ describe("prompt()", () => {
     }).toThrow(/already registered/);
   });
 
+  /***
+   * Test: Multiple Prompt Registration
+   */
   test("should allow registering multiple prompts", () => {
     const mcpServer = new McpServer({
       name: "test server",
@@ -2650,6 +2987,9 @@ describe("prompt()", () => {
     }));
   });
 
+  /***
+   * Test: Prompt Registration with Arguments
+   */
   test("should allow registering prompts with arguments", () => {
     const mcpServer = new McpServer({
       name: "test server",
@@ -2672,6 +3012,9 @@ describe("prompt()", () => {
     );
   });
 
+  /***
+   * Test: Resources and Prompts with Completion Handlers
+   */
   test("should allow registering both resources and prompts with completion handlers", () => {
     const mcpServer = new McpServer({
       name: "test server",
@@ -2713,6 +3056,9 @@ describe("prompt()", () => {
     );
   });
 
+  /***
+   * Test: McpError for Invalid Prompt Name
+   */
   test("should throw McpError for invalid prompt name", async () => {
     const mcpServer = new McpServer({
       name: "test server",
@@ -2764,6 +3110,9 @@ describe("prompt()", () => {
     ).rejects.toThrow(/Prompt nonexistent-prompt not found/);
   });
 
+  /***
+   * Test: Prompt Argument Completion
+   */
   test("should support completion of prompt arguments", async () => {
     const mcpServer = new McpServer({
       name: "test server",
@@ -2829,6 +3178,9 @@ describe("prompt()", () => {
     expect(result.completion.total).toBe(3);
   });
 
+  /***
+   * Test: Filtered Prompt Argument Completion
+   */
   test("should support filtered completion of prompt arguments", async () => {
     const mcpServer = new McpServer({
       name: "test server",
@@ -2896,6 +3248,9 @@ describe("prompt()", () => {
     expect(result.completion.total).toBe(1);
   });
 
+  /***
+   * Test: Pass Request ID to Prompt Callback
+   */
   test("should pass requestId to prompt callback via RequestHandlerExtra", async () => {
     const mcpServer = new McpServer({
       name: "test server",
