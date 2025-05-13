@@ -61,19 +61,13 @@ async function main(): Promise<void> {
     // Log the results from each tool call
     for (const [caller, result] of Object.entries(toolResults)) {
       console.log(`\n=== Tool result for ${caller} ===`);
-      if (result.content) {
-        result.content.forEach((item: { type: string; text?: string; }) => {
-          if (item.type === 'text') {
-            console.log(`  ${item.text}`);
-          } else {
-            console.log(`  ${item.type} content:`, item);
-          }
-        });
-      } else if (result.structuredContent) {
-        console.log(`  Structured content: ${result.structuredContent}`);
-      } else {
-        console.log(`  No content returned`);
-      }
+      result.content?.forEach((item: { type: string; text?: string; }) => {
+        if (item.type === 'text') {
+          console.log(`  ${item.text}`);
+        } else {
+          console.log(`  ${item.type} content:`, item);
+        }
+      });
     }
 
     // 3. Wait for all notifications (10 seconds)
