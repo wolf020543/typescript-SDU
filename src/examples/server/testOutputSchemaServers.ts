@@ -7,7 +7,6 @@
 
 import { Client } from "../../client/index.js";
 import { StdioClientTransport } from "../../client/stdio.js";
-import { ListToolsResultSchema, CallToolResultSchema } from "../../types.js";
 
 async function main() {
   const serverPath = process.argv[2];
@@ -39,9 +38,7 @@ async function main() {
 
     // List available tools
     console.log("Listing available tools...");
-    const toolsResult = await client.request({
-      method: "tools/list"
-    }, ListToolsResultSchema);
+    const toolsResult = await client.listTools();
 
     console.log("Available tools:");
     for (const tool of toolsResult.tools) {
@@ -56,16 +53,15 @@ async function main() {
 
     // Call the weather tool
     console.log("\nCalling get_weather tool...");
-    const weatherResult = await client.request({
-      method: "tools/call",
-      params: {
-        name: "get_weather",
-        arguments: {
-          city: "London",
-          country: "UK"
-        }
+    // Note: Output schema validation only works when using the high-level Client API
+    // methods like callTool(). Low-level protocol requests do not validate the response.
+    const weatherResult = await client.callTool({
+      name: "get_weather",
+      arguments: {
+        city: "London",
+        country: "UK"
       }
-    }, CallToolResultSchema);
+    });
 
     console.log("\nWeather tool result:");
     if (weatherResult.structuredContent) {

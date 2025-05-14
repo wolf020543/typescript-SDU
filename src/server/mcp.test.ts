@@ -463,14 +463,14 @@ describe("tool()", () => {
     );
 
     // new api
-    mcpServer.tool(
+    mcpServer.registerTool(
       "test (new api)",
-      { 
-        inputSchema: { name: z.string(), value: z.number() }, 
-        callback: async ({ name, value }) => ({
-          content: [{ type: "text", text: `${name}: ${value}` }],
-        }),
-      }
+      {
+        inputSchema: { name: z.string(), value: z.number() },
+      },
+      async ({ name, value }) => ({
+        content: [{ type: "text", text: `${name}: ${value}` }],
+      })
     );
 
     const [clientTransport, serverTransport] =
@@ -525,9 +525,12 @@ describe("tool()", () => {
     }));
 
     // new api
-    mcpServer.tool("test (new api)", {
-      description: "Test description",
-      callback: async () => ({
+    mcpServer.registerTool(
+      "test (new api)",
+      {
+        description: "Test description",
+      },
+      async () => ({
         content: [
           {
             type: "text" as const,
@@ -535,7 +538,7 @@ describe("tool()", () => {
           },
         ],
       })
-    });
+    );
 
 
     const [clientTransport, serverTransport] =
@@ -582,17 +585,20 @@ describe("tool()", () => {
       ],
     }));
 
-    mcpServer.tool("test (new api)", {
-      annotations: { title: "Test Tool", readOnlyHint: true },
-      callback: async () => ({
+    mcpServer.registerTool(
+      "test (new api)",
+      {
+        annotations: { title: "Test Tool", readOnlyHint: true },
+      },
+      async () => ({
         content: [
           {
             type: "text" as const,
             text: "Test response",
           },
         ],
-      }),
-    });
+      })
+    );
 
     const [clientTransport, serverTransport] =
       InMemoryTransport.createLinkedPair();
@@ -638,13 +644,16 @@ describe("tool()", () => {
       })
     );
 
-    mcpServer.tool("test (new api)", {
-      inputSchema: { name: z.string() },
-      annotations: { title: "Test Tool", readOnlyHint: true },
-      callback: async ({ name }) => ({
+    mcpServer.registerTool(
+      "test (new api)",
+      {
+        inputSchema: { name: z.string() },
+        annotations: { title: "Test Tool", readOnlyHint: true },
+      },
+      async ({ name }) => ({
         content: [{ type: "text", text: `Hello, ${name}!` }]
       })
-    });
+    );
 
     const [clientTransport, serverTransport] =
       InMemoryTransport.createLinkedPair();
@@ -694,14 +703,17 @@ describe("tool()", () => {
       })
     );
 
-    mcpServer.tool("test (new api)", {
-      description: "A tool with everything",
-      inputSchema: { name: z.string() },
-      annotations: { title: "Complete Test Tool", readOnlyHint: true, openWorldHint: false },
-      callback: async ({ name }) => ({
+    mcpServer.registerTool(
+      "test (new api)",
+      {
+        description: "A tool with everything",
+        inputSchema: { name: z.string() },
+        annotations: { title: "Complete Test Tool", readOnlyHint: true, openWorldHint: false },
+      },
+      async ({ name }) => ({
         content: [{ type: "text", text: `Hello, ${name}!` }]
       })
-    });
+    );
 
     const [clientTransport, serverTransport] =
       InMemoryTransport.createLinkedPair();
@@ -757,14 +769,17 @@ describe("tool()", () => {
       })
     );
 
-    mcpServer.tool("test (new api)", {
-      description: "A tool with everything but empty params",
-      inputSchema: {},
-      annotations: { title: "Complete Test Tool with empty params", readOnlyHint: true, openWorldHint: false },
-      callback: async () => ({
+    mcpServer.registerTool(
+      "test (new api)",
+      {
+        description: "A tool with everything but empty params",
+        inputSchema: {},
+        annotations: { title: "Complete Test Tool with empty params", readOnlyHint: true, openWorldHint: false },
+      },
+      async () => ({
         content: [{ type: "text" as const, text: "Test response" }]
       })
-    });
+    );
 
     const [clientTransport, serverTransport] =
       InMemoryTransport.createLinkedPair();
@@ -834,20 +849,23 @@ describe("tool()", () => {
       }),
     );
 
-    mcpServer.tool("test (new api)", {
-      inputSchema: {
-        name: z.string(),
-        value: z.number(),
+    mcpServer.registerTool(
+      "test (new api)",
+      {
+        inputSchema: {
+          name: z.string(),
+          value: z.number(),
+        },
       },
-      callback: async ({ name, value }) => ({
+      async ({ name, value }) => ({
         content: [
           {
             type: "text",
             text: `${name}: ${value}`,
           },
         ],
-      }),
-    });
+      })
+    );
 
     const [clientTransport, serverTransport] =
       InMemoryTransport.createLinkedPair();
@@ -958,7 +976,7 @@ describe("tool()", () => {
     );
 
     // Register a tool with outputSchema
-    mcpServer.tool(
+    mcpServer.registerTool(
       "test",
       {
         description: "Test tool with structured output",
@@ -970,14 +988,14 @@ describe("tool()", () => {
             resultType: z.string(),
             timestamp: z.string()
         },
-        callback: async ({ input }) => ({
-          structuredContent: {
-            processedInput: input,
-            resultType: "structured",
-            timestamp: "2023-01-01T00:00:00Z"
-          },
-        }),
       },
+      async ({ input }) => ({
+        structuredContent: {
+          processedInput: input,
+          resultType: "structured",
+          timestamp: "2023-01-01T00:00:00Z"
+        },
+      })
     );
 
     const [clientTransport, serverTransport] =
@@ -1061,7 +1079,7 @@ describe("tool()", () => {
     );
 
     // Register a tool with outputSchema that returns invalid data
-    mcpServer.tool(
+    mcpServer.registerTool(
       "test",
       {
         description: "Test tool with invalid structured output",
@@ -1073,15 +1091,15 @@ describe("tool()", () => {
           resultType: z.string(),
           timestamp: z.string()
         },
-        callback: async ({ input }) => ({
-          structuredContent: {
-            processedInput: input,
-            resultType: "structured",
-            // Missing required 'timestamp' field
-            someExtraField: "unexpected" // Extra field not in schema
-          },
-        }),
       },
+      async ({ input }) => ({
+        structuredContent: {
+          processedInput: input,
+          resultType: "structured",
+          // Missing required 'timestamp' field
+          someExtraField: "unexpected" // Extra field not in schema
+        },
+      })
     );
 
     const [clientTransport, serverTransport] =

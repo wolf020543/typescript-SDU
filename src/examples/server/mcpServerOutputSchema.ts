@@ -16,25 +16,28 @@ const server = new McpServer(
 );
 
 // Define a tool with structured output - Weather data
-server.tool("get_weather", {
-  description: "Get weather information for a city",
-  inputSchema:{
-    city: z.string().describe("City name"),
-    country: z.string().describe("Country code (e.g., US, UK)")
+server.registerTool(
+  "get_weather",
+  {
+    description: "Get weather information for a city",
+    inputSchema:{
+      city: z.string().describe("City name"),
+      country: z.string().describe("Country code (e.g., US, UK)")
+    },
+    outputSchema: {
+      temperature: z.object({
+        celsius: z.number(),
+        fahrenheit: z.number()
+      }),
+      conditions: z.enum(["sunny", "cloudy", "rainy", "stormy", "snowy"]),
+      humidity: z.number().min(0).max(100),
+      wind: z.object({
+        speed_kmh: z.number(),
+        direction: z.string()
+      })
+    },
   },
-  outputSchema: {
-    temperature: z.object({
-      celsius: z.number(),
-      fahrenheit: z.number()
-    }),
-    conditions: z.enum(["sunny", "cloudy", "rainy", "stormy", "snowy"]),
-    humidity: z.number().min(0).max(100),
-    wind: z.object({
-      speed_kmh: z.number(),
-      direction: z.string()
-    })
-  },
-  callback: async ({ city, country }) => {
+  async ({ city, country }) => {
     // Parameters are available but not used in this example
     void city;
     void country;
@@ -57,7 +60,7 @@ server.tool("get_weather", {
       }
     };
   }
-});
+);
 
 async function main() {
   const transport = new StdioServerTransport();
