@@ -921,7 +921,10 @@ export const CallToolStructuredResultSchema = ResultSchema.extend({
    * A list of content objects that represent the result of the tool call.
    *
    * If the Tool defines an outputSchema, this field MAY be present in the result.
-   * Tools may use this field to provide compatibility with older clients that do not support structured content.
+   * 
+   * Tools may use this field to provide compatibility with older clients that 
+   * do not support structured content.
+   * 
    * Clients that support structured content should ignore this field.
    */
   content: z.optional(ContentListSchema),
