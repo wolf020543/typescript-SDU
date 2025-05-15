@@ -69,9 +69,9 @@ async function main() {
       console.log(JSON.stringify(weatherResult.structuredContent, null, 2));
     }
     
-    if (weatherResult.content) {
+    if (weatherResult.content && Array.isArray(weatherResult.content)) {
       console.log("Unstructured content:");
-      weatherResult.content.forEach(content => {
+      weatherResult.content.forEach((content: any) => {
         if (content.type === "text") {
           console.log(content.text);
         }
