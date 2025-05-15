@@ -12,8 +12,8 @@ async function main() {
   const serverPath = process.argv[2];
   
   if (!serverPath) {
-    console.error("Usage: npx tsx testOutputSchemaServers.ts <server-path>");
-    console.error("Example: npx tsx testOutputSchemaServers.ts ./mcpServerOutputSchema.ts");
+    console.error("Usage: npx tsx src/examples/client/testOutputSchemaServers.ts <server-path>");
+    console.error("Example: npx tsx src/examples/client/testOutputSchemaServers.ts ../server/mcpServerOutputSchema.ts");
     process.exit(1);
   }
 
