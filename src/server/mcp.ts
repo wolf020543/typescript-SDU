@@ -226,6 +226,14 @@ export class McpServer {
               `Tool ${request.params.name} has no outputSchema and must return content`,
             );
           }
+
+          // If structuredContent is provided, it's an error
+          if (result.structuredContent) {
+            throw new McpError(
+              ErrorCode.InternalError,
+              `Tool ${request.params.name} has no outputSchema but returned structuredContent`,
+            );
+          }
         }
 
         return result;
