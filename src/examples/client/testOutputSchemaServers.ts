@@ -71,7 +71,7 @@ async function main() {
     
     if (weatherResult.content && Array.isArray(weatherResult.content)) {
       console.log("Unstructured content:");
-      weatherResult.content.forEach((content: any) => {
+      weatherResult.content.forEach(content => {
         if (content.type === "text") {
           console.log(content.text);
         }
