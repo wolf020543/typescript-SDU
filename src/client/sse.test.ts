@@ -87,7 +87,7 @@ describe("SSEClientTransport", () => {
       await transport.send(message);
 
       // Verify the POST request maintains the custom path
-      expect(lastServerRequest.url).toBe("/custom/path/messages");
+      expect(lastServerRequest.url).toBe("/custom/path/sse");
     });
 
     it("handles multiple levels of custom paths", async () => {
@@ -107,7 +107,7 @@ describe("SSEClientTransport", () => {
       await transport.send(message);
 
       // Verify the POST request maintains the full custom path
-      expect(lastServerRequest.url).toBe("/api/v1/custom/deep/path/messages");
+      expect(lastServerRequest.url).toBe("/api/v1/custom/deep/path/sse");
     });
 
     it("maintains custom path for SSE connection", async () => {
@@ -130,7 +130,7 @@ describe("SSEClientTransport", () => {
       };
       
       await transport.send(message);
-      expect(lastServerRequest.url).toBe("/custom/path/messages");
+      expect(lastServerRequest.url).toBe("/custom/path/sse");
     });
 
     it("establishes SSE connection and receives endpoint", async () => {
