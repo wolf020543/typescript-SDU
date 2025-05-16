@@ -143,12 +143,7 @@ export class SSEClientTransport implements Transport {
         const messageEvent = event as MessageEvent;
 
         try {
-          // Use the original URL as the base to resolve the received endpoint
           this._endpoint = new URL(messageEvent.data, this._url);
-          
-          // If the original URL had a custom path, preserve it in the endpoint URL
-          this._endpoint.pathname = this._url.pathname;
-          
           if (this._endpoint.origin !== this._url.origin) {
             throw new Error(
               `Endpoint origin does not match connection origin: ${this._endpoint.origin}`,
