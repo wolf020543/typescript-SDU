@@ -1161,6 +1161,70 @@ describe("tool()", () => {
   });
 
   /***
+   * Test: Tool with Output Schema Must Provide Structured Content
+   */
+  test("should throw error when tool with outputSchema returns no structuredContent", async () => {
+    const mcpServer = new McpServer({
+      name: "test server",
+      version: "1.0",
+    });
+
+    const client = new Client(
+      {
+        name: "test client",
+        version: "1.0",
+      },
+      {
+        capabilities: {
+          tools: {},
+        },
+      },
+    );
+
+    // Register a tool with outputSchema that returns only content without structuredContent
+    mcpServer.registerTool(
+      "test",
+      {
+        description: "Test tool with output schema but missing structured content",
+        inputSchema: {
+          input: z.string(),
+        },
+        outputSchema: {
+          processedInput: z.string(),
+          resultType: z.string(),
+        },
+      },
+      async ({ input }) => ({
+        // Only return content without structuredContent
+        content: [
+          {
+            type: "text",
+            text: `Processed: ${input}`,
+          },
+        ],
+      })
+    );
+
+    const [clientTransport, serverTransport] =
+      InMemoryTransport.createLinkedPair();
+
+    await Promise.all([
+      client.connect(clientTransport),
+      mcpServer.server.connect(serverTransport),
+    ]);
+
+    // Call the tool and expect it to throw an error
+    await expect(
+      client.callTool({
+        name: "test",
+        arguments: {
+          input: "hello",
+        },
+      }),
+    ).rejects.toThrow(/Tool test has an output schema but no structured content was provided/);
+  });
+
+  /***
    * Test: Schema Validation Failure for Invalid Structured Content
    */
   test("should fail schema validation when tool returns invalid structuredContent", async () => {

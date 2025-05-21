@@ -198,7 +198,14 @@ export class McpServer {
           }
         }
 
-        if (tool.outputSchema && result.structuredContent) {
+        if (tool.outputSchema) {
+          if (!result.structuredContent) {
+            throw new McpError(
+              ErrorCode.InvalidParams,
+              `Tool ${request.params.name} has an output schema but no structured content was provided`,
+            );
+          }
+
           // if the tool has an output schema, validate structured content
           const parseResult = await tool.outputSchema.safeParseAsync(
             result.structuredContent,
