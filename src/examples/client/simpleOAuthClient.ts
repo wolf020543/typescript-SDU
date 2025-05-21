@@ -108,11 +108,7 @@ class InteractiveOAuthClient {
   private async openBrowser(url: string): Promise<void> {
     console.log(`🌐 Opening browser for authorization: ${url}`);
 
-    // Use platform-specific commands to open browser
-    const platform = process.platform;
-    let command: string;
-
-    command = `open "${url}"`;
+    const command = `open "${url}"`;
 
     exec(command, (error) => {
       if (error) {
