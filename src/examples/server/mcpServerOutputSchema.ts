@@ -20,7 +20,7 @@ server.registerTool(
   "get_weather",
   {
     description: "Get weather information for a city",
-    inputSchema:{
+    inputSchema: {
       city: z.string().describe("City name"),
       country: z.string().describe("Country code (e.g., US, UK)")
     },
@@ -46,10 +46,11 @@ server.registerTool(
     const conditions = ["sunny", "cloudy", "rainy", "stormy", "snowy"][Math.floor(Math.random() * 5)];
 
     return {
+      content: [],
       structuredContent: {
         temperature: {
           celsius: temp_c,
-          fahrenheit: Math.round((temp_c * 9/5 + 32) * 10) / 10
+          fahrenheit: Math.round((temp_c * 9 / 5 + 32) * 10) / 10
         },
         conditions,
         humidity: Math.round(Math.random() * 100),

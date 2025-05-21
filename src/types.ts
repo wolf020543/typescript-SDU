@@ -843,13 +843,13 @@ export const ToolSchema = z
      * If not set, a CallToolResult for this Tool MUST NOT contain a structuredContent field and MUST contain a content field.
      */
     outputSchema: z.optional(
-        z.object({
-          type: z.literal("object"),
-          properties: z.optional(z.object({}).passthrough()),
-          required: z.optional(z.array(z.string())),
-        })
+      z.object({
+        type: z.literal("object"),
+        properties: z.optional(z.object({}).passthrough()),
+        required: z.optional(z.array(z.string())),
+      })
         .passthrough()
-      ),
+    ),
     /**
      * Optional additional tool information.
      */
@@ -892,46 +892,21 @@ export const ContentListSchema = z.array(
   ]),
 );
 
-export const CallToolUnstructuredResultSchema = ResultSchema.extend({
+export const CallToolResultSchema = ResultSchema.extend({
   /**
    * A list of content objects that represent the result of the tool call.
    *
    * If the Tool does not define an outputSchema, this field MUST be present in the result.
+   * For backwards compatibility, this field is always present, but it may be empty.
    */
-  content: ContentListSchema,
+  content: ContentListSchema.default([]),
 
-  /**
-   * Structured output must not be provided in an unstructured tool result.
-   */
-  structuredContent: z.never().optional(),
-
-  /**
-   * Whether the tool call ended in an error.
-   *
-   * If not set, this is assumed to be false (the call was successful).
-   */
-  isError: z.optional(z.boolean()),
-});
-
-export const CallToolStructuredResultSchema = ResultSchema.extend({
   /**
    * An object containing structured tool output.
    *
    * If the Tool defines an outputSchema, this field MUST be present in the result, and contain a JSON object that matches the schema.
    */
-  structuredContent: z.object({}).passthrough(),
-
-  /**
-   * A list of content objects that represent the result of the tool call.
-   *
-   * If the Tool defines an outputSchema, this field MAY be present in the result.
-   * 
-   * Tools may use this field to provide compatibility with older clients that 
-   * do not support structured content.
-   * 
-   * Clients that support structured content should ignore this field.
-   */
-  content: z.optional(ContentListSchema),
+  structuredContent: z.object({}).passthrough().optional(),
 
   /**
    * Whether the tool call ended in an error.
@@ -940,11 +915,6 @@ export const CallToolStructuredResultSchema = ResultSchema.extend({
    */
   isError: z.optional(z.boolean()),
 });
-
-export const CallToolResultSchema = z.union([
-  CallToolUnstructuredResultSchema,
-  CallToolStructuredResultSchema,
-]);
 
 /**
  * CallToolResultSchema extended with backwards compatibility to protocol version 2024-10-07.
@@ -1397,8 +1367,6 @@ export type Tool = Infer<typeof ToolSchema>;
 export type ListToolsRequest = Infer<typeof ListToolsRequestSchema>;
 export type ListToolsResult = Infer<typeof ListToolsResultSchema>;
 export type ContentList = Infer<typeof ContentListSchema>;
-export type CallToolUnstructuredResult = Infer<typeof CallToolUnstructuredResultSchema>;
-export type CallToolStructuredResult = Infer<typeof CallToolStructuredResultSchema>;
 export type CallToolResult = Infer<typeof CallToolResultSchema>;
 export type CompatibilityCallToolResult = Infer<typeof CompatibilityCallToolResultSchema>;
 export type CallToolRequest = Infer<typeof CallToolRequestSchema>;
