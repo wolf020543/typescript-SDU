@@ -16,7 +16,7 @@ import {
   ResourceListChangedNotificationSchema,
   ElicitRequestSchema,
 } from '../../types.js';
-import { Ajv } from 'ajv';
+import Ajv from "ajv";
 
 // Create readline interface for user input
 const readline = createInterface({
@@ -215,7 +215,7 @@ async function connect(url?: string): Promise<void> {
       const required = schema.required || [];
 
       // Set up AJV validator for the requested schema
-      const ajv = new Ajv({ strict: false, validateFormats: true });
+      const ajv = new Ajv();
       const validate = ajv.compile(schema);
 
       let attempts = 0;
@@ -352,7 +352,7 @@ async function connect(url?: string): Promise<void> {
         if (!isValid) {
           console.log('❌ Validation errors:');
           validate.errors?.forEach(error => {
-            console.log(`  - ${error.instancePath || 'root'}: ${error.message}`);
+            console.log(`  - ${error.dataPath || 'root'}: ${error.message}`);
           });
 
           if (attempts < maxAttempts) {

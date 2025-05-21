@@ -33,7 +33,8 @@ import {
   ServerResult,
   SUPPORTED_PROTOCOL_VERSIONS,
 } from "../types.js";
-import { Ajv } from "ajv";
+import Ajv from "ajv";
+import type { ValidateFunction } from "ajv";
 
 export type ServerOptions = ProtocolOptions & {
   /**
@@ -321,7 +322,7 @@ export class Server<
     // Validate the response content against the requested schema if action is "accept"
     if (result.action === "accept" && result.content) {
       try {
-        const ajv = new Ajv({ strict: false, validateFormats: true });
+        const ajv = new Ajv();
         
         const validate = ajv.compile(params.requestedSchema);
         const isValid = validate(result.content);
