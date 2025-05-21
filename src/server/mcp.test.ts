@@ -398,7 +398,7 @@ describe("tool()", () => {
         name: z.string(),
         value: z.number(),
       },
-      callback: async ({name, value}) => ({
+      callback: async ({ name, value }) => ({
         content: [
           {
             type: "text",
@@ -729,7 +729,7 @@ describe("tool()", () => {
     });
 
     mcpServer.tool(
-      "test", 
+      "test",
       { name: z.string() },
       { title: "Test Tool", readOnlyHint: true },
       async ({ name }) => ({
@@ -787,7 +787,7 @@ describe("tool()", () => {
     });
 
     mcpServer.tool(
-      "test", 
+      "test",
       "A tool with everything",
       { name: z.string() },
       { title: "Complete Test Tool", readOnlyHint: true, openWorldHint: false },
@@ -828,8 +828,8 @@ describe("tool()", () => {
       type: "object",
       properties: { name: { type: "string" } }
     });
-    expect(result.tools[0].annotations).toEqual({ 
-      title: "Complete Test Tool", 
+    expect(result.tools[0].annotations).toEqual({
+      title: "Complete Test Tool",
       readOnlyHint: true,
       openWorldHint: false
     });
@@ -853,7 +853,7 @@ describe("tool()", () => {
     });
 
     mcpServer.tool(
-      "test", 
+      "test",
       "A tool with everything but empty params",
       {},
       { title: "Complete Test Tool with empty params", readOnlyHint: true, openWorldHint: false },
@@ -894,8 +894,8 @@ describe("tool()", () => {
       type: "object",
       properties: {}
     });
-    expect(result.tools[0].annotations).toEqual({ 
-      title: "Complete Test Tool with empty params", 
+    expect(result.tools[0].annotations).toEqual({
+      title: "Complete Test Tool with empty params",
       readOnlyHint: true,
       openWorldHint: false
     });
@@ -1077,9 +1077,9 @@ describe("tool()", () => {
           input: z.string(),
         },
         outputSchema: {
-            processedInput: z.string(),
-            resultType: z.string(),
-            timestamp: z.string()
+          processedInput: z.string(),
+          resultType: z.string(),
+          timestamp: z.string()
         },
       },
       async ({ input }) => ({
@@ -1088,6 +1088,16 @@ describe("tool()", () => {
           resultType: "structured",
           timestamp: "2023-01-01T00:00:00Z"
         },
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify({
+              processedInput: input,
+              resultType: "structured",
+              timestamp: "2023-01-01T00:00:00Z"
+            }),
+          },
+        ]
       })
     );
 
@@ -1186,6 +1196,17 @@ describe("tool()", () => {
         },
       },
       async ({ input }) => ({
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify({
+              processedInput: input,
+              resultType: "structured",
+              // Missing required 'timestamp' field
+              someExtraField: "unexpected" // Extra field not in schema
+            }),
+          },
+        ],
         structuredContent: {
           processedInput: input,
           resultType: "structured",
@@ -1203,10 +1224,7 @@ describe("tool()", () => {
       mcpServer.server.connect(serverTransport),
     ]);
 
-    // First call listTools to cache the outputSchema in the client
-    await client.listTools();
-
-    // Call the tool and expect it to throw a validation error
+    // Call the tool and expect it to throw a server-side validation error
     await expect(
       client.callTool({
         name: "test",
@@ -1214,7 +1232,7 @@ describe("tool()", () => {
           input: "hello",
         },
       }),
-    ).rejects.toThrow(/Structured content does not match the tool's output schema/);
+    ).rejects.toThrow(/Invalid structured content for tool test/);
   });
 
   /***
@@ -2664,7 +2682,7 @@ describe("prompt()", () => {
         name: z.string(),
         value: z.string(),
       },
-      callback: async ({name, value}) => ({
+      callback: async ({ name, value }) => ({
         messages: [
           {
             role: "assistant",
