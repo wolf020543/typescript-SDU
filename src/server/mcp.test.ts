@@ -1224,10 +1224,7 @@ describe("tool()", () => {
       mcpServer.server.connect(serverTransport),
     ]);
 
-    // First call listTools to cache the outputSchema in the client
-    await client.listTools();
-
-    // Call the tool and expect it to throw a validation error
+    // Call the tool and expect it to throw a server-side validation error
     await expect(
       client.callTool({
         name: "test",
@@ -1235,7 +1232,7 @@ describe("tool()", () => {
           input: "hello",
         },
       }),
-    ).rejects.toThrow(/Structured content does not match the tool's output schema/);
+    ).rejects.toThrow(/Invalid structured content for tool test/);
   });
 
   /***
