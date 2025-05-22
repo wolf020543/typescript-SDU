@@ -34,7 +34,6 @@ import {
   SUPPORTED_PROTOCOL_VERSIONS,
 } from "../types.js";
 import Ajv from "ajv";
-import type { ValidateFunction } from "ajv";
 
 export type ServerOptions = ProtocolOptions & {
   /**
