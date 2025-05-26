@@ -913,18 +913,10 @@ describe("tool()", () => {
       name: "test server",
       version: "1.0",
     });
-
-    const client = new Client(
-      {
-        name: "test client",
-        version: "1.0",
-      },
-      {
-        capabilities: {
-          tools: {},
-        },
-      },
-    );
+    const client = new Client({
+      name: "test client",
+      version: "1.0",
+    });
 
     mcpServer.tool(
       "test",
@@ -1056,17 +1048,10 @@ describe("tool()", () => {
       version: "1.0",
     });
 
-    const client = new Client(
-      {
-        name: "test client",
-        version: "1.0",
-      },
-      {
-        capabilities: {
-          tools: {},
-        },
-      },
-    );
+    const client = new Client({
+      name: "test client",
+      version: "1.0",
+    });
 
     // Register a tool with outputSchema
     mcpServer.registerTool(
@@ -1169,17 +1154,10 @@ describe("tool()", () => {
       version: "1.0",
     });
 
-    const client = new Client(
-      {
-        name: "test client",
-        version: "1.0",
-      },
-      {
-        capabilities: {
-          tools: {},
-        },
-      },
-    );
+    const client = new Client({
+      name: "test client",
+      version: "1.0",
+    });
 
     // Register a tool with outputSchema that returns only content without structuredContent
     mcpServer.registerTool(
@@ -1233,17 +1211,10 @@ describe("tool()", () => {
       version: "1.0",
     });
 
-    const client = new Client(
-      {
-        name: "test client",
-        version: "1.0",
-      },
-      {
-        capabilities: {
-          tools: {},
-        },
-      },
-    );
+    const client = new Client({
+      name: "test client",
+      version: "1.0",
+    });
 
     // Register a tool with outputSchema that returns invalid data
     mcpServer.registerTool(
@@ -1308,17 +1279,10 @@ describe("tool()", () => {
       version: "1.0",
     });
 
-    const client = new Client(
-      {
-        name: "test client",
-        version: "1.0",
-      },
-      {
-        capabilities: {
-          tools: {},
-        },
-      },
-    );
+    const client = new Client({
+      name: "test client",
+      version: "1.0",
+    });
 
     let receivedSessionId: string | undefined;
     mcpServer.tool("test-tool", async (extra) => {
@@ -1364,17 +1328,10 @@ describe("tool()", () => {
       version: "1.0",
     });
 
-    const client = new Client(
-      {
-        name: "test client",
-        version: "1.0",
-      },
-      {
-        capabilities: {
-          tools: {},
-        },
-      },
-    );
+    const client = new Client({
+      name: "test client",
+      version: "1.0",
+    });
 
     let receivedRequestId: string | number | undefined;
     mcpServer.tool("request-id-test", async (extra) => {
@@ -1423,17 +1380,10 @@ describe("tool()", () => {
       { capabilities: { logging: {} } },
     );
 
-    const client = new Client(
-      {
-        name: "test client",
-        version: "1.0",
-      },
-      {
-        capabilities: {
-          tools: {},
-        },
-      },
-    );
+    const client = new Client({
+      name: "test client",
+      version: "1.0",
+    });
 
     let receivedLogMessage: string | undefined;
     const loggingMessage = "hello here is log message 1";
@@ -1480,17 +1430,10 @@ describe("tool()", () => {
       version: "1.0",
     });
 
-    const client = new Client(
-      {
-        name: "test client",
-        version: "1.0",
-      },
-      {
-        capabilities: {
-          tools: {},
-        },
-      },
-    );
+    const client = new Client({
+      name: "test client",
+      version: "1.0",
+    });
 
     mcpServer.tool(
       "test",
@@ -1546,17 +1489,10 @@ describe("tool()", () => {
       version: "1.0",
     });
 
-    const client = new Client(
-      {
-        name: "test client",
-        version: "1.0",
-      },
-      {
-        capabilities: {
-          tools: {},
-        },
-      },
-    );
+    const client = new Client({
+      name: "test client",
+      version: "1.0",
+    });
 
     mcpServer.tool("error-test", async () => {
       throw new Error("Tool execution failed");
@@ -1598,17 +1534,10 @@ describe("tool()", () => {
       version: "1.0",
     });
 
-    const client = new Client(
-      {
-        name: "test client",
-        version: "1.0",
-      },
-      {
-        capabilities: {
-          tools: {},
-        },
-      },
-    );
+    const client = new Client({
+      name: "test client",
+      version: "1.0",
+    });
 
     mcpServer.tool("test-tool", async () => ({
       content: [
@@ -2401,17 +2330,10 @@ describe("resource()", () => {
       version: "1.0",
     });
 
-    const client = new Client(
-      {
-        name: "test client",
-        version: "1.0",
-      },
-      {
-        capabilities: {
-          resources: {},
-        },
-      },
-    );
+    const client = new Client({
+      name: "test client",
+      version: "1.0",
+    });
 
     mcpServer.resource(
       "test",
@@ -2469,17 +2391,10 @@ describe("resource()", () => {
       version: "1.0",
     });
 
-    const client = new Client(
-      {
-        name: "test client",
-        version: "1.0",
-      },
-      {
-        capabilities: {
-          resources: {},
-        },
-      },
-    );
+    const client = new Client({
+      name: "test client",
+      version: "1.0",
+    });
 
     mcpServer.resource(
       "test",
@@ -2540,17 +2455,10 @@ describe("resource()", () => {
       version: "1.0",
     });
 
-    const client = new Client(
-      {
-        name: "test client",
-        version: "1.0",
-      },
-      {
-        capabilities: {
-          resources: {},
-        },
-      },
-    );
+    const client = new Client({
+      name: "test client",
+      version: "1.0",
+    });
 
     let receivedRequestId: string | number | undefined;
     mcpServer.resource("request-id-test", "test://resource", async (_uri, extra) => {
@@ -3052,17 +2960,10 @@ describe("prompt()", () => {
       version: "1.0",
     });
 
-    const client = new Client(
-      {
-        name: "test client",
-        version: "1.0",
-      },
-      {
-        capabilities: {
-          prompts: {},
-        },
-      },
-    );
+    const client = new Client({
+      name: "test client",
+      version: "1.0",
+    });
 
     mcpServer.prompt(
       "test",
@@ -3258,17 +3159,10 @@ describe("prompt()", () => {
       version: "1.0",
     });
 
-    const client = new Client(
-      {
-        name: "test client",
-        version: "1.0",
-      },
-      {
-        capabilities: {
-          prompts: {},
-        },
-      },
-    );
+    const client = new Client({
+      name: "test client",
+      version: "1.0",
+    });
 
     mcpServer.prompt("test-prompt", async () => ({
       messages: [
@@ -3312,17 +3206,10 @@ describe("prompt()", () => {
       version: "1.0",
     });
 
-    const client = new Client(
-      {
-        name: "test client",
-        version: "1.0",
-      },
-      {
-        capabilities: {
-          prompts: {},
-        },
-      },
-    );
+    const client = new Client({
+      name: "test client",
+      version: "1.0",
+    });
 
     mcpServer.prompt(
       "test-prompt",
@@ -3380,17 +3267,10 @@ describe("prompt()", () => {
       version: "1.0",
     });
 
-    const client = new Client(
-      {
-        name: "test client",
-        version: "1.0",
-      },
-      {
-        capabilities: {
-          prompts: {},
-        },
-      },
-    );
+    const client = new Client({
+      name: "test client",
+      version: "1.0",
+    });
 
     mcpServer.prompt(
       "test-prompt",
@@ -3450,17 +3330,10 @@ describe("prompt()", () => {
       version: "1.0",
     });
 
-    const client = new Client(
-      {
-        name: "test client",
-        version: "1.0",
-      },
-      {
-        capabilities: {
-          prompts: {},
-        },
-      },
-    );
+    const client = new Client({
+      name: "test client",
+      version: "1.0",
+    });
 
     let receivedRequestId: string | number | undefined;
     mcpServer.prompt("request-id-test", async (extra) => {
