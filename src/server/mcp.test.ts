@@ -2322,6 +2322,48 @@ describe("resource()", () => {
   });
 
   /***
+   * Test: Registering a resource template with a complete callback should update server capabilities to advertise support for completion
+   */
+  test("should advertise support for completion when a resource template with a complete callback is defined", async () => {
+    const mcpServer = new McpServer({
+      name: "test server",
+      version: "1.0",
+    });
+    const client = new Client({
+      name: "test client",
+      version: "1.0",
+    });
+
+    mcpServer.resource(
+      "test",
+      new ResourceTemplate("test://resource/{category}", {
+        list: undefined,
+        complete: {
+          category: () => ["books", "movies", "music"],
+        },
+      }),
+      async () => ({
+        contents: [
+          {
+            uri: "test://resource/test",
+            text: "Test content",
+          },
+        ],
+      }),
+    );
+
+    const [clientTransport, serverTransport] =
+      InMemoryTransport.createLinkedPair();
+
+    await Promise.all([
+      client.connect(clientTransport),
+      mcpServer.server.connect(serverTransport),
+    ]);
+
+    expect(client.getServerCapabilities()).toMatchObject({ completions: {} })
+  })
+
+  /***
    * Test: Resource Template Parameter Completion
    */
   test("should support completion of resource template parameters", async () => {
@@ -3196,6 +3238,49 @@ describe("prompt()", () => {
       ),
     ).rejects.toThrow(/Prompt nonexistent-prompt not found/);
   });
+
+
+  /***
+   * Test: Registering a prompt with a completable argument should update server capabilities to advertise support for completion
+   */
+  test("should advertise support for completion when a prompt with a completable argument is defined", async () => {
+    const mcpServer = new McpServer({
+      name: "test server",
+      version: "1.0",
+    });
+    const client = new Client({
+      name: "test client",
+      version: "1.0",
+    });
+
+    mcpServer.prompt(
+      "test-prompt",
+      {
+        name: completable(z.string(), () => ["Alice", "Bob", "Charlie"]),
+      },
+      async ({ name }) => ({
+        messages: [
+          {
+            role: "assistant",
+            content: {
+              type: "text",
+              text: `Hello ${name}`,
+            },
+          },
+        ],
+      }),
+    );
+
+    const [clientTransport, serverTransport] =
+      InMemoryTransport.createLinkedPair();
+
+    await Promise.all([
+      client.connect(clientTransport),
+      mcpServer.server.connect(serverTransport),
+    ]);
+
+    expect(client.getServerCapabilities()).toMatchObject({ completions: {} })
+  })
 
   /***
    * Test: Prompt Argument Completion
