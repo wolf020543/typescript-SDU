@@ -542,7 +542,7 @@ export abstract class Protocol<
         jsonrpcRequest.params = {
           ...request.params,
           _meta: {
-            ...(request.params._meta || {}),
+            ...(request.params?._meta || {}),
             progressToken: messageId
           },
         };
