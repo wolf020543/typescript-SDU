@@ -251,10 +251,15 @@ export class Server<
     this._clientCapabilities = request.params.capabilities;
     this._clientVersion = request.params.clientInfo;
 
-    return {
-      protocolVersion: SUPPORTED_PROTOCOL_VERSIONS.includes(requestedVersion)
+    const protocolVersion = SUPPORTED_PROTOCOL_VERSIONS.includes(requestedVersion)
         ? requestedVersion
-        : LATEST_PROTOCOL_VERSION,
+        : LATEST_PROTOCOL_VERSION;
+    if (this.transport) {
+      this.transport.protocolVersion = protocolVersion;
+    }
+
+    return {
+      protocolVersion,
       capabilities: this.getCapabilities(),
       serverInfo: this._serverInfo,
       ...(this._instructions && { instructions: this._instructions }),

@@ -211,6 +211,27 @@ describe('Streamable HTTP Transport Session Management', () => {
       // Clean up
       await transport.close();
     });
+
+    it('should set protocol version after connecting', async () => {
+      // Create and connect a client
+      const client = new Client({
+        name: 'test-client',
+        version: '1.0.0'
+      });
+
+      const transport = new StreamableHTTPClientTransport(baseUrl);
+      
+      // Verify protocol version is not set before connecting
+      expect(transport.protocolVersion).toBeUndefined();
+      
+      await client.connect(transport);
+      
+      // Verify protocol version is set after connecting
+      expect(transport.protocolVersion).toBe('2025-03-26');
+      
+      // Clean up
+      await transport.close();
+    });
   });
 
   describe('Stateful Mode', () => {

@@ -62,6 +62,7 @@ export class SSEClientTransport implements Transport {
   private _eventSourceInit?: EventSourceInit;
   private _requestInit?: RequestInit;
   private _authProvider?: OAuthClientProvider;
+  protocolVersion?: string;
 
   onclose?: () => void;
   onerror?: (error: Error) => void;
@@ -99,12 +100,17 @@ export class SSEClientTransport implements Transport {
   }
 
   private async _commonHeaders(): Promise<HeadersInit> {
-    const headers: HeadersInit = { ...this._requestInit?.headers };
+    const headers = {
+      ...this._requestInit?.headers,
+    } as HeadersInit & Record<string, string>;
     if (this._authProvider) {
       const tokens = await this._authProvider.tokens();
       if (tokens) {
-        (headers as Record<string, string>)["Authorization"] = `Bearer ${tokens.access_token}`;
+        headers["Authorization"] = `Bearer ${tokens.access_token}`;
       }
+    }
+    if (this.protocolVersion) {
+      headers["mcp-protocol-version"] = this.protocolVersion;
     }
 
     return headers;
@@ -214,7 +220,9 @@ export class SSEClientTransport implements Transport {
 
     try {
       const commonHeaders = await this._commonHeaders();
-      const headers = new Headers({ ...commonHeaders, ...this._requestInit?.headers });
+      // Note: this._requestInit?.headers already set in _commonHeaders
+      // const headers = new Headers({ ...commonHeaders, ...this._requestInit?.headers });
+      const headers = new Headers(commonHeaders);
       headers.set("content-type", "application/json");
       const init = {
         ...this._requestInit,

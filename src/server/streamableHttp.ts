@@ -1,6 +1,6 @@
 import { IncomingMessage, ServerResponse } from "node:http";
 import { Transport } from "../shared/transport.js";
-import { isInitializeRequest, isJSONRPCError, isJSONRPCRequest, isJSONRPCResponse, JSONRPCMessage, JSONRPCMessageSchema, RequestId } from "../types.js";
+import { isInitializeRequest, isJSONRPCError, isJSONRPCRequest, isJSONRPCResponse, JSONRPCMessage, JSONRPCMessageSchema, RequestId, SUPPORTED_PROTOCOL_VERSIONS } from "../types.js";
 import getRawBody from "raw-body";
 import contentType from "content-type";
 import { randomUUID } from "node:crypto";
@@ -110,7 +110,8 @@ export class StreamableHTTPServerTransport implements Transport {
   private _eventStore?: EventStore;
   private _onsessioninitialized?: (sessionId: string) => void;
 
-  sessionId?: string | undefined;
+  sessionId?: string;
+  protocolVersion?: string;
   onclose?: () => void;
   onerror?: (error: Error) => void;
   onmessage?: (message: JSONRPCMessage, extra?: { authInfo?: AuthInfo }) => void;
@@ -170,6 +171,9 @@ export class StreamableHTTPServerTransport implements Transport {
     // clients using the Streamable HTTP transport MUST include it
     // in the Mcp-Session-Id header on all of their subsequent HTTP requests.
     if (!this.validateSession(req, res)) {
+      return;
+    }
+    if (!this.validateProtocolVersion(req, res)) {
       return;
     }
     // Handle resumability: check for Last-Event-ID header
@@ -378,11 +382,17 @@ export class StreamableHTTPServerTransport implements Transport {
         }
 
       }
-      // If an Mcp-Session-Id is returned by the server during initialization,
-      // clients using the Streamable HTTP transport MUST include it 
-      // in the Mcp-Session-Id header on all of their subsequent HTTP requests.
-      if (!isInitializationRequest && !this.validateSession(req, res)) {
-        return;
+      if (!isInitializationRequest) {
+        // If an Mcp-Session-Id is returned by the server during initialization,
+        // clients using the Streamable HTTP transport MUST include it 
+        // in the Mcp-Session-Id header on all of their subsequent HTTP requests.
+        if (!this.validateSession(req, res)) {
+          return;
+        }
+        // Mcp-Protocol-Version header is required for all requests after initialization.
+        if (!this.validateProtocolVersion(req, res)) {
+          return;
+        }
       }
 
 
@@ -457,6 +467,9 @@ export class StreamableHTTPServerTransport implements Transport {
     if (!this.validateSession(req, res)) {
       return;
     }
+    if (!this.validateProtocolVersion(req, res)) {
+      return;
+    }
     await this.close();
     res.writeHead(200).end();
   }
@@ -524,6 +537,34 @@ export class StreamableHTTPServerTransport implements Transport {
     return true;
   }
 
+  private validateProtocolVersion(req: IncomingMessage, res: ServerResponse): boolean {
+    let protocolVersion = req.headers["mcp-protocol-version"];
+    if (Array.isArray(protocolVersion)) {
+      protocolVersion = protocolVersion[protocolVersion.length - 1];
+    }
+    
+    if (protocolVersion == null || protocolVersion === undefined) {
+      // If the protocol version is not set, we assume the client supports the implicit protocol version
+      return true;
+    }
+    
+    protocolVersion = String(protocolVersion).trim();
+    if (this.protocolVersion !== undefined && this.protocolVersion !== protocolVersion) {
+      console.warn(`Request has header with protocol version ${protocolVersion}, but version previously negotiated is ${this.protocolVersion}.`);
+    }
+    if (!SUPPORTED_PROTOCOL_VERSIONS.includes(protocolVersion)) {
+      res.writeHead(400).end(JSON.stringify({
+        jsonrpc: "2.0",
+        error: {
+          code: -32000,
+          message: 'Bad Request: Unsupported protocol version'
+        },
+        id: null
+      }));
+      return false;
+    }
+    return true;
+  }
 
   async close(): Promise<void> {
     // Close all SSE connections

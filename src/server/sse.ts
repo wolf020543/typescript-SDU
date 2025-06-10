@@ -18,6 +18,7 @@ export class SSEServerTransport implements Transport {
   private _sseResponse?: ServerResponse;
   private _sessionId: string;
 
+  protocolVersion?: string;
   onclose?: () => void;
   onerror?: (error: Error) => void;
   onmessage?: (message: JSONRPCMessage, extra?: { authInfo?: AuthInfo }) => void;
