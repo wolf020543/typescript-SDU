@@ -174,7 +174,7 @@ export class StreamableHTTPClientTransport implements Transport {
     if (this._sessionId) {
       headers["mcp-session-id"] = this._sessionId;
     }
-    if (this.protocolVersion != null) {
+    if (this.protocolVersion) {
       headers["mcp-protocol-version"] = this.protocolVersion;
     }
 

@@ -220,8 +220,6 @@ export class SSEClientTransport implements Transport {
 
     try {
       const commonHeaders = await this._commonHeaders();
-      // Note: this._requestInit?.headers already set in _commonHeaders
-      // const headers = new Headers({ ...commonHeaders, ...this._requestInit?.headers });
       const headers = new Headers(commonHeaders);
       headers.set("content-type", "application/json");
       const init = {
