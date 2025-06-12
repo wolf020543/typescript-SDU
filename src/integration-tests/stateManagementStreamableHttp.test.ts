@@ -5,7 +5,7 @@ import { Client } from '../client/index.js';
 import { StreamableHTTPClientTransport } from '../client/streamableHttp.js';
 import { McpServer } from '../server/mcp.js';
 import { StreamableHTTPServerTransport } from '../server/streamableHttp.js';
-import { CallToolResultSchema, ListToolsResultSchema, ListResourcesResultSchema, ListPromptsResultSchema } from '../types.js';
+import { CallToolResultSchema, ListToolsResultSchema, ListResourcesResultSchema, ListPromptsResultSchema, DEFAULT_NEGOTIATED_PROTOCOL_VERSION } from '../types.js';
 import { z } from 'zod';
 
 describe('Streamable HTTP Transport Session Management', () => {
@@ -227,7 +227,7 @@ describe('Streamable HTTP Transport Session Management', () => {
       await client.connect(transport);
       
       // Verify protocol version is set after connecting
-      expect(transport.protocolVersion).toBe('2025-03-26');
+      expect(transport.protocolVersion).toBe(DEFAULT_NEGOTIATED_PROTOCOL_VERSION);
       
       // Clean up
       await transport.close();
