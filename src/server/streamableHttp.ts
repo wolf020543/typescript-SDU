@@ -1,6 +1,6 @@
 import { IncomingMessage, ServerResponse } from "node:http";
 import { Transport } from "../shared/transport.js";
-import { isInitializeRequest, isJSONRPCError, isJSONRPCRequest, isJSONRPCResponse, JSONRPCMessage, JSONRPCMessageSchema, RequestId, SUPPORTED_PROTOCOL_VERSIONS } from "../types.js";
+import { isInitializeRequest, isJSONRPCError, isJSONRPCRequest, isJSONRPCResponse, JSONRPCMessage, JSONRPCMessageSchema, RequestId, SUPPORTED_PROTOCOL_VERSIONS, DEFAULT_NEGOTIATED_PROTOCOL_VERSION } from "../types.js";
 import getRawBody from "raw-body";
 import contentType from "content-type";
 import { randomUUID } from "node:crypto";
@@ -538,17 +538,12 @@ export class StreamableHTTPServerTransport implements Transport {
   }
 
   private validateProtocolVersion(req: IncomingMessage, res: ServerResponse): boolean {
-    let protocolVersion = req.headers["mcp-protocol-version"];
+    let protocolVersion = req.headers["mcp-protocol-version"] ?? DEFAULT_NEGOTIATED_PROTOCOL_VERSION;
     if (Array.isArray(protocolVersion)) {
       protocolVersion = protocolVersion[protocolVersion.length - 1];
     }
-    
-    if (protocolVersion == null || protocolVersion === undefined) {
-      // If the protocol version is not set, we assume the client supports the implicit protocol version
-      return true;
-    }
-    
-    protocolVersion = String(protocolVersion).trim();
+
+
     if (this.protocolVersion !== undefined && this.protocolVersion !== protocolVersion) {
       console.warn(`Request has header with protocol version ${protocolVersion}, but version previously negotiated is ${this.protocolVersion}.`);
     }
@@ -557,7 +552,7 @@ export class StreamableHTTPServerTransport implements Transport {
         jsonrpc: "2.0",
         error: {
           code: -32000,
-          message: 'Bad Request: Unsupported protocol version'
+          message: `Bad Request: Unsupported protocol version (supported versions: ${SUPPORTED_PROTOCOL_VERSIONS.join(", ")})`
         },
         id: null
       }));

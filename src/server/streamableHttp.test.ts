@@ -788,7 +788,7 @@ describe("StreamableHTTPServerTransport", () => {
       
       expect(response.status).toBe(400);
       const errorData = await response.json();
-      expectErrorResponse(errorData, -32000, /Bad Request: Unsupported protocol version/);
+      expectErrorResponse(errorData, -32000, /Bad Request: Unsupported protocol version \(supported versions: .+\)/);
     });
 
     it("should accept but warn when protocol version differs from negotiated version", async () => {
@@ -835,7 +835,7 @@ describe("StreamableHTTPServerTransport", () => {
       
       expect(response.status).toBe(400);
       const errorData = await response.json();
-      expectErrorResponse(errorData, -32000, /Bad Request: Unsupported protocol version/);
+      expectErrorResponse(errorData, -32000, /Bad Request: Unsupported protocol version \(supported versions: .+\)/);
     });
 
     it("should handle protocol version validation for DELETE requests", async () => {
@@ -852,7 +852,7 @@ describe("StreamableHTTPServerTransport", () => {
       
       expect(response.status).toBe(400);
       const errorData = await response.json();
-      expectErrorResponse(errorData, -32000, /Bad Request: Unsupported protocol version/);
+      expectErrorResponse(errorData, -32000, /Bad Request: Unsupported protocol version \(supported versions: .+\)/);
     });
   });
 });
