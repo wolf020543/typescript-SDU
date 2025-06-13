@@ -62,7 +62,7 @@ export class SSEClientTransport implements Transport {
   private _eventSourceInit?: EventSourceInit;
   private _requestInit?: RequestInit;
   private _authProvider?: OAuthClientProvider;
-  protocolVersion?: string;
+  private _protocolVersion?: string;
 
   onclose?: () => void;
   onerror?: (error: Error) => void;
@@ -109,8 +109,8 @@ export class SSEClientTransport implements Transport {
         headers["Authorization"] = `Bearer ${tokens.access_token}`;
       }
     }
-    if (this.protocolVersion) {
-      headers["mcp-protocol-version"] = this.protocolVersion;
+    if (this._protocolVersion) {
+      headers["mcp-protocol-version"] = this._protocolVersion;
     }
 
     return headers;
@@ -254,5 +254,9 @@ export class SSEClientTransport implements Transport {
       this.onerror?.(error as Error);
       throw error;
     }
+  }
+
+  setProtocolVersion(version: string): void {
+    this._protocolVersion = version;
   }
 }

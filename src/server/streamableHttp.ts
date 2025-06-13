@@ -111,7 +111,6 @@ export class StreamableHTTPServerTransport implements Transport {
   private _onsessioninitialized?: (sessionId: string) => void;
 
   sessionId?: string;
-  protocolVersion?: string;
   onclose?: () => void;
   onerror?: (error: Error) => void;
   onmessage?: (message: JSONRPCMessage, extra?: { authInfo?: AuthInfo }) => void;

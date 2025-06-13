@@ -254,9 +254,6 @@ export class Server<
     const protocolVersion = SUPPORTED_PROTOCOL_VERSIONS.includes(requestedVersion)
         ? requestedVersion
         : LATEST_PROTOCOL_VERSION;
-    if (this.transport) {
-      this.transport.protocolVersion = protocolVersion;
-    }
 
     return {
       protocolVersion,

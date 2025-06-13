@@ -166,7 +166,9 @@ export class Client<
       this._serverCapabilities = result.capabilities;
       this._serverVersion = result.serverInfo;
       // HTTP transports must set the protocol version in each header after initialization.
-      transport.protocolVersion = result.protocolVersion;
+      if (transport.setProtocolVersion) {
+        transport.setProtocolVersion(result.protocolVersion);
+      }
 
       this._instructions = result.instructions;
 
