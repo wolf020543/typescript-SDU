@@ -791,7 +791,7 @@ describe("StreamableHTTPServerTransport", () => {
       expectErrorResponse(errorData, -32000, /Bad Request: Unsupported protocol version \(supported versions: .+\)/);
     });
 
-    it("should accept but warn when protocol version differs from negotiated version", async () => {
+    it("should accept when protocol version differs from negotiated version", async () => {
       sessionId = await initializeServer();
       
       // Spy on console.warn to verify warning is logged
@@ -811,11 +811,6 @@ describe("StreamableHTTPServerTransport", () => {
       
       // Request should still succeed
       expect(response.status).toBe(200);
-      
-      // But warning should have been logged
-      expect(warnSpy).toHaveBeenCalledWith(
-        expect.stringContaining("Request has header with protocol version 2024-11-05, but version previously negotiated is 2025-03-26")
-      );
       
       warnSpy.mockRestore();
     });

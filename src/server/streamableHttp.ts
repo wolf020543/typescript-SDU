@@ -543,10 +543,6 @@ export class StreamableHTTPServerTransport implements Transport {
       protocolVersion = protocolVersion[protocolVersion.length - 1];
     }
 
-
-    if (this.protocolVersion !== undefined && this.protocolVersion !== protocolVersion) {
-      console.warn(`Request has header with protocol version ${protocolVersion}, but version previously negotiated is ${this.protocolVersion}.`);
-    }
     if (!SUPPORTED_PROTOCOL_VERSIONS.includes(protocolVersion)) {
       res.writeHead(400).end(JSON.stringify({
         jsonrpc: "2.0",
