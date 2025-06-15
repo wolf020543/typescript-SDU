@@ -5,7 +5,7 @@ import { McpServer } from '../../server/mcp.js';
 import { StreamableHTTPServerTransport } from '../../server/streamableHttp.js';
 import { getOAuthProtectedResourceMetadataUrl, mcpAuthMetadataRouter } from '../../server/auth/router.js';
 import { requireBearerAuth } from '../../server/auth/middleware/bearerAuth.js';
-import { CallToolResult, GetPromptResult, isInitializeRequest, ReadResourceResult } from '../../types.js';
+import { CallToolResult, GetPromptResult, isInitializeRequest, ReadResourceResult, ResourceLink } from '../../types.js';
 import { InMemoryEventStore } from '../shared/inMemoryEventStore.js';
 import { setupAuthServer } from './demoInMemoryOAuthProvider.js';
 import { OAuthMetadata } from 'src/shared/auth.js';
@@ -174,6 +174,99 @@ const getServer = () => {
       };
     }
   );
+
+  // Create additional resources for ResourceLink demonstration
+  server.registerResource(
+    'example-file-1',
+    'file:///example/file1.txt',
+    { 
+      title: 'Example File 1',
+      description: 'First example file for ResourceLink demonstration',
+      mimeType: 'text/plain' 
+    },
+    async (): Promise<ReadResourceResult> => {
+      return {
+        contents: [
+          {
+            uri: 'file:///example/file1.txt',
+            text: 'This is the content of file 1',
+          },
+        ],
+      };
+    }
+  );
+
+  server.registerResource(
+    'example-file-2',
+    'file:///example/file2.txt',
+    { 
+      title: 'Example File 2',
+      description: 'Second example file for ResourceLink demonstration',
+      mimeType: 'text/plain' 
+    },
+    async (): Promise<ReadResourceResult> => {
+      return {
+        contents: [
+          {
+            uri: 'file:///example/file2.txt',
+            text: 'This is the content of file 2',
+          },
+        ],
+      };
+    }
+  );
+
+  // Register a tool that returns ResourceLinks
+  server.registerTool(
+    'list-files',
+    {
+      title: 'List Files with ResourceLinks',
+      description: 'Returns a list of files as ResourceLinks without embedding their content',
+      inputSchema: {
+        includeDescriptions: z.boolean().optional().describe('Whether to include descriptions in the resource links'),
+      },
+    },
+    async ({ includeDescriptions = true }): Promise<CallToolResult> => {
+      const resourceLinks: ResourceLink[] = [
+        {
+          type: 'resource_link',
+          uri: 'https://example.com/greetings/default',
+          name: 'Default Greeting',
+          mimeType: 'text/plain',
+          ...(includeDescriptions && { description: 'A simple greeting resource' })
+        },
+        {
+          type: 'resource_link',
+          uri: 'file:///example/file1.txt',
+          name: 'Example File 1',
+          mimeType: 'text/plain',
+          ...(includeDescriptions && { description: 'First example file for ResourceLink demonstration' })
+        },
+        {
+          type: 'resource_link',
+          uri: 'file:///example/file2.txt',
+          name: 'Example File 2',
+          mimeType: 'text/plain',
+          ...(includeDescriptions && { description: 'Second example file for ResourceLink demonstration' })
+        }
+      ];
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: 'Here are the available files as resource links:',
+          },
+          ...resourceLinks,
+          {
+            type: 'text',
+            text: '\nYou can read any of these resources using their URI.',
+          }
+        ],
+      };
+    }
+  );
+
   return server;
 };
 

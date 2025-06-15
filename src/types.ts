@@ -736,17 +736,32 @@ export const EmbeddedResourceSchema = z
   .passthrough();
 
 /**
+ * A resource that the server is capable of reading, included in a prompt or tool call result.
+ *
+ * Note: resource links returned by tools are not guaranteed to appear in the results of `resources/list` requests.
+ */
+export const ResourceLinkSchema = ResourceSchema.extend({
+  type: z.literal("resource_link"),
+});
+
+/**
+ * A content block that can be used in prompts and tool results.
+ */
+export const ContentBlockSchema = z.union([
+  TextContentSchema,
+  ImageContentSchema,
+  AudioContentSchema,
+  ResourceLinkSchema,
+  EmbeddedResourceSchema,
+]);
+
+/**
  * Describes a message returned as part of a prompt.
  */
 export const PromptMessageSchema = z
   .object({
     role: z.enum(["user", "assistant"]),
-    content: z.union([
-      TextContentSchema,
-      ImageContentSchema,
-      AudioContentSchema,
-      EmbeddedResourceSchema,
-    ]),
+    content: ContentBlockSchema,
   })
   .passthrough();
 
@@ -890,13 +905,7 @@ export const CallToolResultSchema = ResultSchema.extend({
    * If the Tool does not define an outputSchema, this field MUST be present in the result.
    * For backwards compatibility, this field is always present, but it may be empty.
    */
-  content: z.array(
-    z.union([
-      TextContentSchema,
-      ImageContentSchema,
-      AudioContentSchema,
-      EmbeddedResourceSchema,
-    ])).default([]),
+  content: z.array(ContentBlockSchema).default([]),
 
   /**
    * An object containing structured tool output.
@@ -1376,6 +1385,8 @@ export type TextContent = Infer<typeof TextContentSchema>;
 export type ImageContent = Infer<typeof ImageContentSchema>;
 export type AudioContent = Infer<typeof AudioContentSchema>;
 export type EmbeddedResource = Infer<typeof EmbeddedResourceSchema>;
+export type ResourceLink = Infer<typeof ResourceLinkSchema>;
+export type ContentBlock = Infer<typeof ContentBlockSchema>;
 export type PromptMessage = Infer<typeof PromptMessageSchema>;
 export type GetPromptResult = Infer<typeof GetPromptResultSchema>;
 export type PromptListChangedNotification = Infer<typeof PromptListChangedNotificationSchema>;
