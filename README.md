@@ -530,8 +530,7 @@ import { z } from "zod";
 
 const server = new McpServer({
   name: "sqlite-explorer",
-  version: "1.0.0",
-  title: "SQLite Explorer"
+  version: "1.0.0"
 });
 
 // Helper to create DB connection
