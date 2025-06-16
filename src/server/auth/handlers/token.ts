@@ -12,11 +12,8 @@ import {
   UnsupportedGrantTypeError,
   ServerError,
   TooManyRequestsError,
-  OAuthError,
-  InvalidTargetError
+  OAuthError
 } from "../errors.js";
-import { OAuthServerConfig } from "../types.js";
-import { resourceUrlFromServerUrl } from "../../../shared/auth-utils.js";
 
 export type TokenHandlerOptions = {
   provider: OAuthServerProvider;
@@ -25,10 +22,6 @@ export type TokenHandlerOptions = {
    * Set to false to disable rate limiting for this endpoint.
    */
   rateLimit?: Partial<RateLimitOptions> | false;
-  /**
-   * OAuth server configuration options
-   */
-  config?: OAuthServerConfig;
 };
 
 const TokenRequestSchema = z.object({
@@ -48,12 +41,7 @@ const RefreshTokenGrantSchema = z.object({
   resource: z.string().url().optional(),
 });
 
-export function tokenHandler({ provider, rateLimit: rateLimitConfig, config }: TokenHandlerOptions): RequestHandler {
-  // Validate configuration
-  if (config?.validateResourceMatchesServer && !config?.serverUrl) {
-    throw new Error("serverUrl must be configured when validateResourceMatchesServer is true");
-  }
-
+export function tokenHandler({ provider, rateLimit: rateLimitConfig }: TokenHandlerOptions): RequestHandler {
   // Nested router so we can configure middleware and restrict HTTP method
   const router = express.Router();
 
@@ -105,25 +93,8 @@ export function tokenHandler({ provider, rateLimit: rateLimitConfig, config }: T
 
           const { code, code_verifier, redirect_uri, resource } = parseResult.data;
 
-          // If validateResourceMatchesServer is enabled, resource is required and must match
-          if (config?.validateResourceMatchesServer) {
-            if (!resource) {
-              throw new InvalidRequestError("Resource parameter is required when server URL validation is enabled");
-            }
-            
-            const canonicalServerUrl = resourceUrlFromServerUrl(config.serverUrl!);
-            
-            if (resource !== canonicalServerUrl) {
-              throw new InvalidTargetError(
-                `Resource parameter '${resource}' does not match this server's URL '${canonicalServerUrl}'`
-              );
-            }
-          } else {
-            // Always log warning if resource is missing (unless validation is enabled)
-            if (!resource) {
-              console.warn(`Token exchange request from client ${client.client_id} is missing the resource parameter. Consider migrating to RFC 8707.`);
-            }
-          }
+          // Pass through the resource parameter to the provider
+          // The provider can decide how to validate it
 
           const skipLocalPkceValidation = provider.skipLocalPkceValidation;
 
@@ -156,25 +127,8 @@ export function tokenHandler({ provider, rateLimit: rateLimitConfig, config }: T
 
           const { refresh_token, scope, resource } = parseResult.data;
 
-          // If validateResourceMatchesServer is enabled, resource is required and must match
-          if (config?.validateResourceMatchesServer) {
-            if (!resource) {
-              throw new InvalidRequestError("Resource parameter is required when server URL validation is enabled");
-            }
-            
-            const canonicalServerUrl = resourceUrlFromServerUrl(config.serverUrl!);
-            
-            if (resource !== canonicalServerUrl) {
-              throw new InvalidTargetError(
-                `Resource parameter '${resource}' does not match this server's URL '${canonicalServerUrl}'`
-              );
-            }
-          } else {
-            // Always log warning if resource is missing (unless validation is enabled)
-            if (!resource) {
-              console.warn(`Token refresh request from client ${client.client_id} is missing the resource parameter. Consider migrating to RFC 8707.`);
-            }
-          }
+          // Pass through the resource parameter to the provider
+          // The provider can decide how to validate it
 
           const scopes = scope?.split(" ");
           const tokens = await provider.exchangeRefreshToken(client, refresh_token, scopes, resource);

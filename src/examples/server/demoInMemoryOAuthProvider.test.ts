@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from '@jest/globals';
-import { DemoInMemoryAuthProvider, DemoInMemoryClientsStore } from './demoInMemoryOAuthProvider.js';
-import { InvalidTargetError } from '../../server/auth/errors.js';
+import { DemoInMemoryAuthProvider, DemoInMemoryClientsStore, DemoOAuthProviderConfig } from './demoInMemoryOAuthProvider.js';
+import { InvalidTargetError, InvalidRequestError } from '../../server/auth/errors.js';
 import { OAuthClientInformationFull } from '../../shared/auth.js';
 import { Response } from 'express';
 
@@ -213,6 +213,177 @@ describe('DemoInMemoryOAuthProvider - RFC 8707 Resource Validation', () => {
         resource: 'https://any.api.com',
         scopes: ['mcp:tools']
       }, mockResponse as Response)).rejects.toThrow(InvalidTargetError);
+    });
+  });
+
+  describe('Server URL validation configuration', () => {
+    it('should throw error when validateResourceMatchesServer is true but serverUrl is not set', () => {
+      const invalidConfig: DemoOAuthProviderConfig = {
+        validateResourceMatchesServer: true
+        // serverUrl is missing
+      };
+
+      expect(() => {
+        new DemoInMemoryAuthProvider(invalidConfig);
+      }).toThrow("serverUrl must be configured when validateResourceMatchesServer is true");
+    });
+
+    describe('with server URL validation enabled', () => {
+      let strictProvider: DemoInMemoryAuthProvider;
+
+      beforeEach(() => {
+        const config: DemoOAuthProviderConfig = {
+          serverUrl: 'https://api.example.com/mcp',
+          validateResourceMatchesServer: true
+        };
+        strictProvider = new DemoInMemoryAuthProvider(config);
+        
+        strictProvider.clientsStore.registerClient(mockClient);
+      });
+
+      it('should reject authorization without resource parameter', async () => {
+        await expect(strictProvider.authorize(mockClient, {
+          codeChallenge: 'test-challenge',
+          redirectUri: mockClient.redirect_uris[0],
+          scopes: ['mcp:tools']
+          // resource is missing
+        }, mockResponse as Response)).rejects.toThrow(InvalidRequestError);
+      });
+
+      it('should reject authorization with non-matching resource', async () => {
+        await expect(strictProvider.authorize(mockClient, {
+          codeChallenge: 'test-challenge',
+          redirectUri: mockClient.redirect_uris[0],
+          resource: 'https://different.api.com/mcp',
+          scopes: ['mcp:tools']
+        }, mockResponse as Response)).rejects.toThrow(InvalidTargetError);
+      });
+
+      it('should accept authorization with matching resource', async () => {
+        await expect(strictProvider.authorize(mockClient, {
+          codeChallenge: 'test-challenge',
+          redirectUri: mockClient.redirect_uris[0],
+          resource: 'https://api.example.com/mcp',
+          scopes: ['mcp:tools']
+        }, mockResponse as Response)).resolves.not.toThrow();
+
+        expect(mockResponse.redirect).toHaveBeenCalled();
+      });
+
+      it('should handle server URL with fragment correctly', async () => {
+        const configWithFragment: DemoOAuthProviderConfig = {
+          serverUrl: 'https://api.example.com/mcp#fragment',
+          validateResourceMatchesServer: true
+        };
+        const providerWithFragment = new DemoInMemoryAuthProvider(configWithFragment);
+        
+        await providerWithFragment.clientsStore.registerClient(mockClient);
+
+        // Should accept resource without fragment
+        await expect(providerWithFragment.authorize(mockClient, {
+          codeChallenge: 'test-challenge',
+          redirectUri: mockClient.redirect_uris[0],
+          resource: 'https://api.example.com/mcp',
+          scopes: ['mcp:tools']
+        }, mockResponse as Response)).resolves.not.toThrow();
+      });
+
+      it('should reject token exchange without resource parameter', async () => {
+        // First authorize with resource
+        mockResponse.redirect = jest.fn();
+        await strictProvider.authorize(mockClient, {
+          codeChallenge: 'test-challenge',
+          redirectUri: mockClient.redirect_uris[0],
+          resource: 'https://api.example.com/mcp',
+          scopes: ['mcp:tools']
+        }, mockResponse as Response);
+
+        const redirectCall = (mockResponse.redirect as jest.Mock).mock.calls[0][0];
+        const url = new URL(redirectCall);
+        const authCode = url.searchParams.get('code')!;
+
+        await expect(strictProvider.exchangeAuthorizationCode(
+          mockClient,
+          authCode,
+          undefined,
+          undefined
+          // resource is missing
+        )).rejects.toThrow(InvalidRequestError);
+      });
+
+      it('should reject refresh token without resource parameter', async () => {
+        await expect(strictProvider.exchangeRefreshToken(
+          mockClient,
+          'refresh-token',
+          undefined
+          // resource is missing
+        )).rejects.toThrow(InvalidRequestError);
+      });
+    });
+
+    describe('with server URL validation disabled (warning mode)', () => {
+      let warnProvider: DemoInMemoryAuthProvider;
+      let consoleWarnSpy: jest.SpyInstance;
+
+      beforeEach(() => {
+        consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
+        warnProvider = new DemoInMemoryAuthProvider(); // No config = warnings enabled
+        
+        warnProvider.clientsStore.registerClient(mockClient);
+      });
+
+      afterEach(() => {
+        consoleWarnSpy.mockRestore();
+      });
+
+      it('should log warning when resource is missing from authorization', async () => {
+        await warnProvider.authorize(mockClient, {
+          codeChallenge: 'test-challenge',
+          redirectUri: mockClient.redirect_uris[0],
+          scopes: ['mcp:tools']
+          // resource is missing
+        }, mockResponse as Response);
+
+        expect(consoleWarnSpy).toHaveBeenCalledWith(
+          expect.stringContaining('test-client is missing the resource parameter')
+        );
+      });
+
+      it('should not log warning when resource is present', async () => {
+        await warnProvider.authorize(mockClient, {
+          codeChallenge: 'test-challenge',
+          redirectUri: mockClient.redirect_uris[0],
+          resource: 'https://api.example.com/mcp',
+          scopes: ['mcp:tools']
+        }, mockResponse as Response);
+
+        expect(consoleWarnSpy).not.toHaveBeenCalled();
+      });
+
+      it('should log warning when resource is missing from token exchange', async () => {
+        // First authorize without resource
+        await warnProvider.authorize(mockClient, {
+          codeChallenge: 'test-challenge',
+          redirectUri: mockClient.redirect_uris[0],
+          scopes: ['mcp:tools']
+        }, mockResponse as Response);
+
+        const redirectCall = (mockResponse.redirect as jest.Mock).mock.calls[0][0];
+        const url = new URL(redirectCall);
+        const authCode = url.searchParams.get('code')!;
+
+        await warnProvider.exchangeAuthorizationCode(
+          mockClient,
+          authCode,
+          undefined,
+          undefined
+          // resource is missing
+        );
+
+        expect(consoleWarnSpy).toHaveBeenCalledWith(
+          expect.stringContaining('test-client is missing the resource parameter')
+        );
+      });
     });
   });
 });

@@ -5,7 +5,8 @@ import { OAuthClientInformationFull, OAuthMetadata, OAuthTokens } from '../../sh
 import express, { Request, Response } from "express";
 import { AuthInfo } from '../../server/auth/types.js';
 import { createOAuthMetadata, mcpAuthRouter } from '../../server/auth/router.js';
-import { InvalidTargetError } from '../../server/auth/errors.js';
+import { InvalidTargetError, InvalidRequestError } from '../../server/auth/errors.js';
+import { resourceUrlFromServerUrl } from '../../shared/auth-utils.js';
 
 
 interface ExtendedClientInformation extends OAuthClientInformationFull {
@@ -48,19 +49,79 @@ interface ExtendedAuthInfo extends AuthInfo {
   type?: string;
 }
 
+/**
+ * Configuration options for the demo OAuth provider
+ */
+export interface DemoOAuthProviderConfig {
+  /**
+   * The canonical URL of this MCP server. When provided, the provider will validate
+   * that the resource parameter in OAuth requests matches this URL.
+   * 
+   * This should be the full URL that clients use to connect to this server,
+   * without any fragment component (e.g., "https://api.example.com/mcp").
+   * 
+   * Required when validateResourceMatchesServer is true.
+   */
+  serverUrl?: string;
+
+  /**
+   * If true, validates that the resource parameter matches the configured serverUrl.
+   * 
+   * When enabled:
+   * - serverUrl must be configured (throws error if not)
+   * - resource parameter is required on all requests
+   * - resource must exactly match serverUrl (after fragment removal)
+   * - requests without resource parameter will be rejected with invalid_request error
+   * - requests with non-matching resource will be rejected with invalid_target error
+   * 
+   * When disabled:
+   * - warnings are logged when resource parameter is missing (for migration tracking)
+   * 
+   * @default false
+   */
+  validateResourceMatchesServer?: boolean;
+}
+
 export class DemoInMemoryAuthProvider implements OAuthServerProvider {
   clientsStore = new DemoInMemoryClientsStore();
   private codes = new Map<string, {
     params: AuthorizationParams,
     client: OAuthClientInformationFull}>();
   private tokens = new Map<string, ExtendedAuthInfo>();
+  private config?: DemoOAuthProviderConfig;
+
+  constructor(config?: DemoOAuthProviderConfig) {
+    if (config?.validateResourceMatchesServer && !config?.serverUrl) {
+      throw new Error("serverUrl must be configured when validateResourceMatchesServer is true");
+    }
+    this.config = config;
+  }
 
   async authorize(
     client: OAuthClientInformationFull,
     params: AuthorizationParams,
     res: Response
   ): Promise<void> {
-    // Validate resource parameter if provided
+    // Validate resource parameter based on configuration
+    if (this.config?.validateResourceMatchesServer) {
+      if (!params.resource) {
+        throw new InvalidRequestError("Resource parameter is required when server URL validation is enabled");
+      }
+      
+      // Remove fragment from server URL if present (though it shouldn't have one)
+      const canonicalServerUrl = resourceUrlFromServerUrl(this.config.serverUrl!);
+      
+      if (params.resource !== canonicalServerUrl) {
+        throw new InvalidTargetError(
+          `Resource parameter '${params.resource}' does not match this server's URL '${canonicalServerUrl}'`
+        );
+      }
+    } else if (!params.resource) {
+      // Always log warning if resource is missing (unless validation is enabled)
+      console.warn(`Authorization request from client ${client.client_id} is missing the resource parameter. Consider migrating to RFC 8707.`);
+    }
+    
+    // Additional validation: check if client is allowed to access the resource
     if (params.resource) {
       await this.validateResource(client, params.resource);
     }
@@ -116,6 +177,24 @@ export class DemoInMemoryAuthProvider implements OAuthServerProvider {
       throw new Error(`Authorization code was not issued to this client, ${codeData.client.client_id} != ${client.client_id}`);
     }
 
+    // Validate resource parameter based on configuration
+    if (this.config?.validateResourceMatchesServer) {
+      if (!resource) {
+        throw new InvalidRequestError("Resource parameter is required when server URL validation is enabled");
+      }
+      
+      const canonicalServerUrl = resourceUrlFromServerUrl(this.config.serverUrl!);
+      
+      if (resource !== canonicalServerUrl) {
+        throw new InvalidTargetError(
+          `Resource parameter '${resource}' does not match this server's URL '${canonicalServerUrl}'`
+        );
+      }
+    } else if (!resource) {
+      // Always log warning if resource is missing (unless validation is enabled)
+      console.warn(`Token exchange request from client ${client.client_id} is missing the resource parameter. Consider migrating to RFC 8707.`);
+    }
+
     // Validate that the resource matches what was authorized
     if (resource !== codeData.params.resource) {
       throw new InvalidTargetError('Resource parameter does not match the authorized resource');
@@ -154,7 +233,25 @@ export class DemoInMemoryAuthProvider implements OAuthServerProvider {
     _scopes?: string[],
     resource?: string
   ): Promise<OAuthTokens> {
-    // Validate resource parameter if provided
+    // Validate resource parameter based on configuration
+    if (this.config?.validateResourceMatchesServer) {
+      if (!resource) {
+        throw new InvalidRequestError("Resource parameter is required when server URL validation is enabled");
+      }
+      
+      const canonicalServerUrl = resourceUrlFromServerUrl(this.config.serverUrl!);
+      
+      if (resource !== canonicalServerUrl) {
+        throw new InvalidTargetError(
+          `Resource parameter '${resource}' does not match this server's URL '${canonicalServerUrl}'`
+        );
+      }
+    } else if (!resource) {
+      // Always log warning if resource is missing (unless validation is enabled)
+      console.warn(`Token refresh request from client ${client.client_id} is missing the resource parameter. Consider migrating to RFC 8707.`);
+    }
+    
+    // Additional validation: check if client is allowed to access the resource
     if (resource) {
       await this.validateResource(client, resource);
     }
@@ -204,13 +301,13 @@ export class DemoInMemoryAuthProvider implements OAuthServerProvider {
 }
 
 
-export const setupAuthServer = (authServerUrl: URL): OAuthMetadata => {
+export const setupAuthServer = (authServerUrl: URL, config?: DemoOAuthProviderConfig): OAuthMetadata => {
   // Create separate auth server app
   // NOTE: This is a separate app on a separate port to illustrate
   // how to separate an OAuth Authorization Server from a Resource
   // server in the SDK. The SDK is not intended to be provide a standalone
   // authorization server.
-  const provider = new DemoInMemoryAuthProvider();
+  const provider = new DemoInMemoryAuthProvider(config);
   const authApp = express();
   authApp.use(express.json());
   // For introspection requests
