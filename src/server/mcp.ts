@@ -22,6 +22,7 @@ import {
   CompleteResult,
   PromptReference,
   ResourceTemplateReference,
+  BaseMetadata,
   Resource,
   ListResourcesResult,
   ListResourceTemplatesRequestSchema,
@@ -128,7 +129,7 @@ export class McpServer {
 
             if (tool.outputSchema) {
               toolDefinition.outputSchema = zodToJsonSchema(
-                tool.outputSchema, 
+                tool.outputSchema,
                 { strictUnions: true }
               ) as Tool["outputSchema"];
             }
@@ -586,27 +587,13 @@ export class McpServer {
         throw new Error(`Resource ${uriOrTemplate} is already registered`);
       }
 
-      const registeredResource: RegisteredResource = {
+      const registeredResource = this._createRegisteredResource(
         name,
+        undefined,
+        uriOrTemplate,
         metadata,
-        readCallback: readCallback as ReadResourceCallback,
-        enabled: true,
-        disable: () => registeredResource.update({ enabled: false }),
-        enable: () => registeredResource.update({ enabled: true }),
-        remove: () => registeredResource.update({ uri: null }),
-        update: (updates) => {
-          if (typeof updates.uri !== "undefined" && updates.uri !== uriOrTemplate) {
-            delete this._registeredResources[uriOrTemplate]
-            if (updates.uri) this._registeredResources[updates.uri] = registeredResource
-          }
-          if (typeof updates.name !== "undefined") registeredResource.name = updates.name
-          if (typeof updates.metadata !== "undefined") registeredResource.metadata = updates.metadata
-          if (typeof updates.callback !== "undefined") registeredResource.readCallback = updates.callback
-          if (typeof updates.enabled !== "undefined") registeredResource.enabled = updates.enabled
-          this.sendResourceListChanged()
-        },
-      };
-      this._registeredResources[uriOrTemplate] = registeredResource;
+        readCallback as ReadResourceCallback
+      );
 
       this.setResourceRequestHandlers();
       this.sendResourceListChanged();
@@ -616,27 +603,13 @@ export class McpServer {
         throw new Error(`Resource template ${name} is already registered`);
       }
 
-      const registeredResourceTemplate: RegisteredResourceTemplate = {
-        resourceTemplate: uriOrTemplate,
+      const registeredResourceTemplate = this._createRegisteredResourceTemplate(
+        name,
+        undefined,
+        uriOrTemplate,
         metadata,
-        readCallback: readCallback as ReadResourceTemplateCallback,
-        enabled: true,
-        disable: () => registeredResourceTemplate.update({ enabled: false }),
-        enable: () => registeredResourceTemplate.update({ enabled: true }),
-        remove: () => registeredResourceTemplate.update({ name: null }),
-        update: (updates) => {
-          if (typeof updates.name !== "undefined" && updates.name !== name) {
-            delete this._registeredResourceTemplates[name]
-            if (updates.name) this._registeredResourceTemplates[updates.name] = registeredResourceTemplate
-          }
-          if (typeof updates.template !== "undefined") registeredResourceTemplate.resourceTemplate = updates.template
-          if (typeof updates.metadata !== "undefined") registeredResourceTemplate.metadata = updates.metadata
-          if (typeof updates.callback !== "undefined") registeredResourceTemplate.readCallback = updates.callback
-          if (typeof updates.enabled !== "undefined") registeredResourceTemplate.enabled = updates.enabled
-          this.sendResourceListChanged()
-        },
-      };
-      this._registeredResourceTemplates[name] = registeredResourceTemplate;
+        readCallback as ReadResourceTemplateCallback
+      );
 
       this.setResourceRequestHandlers();
       this.sendResourceListChanged();
@@ -651,11 +624,7 @@ export class McpServer {
   registerResource(
     name: string,
     uriOrTemplate: string | ResourceTemplate,
-    config: ResourceMetadata & {
-      title?: string;
-      description?: string;
-      mimeType?: string;
-    },
+    config: ResourceMetadata,
     readCallback: ReadResourceCallback | ReadResourceTemplateCallback
   ): RegisteredResource | RegisteredResourceTemplate {
     if (typeof uriOrTemplate === "string") {
@@ -663,27 +632,13 @@ export class McpServer {
         throw new Error(`Resource ${uriOrTemplate} is already registered`);
       }
 
-      const registeredResource: RegisteredResource = {
+      const registeredResource = this._createRegisteredResource(
         name,
-        metadata: config,
-        readCallback: readCallback as ReadResourceCallback,
-        enabled: true,
-        disable: () => registeredResource.update({ enabled: false }),
-        enable: () => registeredResource.update({ enabled: true }),
-        remove: () => registeredResource.update({ uri: null }),
-        update: (updates) => {
-          if (typeof updates.uri !== "undefined" && updates.uri !== uriOrTemplate) {
-            delete this._registeredResources[uriOrTemplate]
-            if (updates.uri) this._registeredResources[updates.uri] = registeredResource
-          }
-          if (typeof updates.name !== "undefined") registeredResource.name = updates.name
-          if (typeof updates.metadata !== "undefined") registeredResource.metadata = updates.metadata
-          if (typeof updates.callback !== "undefined") registeredResource.readCallback = updates.callback
-          if (typeof updates.enabled !== "undefined") registeredResource.enabled = updates.enabled
-          this.sendResourceListChanged()
-        },
-      };
-      this._registeredResources[uriOrTemplate] = registeredResource;
+        (config as BaseMetadata).title,
+        uriOrTemplate,
+        config,
+        readCallback as ReadResourceCallback
+      );
 
       this.setResourceRequestHandlers();
       this.sendResourceListChanged();
@@ -693,27 +648,13 @@ export class McpServer {
         throw new Error(`Resource template ${name} is already registered`);
       }
 
-      const registeredResourceTemplate: RegisteredResourceTemplate = {
-        resourceTemplate: uriOrTemplate,
-        metadata: config,
-        readCallback: readCallback as ReadResourceTemplateCallback,
-        enabled: true,
-        disable: () => registeredResourceTemplate.update({ enabled: false }),
-        enable: () => registeredResourceTemplate.update({ enabled: true }),
-        remove: () => registeredResourceTemplate.update({ name: null }),
-        update: (updates) => {
-          if (typeof updates.name !== "undefined" && updates.name !== name) {
-            delete this._registeredResourceTemplates[name]
-            if (updates.name) this._registeredResourceTemplates[updates.name] = registeredResourceTemplate
-          }
-          if (typeof updates.template !== "undefined") registeredResourceTemplate.resourceTemplate = updates.template
-          if (typeof updates.metadata !== "undefined") registeredResourceTemplate.metadata = updates.metadata
-          if (typeof updates.callback !== "undefined") registeredResourceTemplate.readCallback = updates.callback
-          if (typeof updates.enabled !== "undefined") registeredResourceTemplate.enabled = updates.enabled
-          this.sendResourceListChanged()
-        },
-      };
-      this._registeredResourceTemplates[name] = registeredResourceTemplate;
+      const registeredResourceTemplate = this._createRegisteredResourceTemplate(
+        name,
+        (config as BaseMetadata).title,
+        uriOrTemplate,
+        config,
+        readCallback as ReadResourceTemplateCallback
+      );
 
       this.setResourceRequestHandlers();
       this.sendResourceListChanged();
@@ -721,8 +662,108 @@ export class McpServer {
     }
   }
 
+  private _createRegisteredResource(
+    name: string,
+    title: string | undefined,
+    uri: string,
+    metadata: ResourceMetadata | undefined,
+    readCallback: ReadResourceCallback
+  ): RegisteredResource {
+    const registeredResource: RegisteredResource = {
+      name,
+      title,
+      metadata,
+      readCallback,
+      enabled: true,
+      disable: () => registeredResource.update({ enabled: false }),
+      enable: () => registeredResource.update({ enabled: true }),
+      remove: () => registeredResource.update({ uri: null }),
+      update: (updates) => {
+        if (typeof updates.uri !== "undefined" && updates.uri !== uri) {
+          delete this._registeredResources[uri]
+          if (updates.uri) this._registeredResources[updates.uri] = registeredResource
+        }
+        if (typeof updates.name !== "undefined") registeredResource.name = updates.name
+        if (typeof updates.title !== "undefined") registeredResource.title = updates.title
+        if (typeof updates.metadata !== "undefined") registeredResource.metadata = updates.metadata
+        if (typeof updates.callback !== "undefined") registeredResource.readCallback = updates.callback
+        if (typeof updates.enabled !== "undefined") registeredResource.enabled = updates.enabled
+        this.sendResourceListChanged()
+      },
+    };
+    this._registeredResources[uri] = registeredResource;
+    return registeredResource;
+  }
+
+  private _createRegisteredResourceTemplate(
+    name: string,
+    title: string | undefined,
+    template: ResourceTemplate,
+    metadata: ResourceMetadata | undefined,
+    readCallback: ReadResourceTemplateCallback
+  ): RegisteredResourceTemplate {
+    const registeredResourceTemplate: RegisteredResourceTemplate = {
+      resourceTemplate: template,
+      title,
+      metadata,
+      readCallback,
+      enabled: true,
+      disable: () => registeredResourceTemplate.update({ enabled: false }),
+      enable: () => registeredResourceTemplate.update({ enabled: true }),
+      remove: () => registeredResourceTemplate.update({ name: null }),
+      update: (updates) => {
+        if (typeof updates.name !== "undefined" && updates.name !== name) {
+          delete this._registeredResourceTemplates[name]
+          if (updates.name) this._registeredResourceTemplates[updates.name] = registeredResourceTemplate
+        }
+        if (typeof updates.title !== "undefined") registeredResourceTemplate.title = updates.title
+        if (typeof updates.template !== "undefined") registeredResourceTemplate.resourceTemplate = updates.template
+        if (typeof updates.metadata !== "undefined") registeredResourceTemplate.metadata = updates.metadata
+        if (typeof updates.callback !== "undefined") registeredResourceTemplate.readCallback = updates.callback
+        if (typeof updates.enabled !== "undefined") registeredResourceTemplate.enabled = updates.enabled
+        this.sendResourceListChanged()
+      },
+    };
+    this._registeredResourceTemplates[name] = registeredResourceTemplate;
+    return registeredResourceTemplate;
+  }
+
+  private _createRegisteredPrompt(
+    name: string,
+    title: string | undefined,
+    description: string | undefined,
+    argsSchema: PromptArgsRawShape | undefined,
+    callback: PromptCallback<PromptArgsRawShape | undefined>
+  ): RegisteredPrompt {
+    const registeredPrompt: RegisteredPrompt = {
+      title,
+      description,
+      argsSchema: argsSchema === undefined ? undefined : z.object(argsSchema),
+      callback,
+      enabled: true,
+      disable: () => registeredPrompt.update({ enabled: false }),
+      enable: () => registeredPrompt.update({ enabled: true }),
+      remove: () => registeredPrompt.update({ name: null }),
+      update: (updates) => {
+        if (typeof updates.name !== "undefined" && updates.name !== name) {
+          delete this._registeredPrompts[name]
+          if (updates.name) this._registeredPrompts[updates.name] = registeredPrompt
+        }
+        if (typeof updates.title !== "undefined") registeredPrompt.title = updates.title
+        if (typeof updates.description !== "undefined") registeredPrompt.description = updates.description
+        if (typeof updates.argsSchema !== "undefined") registeredPrompt.argsSchema = z.object(updates.argsSchema)
+        if (typeof updates.callback !== "undefined") registeredPrompt.callback = updates.callback
+        if (typeof updates.enabled !== "undefined") registeredPrompt.enabled = updates.enabled
+        this.sendPromptListChanged()
+      },
+    };
+    this._registeredPrompts[name] = registeredPrompt;
+    return registeredPrompt;
+  }
+
   private _createRegisteredTool(
     name: string,
+    title: string | undefined,
     description: string | undefined,
     inputSchema: ZodRawShape | undefined,
     outputSchema: ZodRawShape | undefined,
@@ -730,6 +771,7 @@ export class McpServer {
     callback: ToolCallback<ZodRawShape | undefined>
   ): RegisteredTool {
     const registeredTool: RegisteredTool = {
+      title,
       description,
       inputSchema:
         inputSchema === undefined ? undefined : z.object(inputSchema),
@@ -868,7 +910,7 @@ export class McpServer {
     }
     const callback = rest[0] as ToolCallback<ZodRawShape | undefined>;
 
-    return this._createRegisteredTool(name, description, inputSchema, outputSchema, annotations, callback)
+    return this._createRegisteredTool(name, undefined, description, inputSchema, outputSchema, annotations, callback)
   }
 
   /**
@@ -891,21 +933,15 @@ export class McpServer {
 
     const { title, description, inputSchema, outputSchema, annotations } = config;
 
-    const registeredTool = this._createRegisteredTool(
+    return this._createRegisteredTool(
       name,
+      title,
       description,
       inputSchema,
       outputSchema,
       annotations,
       cb as ToolCallback<ZodRawShape | undefined>
     );
-
-    // Set title if provided
-    if (title !== undefined) {
-      registeredTool.title = title;
-    }
-
-    return registeredTool;
   }
 
   /**
@@ -953,28 +989,13 @@ export class McpServer {
     }
 
     const cb = rest[0] as PromptCallback<PromptArgsRawShape | undefined>;
-    const registeredPrompt: RegisteredPrompt = {
+    const registeredPrompt = this._createRegisteredPrompt(
+      name,
+      undefined,
       description,
-      argsSchema: argsSchema === undefined ? undefined : z.object(argsSchema),
-      callback: cb,
-      enabled: true,
-      disable: () => registeredPrompt.update({ enabled: false }),
-      enable: () => registeredPrompt.update({ enabled: true }),
-      remove: () => registeredPrompt.update({ name: null }),
-      update: (updates) => {
-        if (typeof updates.name !== "undefined" && updates.name !== name) {
-          delete this._registeredPrompts[name]
-          if (updates.name) this._registeredPrompts[updates.name] = registeredPrompt
-        }
-        if (typeof updates.title !== "undefined") registeredPrompt.title = updates.title
-        if (typeof updates.description !== "undefined") registeredPrompt.description = updates.description
-        if (typeof updates.argsSchema !== "undefined") registeredPrompt.argsSchema = z.object(updates.argsSchema)
-        if (typeof updates.callback !== "undefined") registeredPrompt.callback = updates.callback
-        if (typeof updates.enabled !== "undefined") registeredPrompt.enabled = updates.enabled
-        this.sendPromptListChanged()
-      },
-    };
-    this._registeredPrompts[name] = registeredPrompt;
+      argsSchema,
+      cb
+    );
 
     this.setPromptRequestHandlers();
     this.sendPromptListChanged()
@@ -1000,29 +1021,13 @@ export class McpServer {
 
     const { title, description, arguments: argsSchema } = config;
 
-    const registeredPrompt: RegisteredPrompt = {
+    const registeredPrompt = this._createRegisteredPrompt(
+      name,
       title,
       description,
-      argsSchema: argsSchema === undefined ? undefined : z.object(argsSchema),
-      callback: cb as PromptCallback<PromptArgsRawShape | undefined>,
-      enabled: true,
-      disable: () => registeredPrompt.update({ enabled: false }),
-      enable: () => registeredPrompt.update({ enabled: true }),
-      remove: () => registeredPrompt.update({ name: null }),
-      update: (updates) => {
-        if (typeof updates.name !== "undefined" && updates.name !== name) {
-          delete this._registeredPrompts[name]
-          if (updates.name) this._registeredPrompts[updates.name] = registeredPrompt
-        }
-        if (typeof updates.title !== "undefined") registeredPrompt.title = updates.title
-        if (typeof updates.description !== "undefined") registeredPrompt.description = updates.description
-        if (typeof updates.argsSchema !== "undefined") registeredPrompt.argsSchema = z.object(updates.argsSchema)
-        if (typeof updates.callback !== "undefined") registeredPrompt.callback = updates.callback
-        if (typeof updates.enabled !== "undefined") registeredPrompt.enabled = updates.enabled
-        this.sendPromptListChanged()
-      },
-    };
-    this._registeredPrompts[name] = registeredPrompt;
+      argsSchema,
+      cb as PromptCallback<PromptArgsRawShape | undefined>
+    );
 
     this.setPromptRequestHandlers();
     this.sendPromptListChanged()
@@ -1155,16 +1160,16 @@ export type RegisteredTool = {
   enable(): void;
   disable(): void;
   update<InputArgs extends ZodRawShape, OutputArgs extends ZodRawShape>(
-    updates: { 
-      name?: string | null, 
+    updates: {
+      name?: string | null,
       title?: string,
-      description?: string, 
-      paramsSchema?: InputArgs, 
-      outputSchema?: OutputArgs, 
-      annotations?: ToolAnnotations, 
-      callback?: ToolCallback<InputArgs>, 
-      enabled?: boolean 
-  }): void
+      description?: string,
+      paramsSchema?: InputArgs,
+      outputSchema?: OutputArgs,
+      annotations?: ToolAnnotations,
+      callback?: ToolCallback<InputArgs>,
+      enabled?: boolean
+    }): void
   remove(): void
 };
 
@@ -1212,12 +1217,13 @@ export type ReadResourceCallback = (
 
 export type RegisteredResource = {
   name: string;
+  title?: string;
   metadata?: ResourceMetadata;
   readCallback: ReadResourceCallback;
   enabled: boolean;
   enable(): void;
   disable(): void;
-  update(updates: { name?: string, uri?: string | null, metadata?: ResourceMetadata, callback?: ReadResourceCallback, enabled?: boolean }): void
+  update(updates: { name?: string, title?: string, uri?: string | null, metadata?: ResourceMetadata, callback?: ReadResourceCallback, enabled?: boolean }): void
   remove(): void
 };
 
@@ -1232,12 +1238,13 @@ export type ReadResourceTemplateCallback = (
 
 export type RegisteredResourceTemplate = {
   resourceTemplate: ResourceTemplate;
+  title?: string;
   metadata?: ResourceMetadata;
   readCallback: ReadResourceTemplateCallback;
   enabled: boolean;
   enable(): void;
   disable(): void;
-  update(updates: { name?: string | null, template?: ResourceTemplate, metadata?: ResourceMetadata, callback?: ReadResourceTemplateCallback, enabled?: boolean }): void
+  update(updates: { name?: string | null, title?: string, template?: ResourceTemplate, metadata?: ResourceMetadata, callback?: ReadResourceTemplateCallback, enabled?: boolean }): void
   remove(): void
 };
 

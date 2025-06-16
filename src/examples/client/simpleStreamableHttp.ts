@@ -318,7 +318,12 @@ async function listTools(): Promise<void> {
       console.log('  No tools available');
     } else {
       for (const tool of toolsResult.tools) {
-        console.log(`  - ${getDisplayName(tool)}: ${tool.description}`);
+        const displayName = getDisplayName(tool);
+        if (displayName !== tool.name) {
+          console.log(`  - ${tool.name} (${displayName}): ${tool.description}`);
+        } else {
+          console.log(`  - ${tool.name}: ${tool.description}`);
+        }
       }
     }
   } catch (error) {

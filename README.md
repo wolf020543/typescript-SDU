@@ -226,14 +226,36 @@ All resources, tools, and prompts support an optional `title` field for better U
 
 **Note:** The `register*` methods (`registerTool`, `registerPrompt`, `registerResource`) are the recommended approach for new code. The older methods (`tool`, `prompt`, `resource`) remain available for backwards compatibility.
 
+#### Title Precedence for Tools
+
+For tools specifically, there are two ways to specify a title:
+- `title` field in the tool configuration
+- `annotations.title` field (when using the older `tool()` method with annotations)
+
+The precedence order is: `title` → `annotations.title` → `name`
+
+```typescript
+// Using registerTool (recommended)
+server.registerTool("my_tool", {
+  title: "My Tool",              // This title takes precedence
+  annotations: {
+    title: "Annotation Title"    // This is ignored if title is set
+  }
+}, handler);
+
+// Using tool with annotations (older API)
+server.tool("my_tool", "description", {
+  title: "Annotation Title"      // This is used as title
+}, handler);
+```
 
 When building clients, use the provided utility to get the appropriate display name:
 
 ```typescript
 import { getDisplayName } from "@modelcontextprotocol/sdk/shared/metadataUtils.js";
 
-// Falls back to 'name' if 'title' is not provided
-const displayName = getDisplayName(tool);  // Returns title if available, otherwise name
+// Automatically handles the precedence: title → annotations.title → name
+const displayName = getDisplayName(tool);
 ```
 
 ## Running Your Server
