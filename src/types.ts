@@ -44,8 +44,9 @@ export const RequestSchema = z.object({
 const BaseNotificationParamsSchema = z
   .object({
     /**
-     * Reserved by MCP for protocol-level metadata; implementations must not make assumptions about its contents.
-    */
+     * See [MCP specification](https://github.com/modelcontextprotocol/modelcontextprotocol/blob/47339c03c143bb4ec01a26e721a1b8fe66634ebe/docs/specification/draft/basic/index.mdx#general-fields)
+     * for notes on _meta usage.
+     */
     _meta: z.optional(z.object({}).passthrough()),
   })
   .passthrough();
@@ -58,8 +59,9 @@ export const NotificationSchema = z.object({
 export const ResultSchema = z
   .object({
     /**
-     * Reserved by MCP for protocol-level metadata; implementations must not make assumptions about its contents.
-    */
+     * See [MCP specification](https://github.com/modelcontextprotocol/modelcontextprotocol/blob/47339c03c143bb4ec01a26e721a1b8fe66634ebe/docs/specification/draft/basic/index.mdx#general-fields)
+     * for notes on _meta usage.
+     */
     _meta: z.optional(z.object({}).passthrough()),
   })
   .passthrough();
@@ -440,7 +442,8 @@ export const ResourceContentsSchema = z
      */
     mimeType: z.optional(z.string()),
     /**
-     * Reserved by MCP for protocol-level metadata; implementations must not make assumptions about its contents.
+     * See [MCP specification](https://github.com/modelcontextprotocol/modelcontextprotocol/blob/47339c03c143bb4ec01a26e721a1b8fe66634ebe/docs/specification/draft/basic/index.mdx#general-fields)
+     * for notes on _meta usage.
      */
     _meta: z.optional(z.object({}).passthrough()),
   })
@@ -482,8 +485,9 @@ export const ResourceSchema = BaseMetadataSchema.extend({
   mimeType: z.optional(z.string()),
 
   /**
-   * Reserved by MCP for protocol-level metadata; implementations must not make assumptions about its contents.
-  */
+   * See [MCP specification](https://github.com/modelcontextprotocol/modelcontextprotocol/blob/47339c03c143bb4ec01a26e721a1b8fe66634ebe/docs/specification/draft/basic/index.mdx#general-fields)
+   * for notes on _meta usage.
+   */
   _meta: z.optional(z.object({}).passthrough()),
 });
 
@@ -509,8 +513,9 @@ export const ResourceTemplateSchema = BaseMetadataSchema.extend({
   mimeType: z.optional(z.string()),
 
   /**
-   * Reserved by MCP for protocol-level metadata; implementations must not make assumptions about its contents.
-  */
+   * See [MCP specification](https://github.com/modelcontextprotocol/modelcontextprotocol/blob/47339c03c143bb4ec01a26e721a1b8fe66634ebe/docs/specification/draft/basic/index.mdx#general-fields)
+   * for notes on _meta usage.
+   */
   _meta: z.optional(z.object({}).passthrough()),
 });
 
@@ -646,7 +651,8 @@ export const PromptSchema = BaseMetadataSchema.extend({
    */
   arguments: z.optional(z.array(PromptArgumentSchema)),
   /**
-   * Reserved by MCP for protocol-level metadata; implementations must not make assumptions about its contents.
+   * See [MCP specification](https://github.com/modelcontextprotocol/modelcontextprotocol/blob/47339c03c143bb4ec01a26e721a1b8fe66634ebe/docs/specification/draft/basic/index.mdx#general-fields)
+   * for notes on _meta usage.
    */
   _meta: z.optional(z.object({}).passthrough()),
 });
@@ -694,8 +700,9 @@ export const TextContentSchema = z
     text: z.string(),
 
     /**
-     * Reserved by MCP for protocol-level metadata; implementations must not make assumptions about its contents.
-    */
+     * See [MCP specification](https://github.com/modelcontextprotocol/modelcontextprotocol/blob/47339c03c143bb4ec01a26e721a1b8fe66634ebe/docs/specification/draft/basic/index.mdx#general-fields)
+     * for notes on _meta usage.
+     */
     _meta: z.optional(z.object({}).passthrough()),
   })
   .passthrough();
@@ -716,8 +723,9 @@ export const ImageContentSchema = z
     mimeType: z.string(),
 
     /**
-     * Reserved by MCP for protocol-level metadata; implementations must not make assumptions about its contents.
-    */
+     * See [MCP specification](https://github.com/modelcontextprotocol/modelcontextprotocol/blob/47339c03c143bb4ec01a26e721a1b8fe66634ebe/docs/specification/draft/basic/index.mdx#general-fields)
+     * for notes on _meta usage.
+     */
     _meta: z.optional(z.object({}).passthrough()),
   })
   .passthrough();
@@ -738,8 +746,9 @@ export const AudioContentSchema = z
     mimeType: z.string(),
 
     /**
-     * Reserved by MCP for protocol-level metadata; implementations must not make assumptions about its contents.
-    */
+     * See [MCP specification](https://github.com/modelcontextprotocol/modelcontextprotocol/blob/47339c03c143bb4ec01a26e721a1b8fe66634ebe/docs/specification/draft/basic/index.mdx#general-fields)
+     * for notes on _meta usage.
+     */
     _meta: z.optional(z.object({}).passthrough()),
   })
   .passthrough();
@@ -752,7 +761,8 @@ export const EmbeddedResourceSchema = z
     type: z.literal("resource"),
     resource: z.union([TextResourceContentsSchema, BlobResourceContentsSchema]),
     /**
-     * Reserved by MCP for protocol-level metadata; implementations must not make assumptions about its contents.
+     * See [MCP specification](https://github.com/modelcontextprotocol/modelcontextprotocol/blob/47339c03c143bb4ec01a26e721a1b8fe66634ebe/docs/specification/draft/basic/index.mdx#general-fields)
+     * for notes on _meta usage.
      */
     _meta: z.optional(z.object({}).passthrough()),
   })
@@ -899,8 +909,9 @@ export const ToolSchema = BaseMetadataSchema.extend({
   annotations: z.optional(ToolAnnotationsSchema),
 
   /**
-   * Reserved by MCP for protocol-level metadata; implementations must not make assumptions about its contents.
-  */
+   * See [MCP specification](https://github.com/modelcontextprotocol/modelcontextprotocol/blob/47339c03c143bb4ec01a26e721a1b8fe66634ebe/docs/specification/draft/basic/index.mdx#general-fields)
+   * for notes on _meta usage.
+   */
   _meta: z.optional(z.object({}).passthrough()),
 });
 
@@ -1335,8 +1346,9 @@ export const RootSchema = z
     name: z.optional(z.string()),
 
     /**
-     * Reserved by MCP for protocol-level metadata; implementations must not make assumptions about its contents.
-    */
+     * See [MCP specification](https://github.com/modelcontextprotocol/modelcontextprotocol/blob/47339c03c143bb4ec01a26e721a1b8fe66634ebe/docs/specification/draft/basic/index.mdx#general-fields)
+     * for notes on _meta usage.
+     */
     _meta: z.optional(z.object({}).passthrough()),
   })
   .passthrough();
