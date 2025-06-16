@@ -340,7 +340,7 @@ const result = await client.complete({
     }
   }
 });
-console.log(result.completion.values); // ["suggestion1", "suggestion2", ...]
+
 ```
 
 ### Display Names and Metadata
