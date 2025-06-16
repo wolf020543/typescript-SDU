@@ -923,10 +923,11 @@ server.tool(
     };
   }
 );
+```
 
-// Client-side: Handle elicitation requests
+Client-side: Handle elicitation requests
 
-
+```typescript
 // This is a placeholder - implement based on your UI framework
 async function getInputFromUser(message: string, schema: any): Promise<{
   action: "accept" | "decline" | "cancel";
