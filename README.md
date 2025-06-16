@@ -287,23 +287,30 @@ server.registerPrompt(
     title: "Team Greeting",
     description: "Generate a greeting for team members",
     argsSchema: {
-      // Completable arguments can use context for intelligent suggestions
+      department: completable(z.string(), (value) => {
+        // Department suggestions
+        return ["engineering", "sales", "marketing", "support"].filter(d => d.startsWith(value));
+      }),
       name: completable(z.string(), (value, context) => {
-        if (context?.arguments?.["department"] === "engineering") {
+        // Name suggestions based on selected department
+        const department = context?.arguments?.["department"];
+        if (department === "engineering") {
           return ["Alice", "Bob", "Charlie"].filter(n => n.startsWith(value));
-        } else if (context?.arguments?.["department"] === "sales") {
+        } else if (department === "sales") {
           return ["David", "Eve", "Frank"].filter(n => n.startsWith(value));
+        } else if (department === "marketing") {
+          return ["Grace", "Henry", "Iris"].filter(n => n.startsWith(value));
         }
         return ["Guest"].filter(n => n.startsWith(value));
       })
     }
   },
-  ({ name }) => ({
+  ({ department, name }) => ({
     messages: [{
       role: "assistant",
       content: {
         type: "text",
-        text: `Hello ${name}, welcome to the team!`
+        text: `Hello ${name}, welcome to the ${department} team!`
       }
     }]
   })
@@ -694,57 +701,6 @@ server.registerTool(
 ```
 
 ## Advanced Usage
-
-### Context-Aware Completions
-
-MCP supports intelligent completions that can use previously resolved values as context. This is useful for creating dependent parameter completions where later parameters depend on earlier ones:
-
-```typescript
-import { completable } from "@modelcontextprotocol/sdk/server/completable.js";
-
-// For resource templates
-server.registerResource(
-  "database-query",
-  new ResourceTemplate("db://{database}/{table}/{query}", {
-    list: undefined,
-    complete: {
-      // Table completions depend on the selected database
-      table: (value, context) => {
-        const database = context?.arguments?.["database"];
-        if (database === "users_db") {
-          return ["profiles", "sessions", "preferences"].filter(t => t.startsWith(value));
-        } else if (database === "products_db") {
-          return ["items", "categories", "inventory"].filter(t => t.startsWith(value));
-        }
-        return [];
-      }
-    }
-  }),
-  metadata,
-  handler
-);
-
-// For prompts with completable arguments
-server.registerPrompt(
-  "api-request",
-  {
-    argsSchema: {
-      endpoint: z.string(),
-      // Method completions can be context-aware
-      method: completable(z.string(), (value, context) => {
-        const endpoint = context?.arguments?.["endpoint"];
-        if (endpoint?.includes("/readonly/")) {
-          return ["GET"].filter(m => m.startsWith(value.toUpperCase()));
-        }
-        return ["GET", "POST", "PUT", "DELETE"].filter(m => m.startsWith(value.toUpperCase()));
-      })
-    }
-  },
-  handler
-);
-```
-
-The context object contains an `arguments` field with previously resolved parameter values, allowing you to provide more intelligent and contextual completions.
 
 ### Dynamic Servers
 

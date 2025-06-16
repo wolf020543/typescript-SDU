@@ -3875,23 +3875,29 @@ describe("Tool title precedence", () => {
         title: "Team Greeting",
         description: "Generate a greeting for team members",
         argsSchema: {
+          department: completable(z.string(), (value) => {
+            return ["engineering", "sales", "marketing", "support"].filter(d => d.startsWith(value));
+          }),
           name: completable(z.string(), (value, context) => {
-            if (context?.arguments?.["category"] === "developers") {
+            const department = context?.arguments?.["department"];
+            if (department === "engineering") {
               return ["Alice", "Bob", "Charlie"].filter(n => n.startsWith(value));
-            } else if (context?.arguments?.["category"] === "managers") {
+            } else if (department === "sales") {
               return ["David", "Eve", "Frank"].filter(n => n.startsWith(value));
+            } else if (department === "marketing") {
+              return ["Grace", "Henry", "Iris"].filter(n => n.startsWith(value));
             }
             return ["Guest"].filter(n => n.startsWith(value));
           }),
         }
       },
-      async ({ name }) => ({
+      async ({ department, name }) => ({
         messages: [
           {
             role: "assistant",
             content: {
               type: "text",
-              text: `Hello ${name}`,
+              text: `Hello ${name}, welcome to the ${department} team!`,
             },
           },
         ],
@@ -3906,7 +3912,7 @@ describe("Tool title precedence", () => {
       mcpServer.server.connect(serverTransport),
     ]);
 
-    // Test with developers category
+    // Test with engineering department
     const result1 = await client.request(
       {
         method: "completion/complete",
@@ -3921,7 +3927,7 @@ describe("Tool title precedence", () => {
           },
           context: {
             arguments: {
-              category: "developers",
+              department: "engineering",
             },
           },
         },
@@ -3931,7 +3937,7 @@ describe("Tool title precedence", () => {
 
     expect(result1.completion.values).toEqual(["Alice"]);
 
-    // Test with managers category
+    // Test with sales department
     const result2 = await client.request(
       {
         method: "completion/complete",
@@ -3946,7 +3952,7 @@ describe("Tool title precedence", () => {
           },
           context: {
             arguments: {
-              category: "managers",
+              department: "sales",
             },
           },
         },
@@ -3956,8 +3962,33 @@ describe("Tool title precedence", () => {
 
     expect(result2.completion.values).toEqual(["David"]);
 
-    // Test with no resolved context
+    // Test with marketing department
     const result3 = await client.request(
+      {
+        method: "completion/complete",
+        params: {
+          ref: {
+            type: "ref/prompt",
+            name: "test-prompt",
+          },
+          argument: {
+            name: "name",
+            value: "G",
+          },
+          context: {
+            arguments: {
+              department: "marketing",
+            },
+          },
+        },
+      },
+      CompleteResultSchema,
+    );
+
+    expect(result3.completion.values).toEqual(["Grace"]);
+
+    // Test with no resolved context
+    const result4 = await client.request(
       {
         method: "completion/complete",
         params: {
@@ -3974,6 +4005,6 @@ describe("Tool title precedence", () => {
       CompleteResultSchema,
     );
 
-    expect(result3.completion.values).toEqual(["Guest"]);
+    expect(result4.completion.values).toEqual(["Guest"]);
   });
 });
