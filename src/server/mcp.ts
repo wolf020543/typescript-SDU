@@ -114,6 +114,7 @@ export class McpServer {
           ([name, tool]): Tool => {
             const toolDefinition: Tool = {
               name,
+              title: tool.title,
               description: tool.description,
               inputSchema: tool.inputSchema
                 ? (zodToJsonSchema(tool.inputSchema, {
@@ -122,10 +123,6 @@ export class McpServer {
                 : EMPTY_OBJECT_JSON_SCHEMA,
               annotations: tool.annotations,
             };
-
-            if (tool.title !== undefined) {
-              toolDefinition.title = tool.title;
-            }
 
             if (tool.outputSchema) {
               toolDefinition.outputSchema = zodToJsonSchema(
@@ -472,19 +469,14 @@ export class McpServer {
           ([, prompt]) => prompt.enabled,
         ).map(
           ([name, prompt]): Prompt => {
-            const promptDefinition: Prompt = {
+            return {
               name,
+              title: prompt.title,
               description: prompt.description,
               arguments: prompt.argsSchema
                 ? promptArgumentsFromSchema(prompt.argsSchema)
                 : undefined,
             };
-
-            if (prompt.title !== undefined) {
-              promptDefinition.title = prompt.title;
-            }
-
-            return promptDefinition;
           },
         ),
       }),
