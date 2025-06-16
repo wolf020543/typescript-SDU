@@ -55,8 +55,7 @@ import { z } from "zod";
 // Create an MCP server
 const server = new McpServer({
   name: "demo-server",
-  version: "1.0.0",
-  title: "Demo Server"  // Optional display name
+  version: "1.0.0"
 });
 
 // Add an addition tool
@@ -79,10 +78,10 @@ server.registerResource(
     title: "Greeting Resource",      // Display name for UI
     description: "Dynamic greeting generator"
   },
-  async (uri, params) => ({
+  async (uri, { name }) => ({
     contents: [{
       uri: uri.href,
-      text: `Hello, ${params.name}!`
+      text: `Hello, ${name}!`
     }]
   })
 );
@@ -109,9 +108,8 @@ The McpServer is your core interface to the MCP protocol. It handles connection 
 
 ```typescript
 const server = new McpServer({
-  name: "my-app",              // Unique identifier for your server
-  version: "1.0.0",            // Server version
-  title: "My Application"      // Optional display name for UI
+  name: "my-app",
+  version: "1.0.0"
 });
 ```
 
@@ -145,10 +143,10 @@ server.registerResource(
     title: "User Profile",
     description: "User profile information"
   },
-  async (uri, params) => ({
+  async (uri, { userId }) => ({
     contents: [{
       uri: uri.href,
-      text: `Profile data for user ${params.userId}`
+      text: `Profile data for user ${userId}`
     }]
   })
 );
@@ -258,14 +256,36 @@ All resources, tools, and prompts support an optional `title` field for better U
 
 **Note:** The `register*` methods (`registerTool`, `registerPrompt`, `registerResource`) are the recommended approach for new code. The older methods (`tool`, `prompt`, `resource`) remain available for backwards compatibility.
 
+#### Title Precedence for Tools
+
+For tools specifically, there are two ways to specify a title:
+- `title` field in the tool configuration
+- `annotations.title` field (when using the older `tool()` method with annotations)
+
+The precedence order is: `title` → `annotations.title` → `name`
+
+```typescript
+// Using registerTool (recommended)
+server.registerTool("my_tool", {
+  title: "My Tool",              // This title takes precedence
+  annotations: {
+    title: "Annotation Title"    // This is ignored if title is set
+  }
+}, handler);
+
+// Using tool with annotations (older API)
+server.tool("my_tool", "description", {
+  title: "Annotation Title"      // This is used as title
+}, handler);
+```
 
 When building clients, use the provided utility to get the appropriate display name:
 
 ```typescript
 import { getDisplayName } from "@modelcontextprotocol/sdk/shared/metadataUtils.js";
 
-// Falls back to 'name' if 'title' is not provided
-const displayName = getDisplayName(tool);  // Returns title if available, otherwise name
+// Automatically handles the precedence: title → annotations.title → name
+const displayName = getDisplayName(tool);
 ```
 
 ## Running Your Server
@@ -481,8 +501,7 @@ import { z } from "zod";
 
 const server = new McpServer({
   name: "echo-server",
-  version: "1.0.0",
-  title: "Echo Server"
+  version: "1.0.0"
 });
 
 server.registerResource(
@@ -492,10 +511,10 @@ server.registerResource(
     title: "Echo Resource",
     description: "Echoes back messages as resources"
   },
-  async (uri, params) => ({
+  async (uri, { message }) => ({
     contents: [{
       uri: uri.href,
-      text: `Resource echo: ${params.message}`
+      text: `Resource echo: ${message}`
     }]
   })
 );
@@ -517,7 +536,7 @@ server.registerPrompt(
   {
     title: "Echo Prompt",
     description: "Creates a prompt to process a message",
-    arguments: { message: z.string() }
+    argsSchema: { message: z.string() }
   },
   ({ message }) => ({
     messages: [{
@@ -543,8 +562,7 @@ import { z } from "zod";
 
 const server = new McpServer({
   name: "sqlite-explorer",
-  version: "1.0.0",
-  title: "SQLite Explorer"
+  version: "1.0.0"
 });
 
 // Helper to create DB connection

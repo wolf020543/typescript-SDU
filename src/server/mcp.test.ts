@@ -18,6 +18,7 @@ import {
 import { ResourceTemplate } from "./mcp.js";
 import { completable } from "./completable.js";
 import { UriTemplate } from "../shared/uriTemplate.js";
+import { getDisplayName } from "../shared/metadataUtils.js";
 
 describe("McpServer", () => {
   /***
@@ -3596,5 +3597,142 @@ describe("prompt()", () => {
     expect(result.resources[0].name).toBe("Overridden Name");
     expect(result.resources[0].description).toBe("Overridden description");
     expect(result.resources[0].mimeType).toBe("text/markdown");
+  });
+});
+
+describe("Tool title precedence", () => {
+  test("should follow correct title precedence: title → annotations.title → name", async () => {
+    const mcpServer = new McpServer({
+      name: "test server",
+      version: "1.0",
+    });
+    const client = new Client({
+      name: "test client",
+      version: "1.0",
+    });
+
+    // Tool 1: Only name
+    mcpServer.tool(
+      "tool_name_only",
+      async () => ({
+        content: [{ type: "text", text: "Response" }],
+      })
+    );
+
+    // Tool 2: Name and annotations.title
+    mcpServer.tool(
+      "tool_with_annotations_title",
+      "Tool with annotations title",
+      {
+        title: "Annotations Title"
+      },
+      async () => ({
+        content: [{ type: "text", text: "Response" }],
+      })
+    );
+
+    // Tool 3: Name and title (using registerTool)
+    mcpServer.registerTool(
+      "tool_with_title",
+      {
+        title: "Regular Title",
+        description: "Tool with regular title"
+      },
+      async () => ({
+        content: [{ type: "text", text: "Response" }],
+      })
+    );
+
+    // Tool 4: All three - title should win
+    mcpServer.registerTool(
+      "tool_with_all_titles",
+      {
+        title: "Regular Title Wins",
+        description: "Tool with all titles",
+        annotations: {
+          title: "Annotations Title Should Not Show"
+        }
+      },
+      async () => ({
+        content: [{ type: "text", text: "Response" }],
+      })
+    );
+
+    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+    await Promise.all([
+      client.connect(clientTransport),
+      mcpServer.connect(serverTransport),
+    ]);
+
+    const result = await client.request(
+      { method: "tools/list" },
+      ListToolsResultSchema,
+    );
+
+
+    expect(result.tools).toHaveLength(4);
+
+    // Tool 1: Only name - should display name
+    const tool1 = result.tools.find(t => t.name === "tool_name_only");
+    expect(tool1).toBeDefined();
+    expect(getDisplayName(tool1!)).toBe("tool_name_only");
+
+    // Tool 2: Name and annotations.title - should display annotations.title
+    const tool2 = result.tools.find(t => t.name === "tool_with_annotations_title");
+    expect(tool2).toBeDefined();
+    expect(tool2!.annotations?.title).toBe("Annotations Title");
+    expect(getDisplayName(tool2!)).toBe("Annotations Title");
+
+    // Tool 3: Name and title - should display title
+    const tool3 = result.tools.find(t => t.name === "tool_with_title");
+    expect(tool3).toBeDefined();
+    expect(tool3!.title).toBe("Regular Title");
+    expect(getDisplayName(tool3!)).toBe("Regular Title");
+
+    // Tool 4: All three - title should take precedence
+    const tool4 = result.tools.find(t => t.name === "tool_with_all_titles");
+    expect(tool4).toBeDefined();
+    expect(tool4!.title).toBe("Regular Title Wins");
+    expect(tool4!.annotations?.title).toBe("Annotations Title Should Not Show");
+    expect(getDisplayName(tool4!)).toBe("Regular Title Wins");
+  });
+
+  test("getDisplayName unit tests for title precedence", () => {
+    
+    // Test 1: Only name
+    expect(getDisplayName({ name: "tool_name" })).toBe("tool_name");
+    
+    // Test 2: Name and title - title wins
+    expect(getDisplayName({ 
+      name: "tool_name", 
+      title: "Tool Title" 
+    })).toBe("Tool Title");
+    
+    // Test 3: Name and annotations.title - annotations.title wins
+    expect(getDisplayName({ 
+      name: "tool_name",
+      annotations: { title: "Annotations Title" }
+    })).toBe("Annotations Title");
+    
+    // Test 4: All three - title wins (correct precedence)
+    expect(getDisplayName({ 
+      name: "tool_name", 
+      title: "Regular Title",
+      annotations: { title: "Annotations Title" }
+    })).toBe("Regular Title");
+    
+    // Test 5: Empty title should not be used
+    expect(getDisplayName({ 
+      name: "tool_name", 
+      title: "",
+      annotations: { title: "Annotations Title" }
+    })).toBe("Annotations Title");
+    
+    // Test 6: Undefined vs null handling
+    expect(getDisplayName({ 
+      name: "tool_name", 
+      title: undefined,
+      annotations: { title: "Annotations Title" }
+    })).toBe("Annotations Title");
   });
 });

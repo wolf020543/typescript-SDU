@@ -17,8 +17,7 @@ const useOAuth = process.argv.includes('--oauth');
 const getServer = () => {
   const server = new McpServer({
     name: 'simple-streamable-http-server',
-    version: '1.0.0',
-    title: 'Simple Streamable HTTP Server',  // Display name for UI
+    version: '1.0.0'
   }, { capabilities: { logging: {} } });
 
   // Register a simple tool that returns a greeting
@@ -94,7 +93,7 @@ const getServer = () => {
     {
       title: 'Greeting Template',  // Display name for UI
       description: 'A simple greeting prompt template',
-      arguments: {
+      argsSchema: {
         name: z.string().describe('Name to include in greeting'),
       },
     },
@@ -158,10 +157,10 @@ const getServer = () => {
   server.registerResource(
     'greeting-resource',
     'https://example.com/greetings/default',
-    { 
+    {
       title: 'Default Greeting',  // Display name for UI
       description: 'A simple greeting resource',
-      mimeType: 'text/plain' 
+      mimeType: 'text/plain'
     },
     async (): Promise<ReadResourceResult> => {
       return {
