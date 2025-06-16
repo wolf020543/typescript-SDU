@@ -14,6 +14,7 @@ import {
   OAuthError
 } from "../errors.js";
 import { OAuthServerConfig } from "../types.js";
+import { resourceUrlFromServerUrl } from "../../../shared/auth-utils.js";
 
 export type AuthorizationHandlerOptions = {
   provider: OAuthServerProvider;
@@ -137,7 +138,7 @@ export function authorizationHandler({ provider, rateLimit: rateLimitConfig, con
         }
         
         // Remove fragment from server URL if present (though it shouldn't have one)
-        const canonicalServerUrl = config.serverUrl!.split('#')[0];
+        const canonicalServerUrl = resourceUrlFromServerUrl(config.serverUrl!);
         
         if (resource !== canonicalServerUrl) {
           throw new InvalidTargetError(

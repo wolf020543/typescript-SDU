@@ -16,6 +16,7 @@ import {
   InvalidTargetError
 } from "../errors.js";
 import { OAuthServerConfig } from "../types.js";
+import { resourceUrlFromServerUrl } from "../../../shared/auth-utils.js";
 
 export type TokenHandlerOptions = {
   provider: OAuthServerProvider;
@@ -110,7 +111,7 @@ export function tokenHandler({ provider, rateLimit: rateLimitConfig, config }: T
               throw new InvalidRequestError("Resource parameter is required when server URL validation is enabled");
             }
             
-            const canonicalServerUrl = config.serverUrl!.split('#')[0];
+            const canonicalServerUrl = resourceUrlFromServerUrl(config.serverUrl!);
             
             if (resource !== canonicalServerUrl) {
               throw new InvalidTargetError(
@@ -161,7 +162,7 @@ export function tokenHandler({ provider, rateLimit: rateLimitConfig, config }: T
               throw new InvalidRequestError("Resource parameter is required when server URL validation is enabled");
             }
             
-            const canonicalServerUrl = config.serverUrl!.split('#')[0];
+            const canonicalServerUrl = resourceUrlFromServerUrl(config.serverUrl!);
             
             if (resource !== canonicalServerUrl) {
               throw new InvalidTargetError(

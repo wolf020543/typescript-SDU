@@ -24,14 +24,6 @@ export function validateResourceUri(resourceUri: string): void {
 }
 
 /**
- * Removes fragment from URI to make it RFC 8707 compliant.
- * @deprecated Use resourceUrlFromServerUrl instead
- */
-export function canonicalizeResourceUri(resourceUri: string): string {
-  return resourceUrlFromServerUrl(resourceUri);
-}
-
-/**
  * Extracts resource URI from server URL by removing fragment.
  * @param serverUrl The server URL to extract from
  * @returns The resource URI without fragment
@@ -39,6 +31,3 @@ export function canonicalizeResourceUri(resourceUri: string): string {
 export function extractResourceUri(serverUrl: string | URL): string {
   return resourceUrlFromServerUrl(typeof serverUrl === 'string' ? serverUrl : serverUrl.href);
 }
-
-// Backward compatibility alias
-export const extractCanonicalResourceUri = extractResourceUri;

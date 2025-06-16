@@ -1,4 +1,4 @@
-import { canonicalizeResourceUri, validateResourceUri, extractCanonicalResourceUri, resourceUrlFromServerUrl } from './auth-utils.js';
+import { validateResourceUri, extractResourceUri, resourceUrlFromServerUrl } from './auth-utils.js';
 
 describe('auth-utils', () => {
   describe('resourceUrlFromServerUrl', () => {
@@ -28,17 +28,6 @@ describe('auth-utils', () => {
     });
   });
 
-  describe('canonicalizeResourceUri', () => {
-    it('should remove fragments', () => {
-      expect(canonicalizeResourceUri('https://example.com/path#fragment')).toBe('https://example.com/path');
-    });
-
-    it('should keep everything else unchanged', () => {
-      expect(canonicalizeResourceUri('HTTPS://EXAMPLE.COM/path')).toBe('HTTPS://EXAMPLE.COM/path');
-      expect(canonicalizeResourceUri('https://example.com:443/path')).toBe('https://example.com:443/path');
-      expect(canonicalizeResourceUri('https://example.com/path?query=1')).toBe('https://example.com/path?query=1');
-    });
-  });
 
   describe('validateResourceUri', () => {
     it('should accept valid resource URIs without fragments', () => {
@@ -64,34 +53,34 @@ describe('auth-utils', () => {
     });
   });
 
-  describe('extractCanonicalResourceUri', () => {
+  describe('extractResourceUri', () => {
     it('should remove fragments from URLs', () => {
-      expect(extractCanonicalResourceUri('https://example.com/path#fragment')).toBe('https://example.com/path');
-      expect(extractCanonicalResourceUri('https://example.com/path?query=1#fragment')).toBe('https://example.com/path?query=1');
+      expect(extractResourceUri('https://example.com/path#fragment')).toBe('https://example.com/path');
+      expect(extractResourceUri('https://example.com/path?query=1#fragment')).toBe('https://example.com/path?query=1');
     });
 
     it('should handle URL object', () => {
       const url = new URL('https://example.com:8443/path?query=1#fragment');
-      expect(extractCanonicalResourceUri(url)).toBe('https://example.com:8443/path?query=1');
+      expect(extractResourceUri(url)).toBe('https://example.com:8443/path?query=1');
     });
 
     it('should keep everything else unchanged', () => {
       // Preserves case
-      expect(extractCanonicalResourceUri('HTTPS://EXAMPLE.COM/path')).toBe('HTTPS://EXAMPLE.COM/path');
+      expect(extractResourceUri('HTTPS://EXAMPLE.COM/path')).toBe('HTTPS://EXAMPLE.COM/path');
       // Preserves all ports
-      expect(extractCanonicalResourceUri('https://example.com:443/path')).toBe('https://example.com:443/path');
-      expect(extractCanonicalResourceUri('http://example.com:80/path')).toBe('http://example.com:80/path');
+      expect(extractResourceUri('https://example.com:443/path')).toBe('https://example.com:443/path');
+      expect(extractResourceUri('http://example.com:80/path')).toBe('http://example.com:80/path');
       // Preserves query parameters
-      expect(extractCanonicalResourceUri('https://example.com/path?query=1')).toBe('https://example.com/path?query=1');
+      expect(extractResourceUri('https://example.com/path?query=1')).toBe('https://example.com/path?query=1');
       // Preserves trailing slashes
-      expect(extractCanonicalResourceUri('https://example.com/')).toBe('https://example.com/');
-      expect(extractCanonicalResourceUri('https://example.com/app1/')).toBe('https://example.com/app1/');
+      expect(extractResourceUri('https://example.com/')).toBe('https://example.com/');
+      expect(extractResourceUri('https://example.com/app1/')).toBe('https://example.com/app1/');
     });
 
     it('should distinguish between different paths on same domain', () => {
       // This is the key test for the security concern mentioned
-      const app1 = extractCanonicalResourceUri('https://api.example.com/mcp-server-1');
-      const app2 = extractCanonicalResourceUri('https://api.example.com/mcp-server-2');
+      const app1 = extractResourceUri('https://api.example.com/mcp-server-1');
+      const app2 = extractResourceUri('https://api.example.com/mcp-server-2');
       expect(app1).not.toBe(app2);
       expect(app1).toBe('https://api.example.com/mcp-server-1');
       expect(app2).toBe('https://api.example.com/mcp-server-2');

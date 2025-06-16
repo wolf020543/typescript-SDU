@@ -2,7 +2,7 @@ import pkceChallenge from "pkce-challenge";
 import { LATEST_PROTOCOL_VERSION } from "../types.js";
 import type { OAuthClientMetadata, OAuthClientInformation, OAuthTokens, OAuthMetadata, OAuthClientInformationFull, OAuthProtectedResourceMetadata } from "../shared/auth.js";
 import { OAuthClientInformationFullSchema, OAuthMetadataSchema, OAuthProtectedResourceMetadataSchema, OAuthTokensSchema } from "../shared/auth.js";
-import { canonicalizeResourceUri } from "../shared/auth-utils.js";
+import { resourceUrlFromServerUrl } from "../shared/auth-utils.js";
 
 /**
  * Implements an end-to-end OAuth client to be used with one MCP server.
@@ -105,7 +105,7 @@ export async function auth(
   // Remove fragment from resource parameter if provided
   let canonicalResource: string | undefined;
   if (resource) {
-    canonicalResource = canonicalizeResourceUri(resource);
+    canonicalResource = resourceUrlFromServerUrl(resource);
   }
 
   let authorizationServerUrl = serverUrl;
