@@ -1011,7 +1011,7 @@ export class McpServer {
     config: {
       title?: string;
       description?: string;
-      arguments?: Args;
+      argsSchema?: Args;
     },
     cb: PromptCallback<Args>
   ): RegisteredPrompt {
@@ -1019,7 +1019,7 @@ export class McpServer {
       throw new Error(`Prompt ${name} is already registered`);
     }
 
-    const { title, description, arguments: argsSchema } = config;
+    const { title, description, argsSchema } = config;
 
     const registeredPrompt = this._createRegisteredPrompt(
       name,

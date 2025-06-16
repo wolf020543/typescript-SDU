@@ -55,8 +55,7 @@ import { z } from "zod";
 // Create an MCP server
 const server = new McpServer({
   name: "demo-server",
-  version: "1.0.0",
-  title: "Demo Server"  // Optional display name
+  version: "1.0.0"
 });
 
 // Add an addition tool
@@ -109,9 +108,8 @@ The McpServer is your core interface to the MCP protocol. It handles connection 
 
 ```typescript
 const server = new McpServer({
-  name: "my-app",              // Unique identifier for your server
-  version: "1.0.0",            // Server version
-  title: "My Application"      // Optional display name for UI
+  name: "my-app",
+  version: "1.0.0"
 });
 ```
 
@@ -471,8 +469,7 @@ import { z } from "zod";
 
 const server = new McpServer({
   name: "echo-server",
-  version: "1.0.0",
-  title: "Echo Server"
+  version: "1.0.0"
 });
 
 server.registerResource(
@@ -507,7 +504,7 @@ server.registerPrompt(
   {
     title: "Echo Prompt",
     description: "Creates a prompt to process a message",
-    arguments: { message: z.string() }
+    argsSchema: { message: z.string() }
   },
   ({ message }) => ({
     messages: [{
