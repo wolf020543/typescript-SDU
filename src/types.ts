@@ -435,6 +435,10 @@ export const ResourceContentsSchema = z
      * The MIME type of this resource, if known.
      */
     mimeType: z.optional(z.string()),
+    /**
+     * Reserved by MCP for protocol-level metadata; implementations must not make assumptions about its contents.
+     */
+    _meta: z.optional(z.object({}).passthrough()),
   })
   .passthrough();
 
@@ -637,6 +641,10 @@ export const PromptSchema = BaseMetadataSchema.extend({
    * A list of arguments to use for templating the prompt.
    */
   arguments: z.optional(z.array(PromptArgumentSchema)),
+  /**
+   * Reserved by MCP for protocol-level metadata; implementations must not make assumptions about its contents.
+   */
+  _meta: z.optional(z.object({}).passthrough()),
 });
 
 /**
@@ -739,6 +747,10 @@ export const EmbeddedResourceSchema = z
   .object({
     type: z.literal("resource"),
     resource: z.union([TextResourceContentsSchema, BlobResourceContentsSchema]),
+    /**
+     * Reserved by MCP for protocol-level metadata; implementations must not make assumptions about its contents.
+     */
+    _meta: z.optional(z.object({}).passthrough()),
   })
   .passthrough();
 
