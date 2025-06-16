@@ -293,7 +293,7 @@ export class McpServer {
     }
 
     const def: CompletableDef<ZodString> = field._def;
-    const suggestions = await def.complete(request.params.argument.value);
+    const suggestions = await def.complete(request.params.argument.value, request.params.context);
     return createCompletionResult(suggestions);
   }
 
@@ -324,7 +324,7 @@ export class McpServer {
       return EMPTY_COMPLETION_RESULT;
     }
 
-    const suggestions = await completer(request.params.argument.value);
+    const suggestions = await completer(request.params.argument.value, request.params.context);
     return createCompletionResult(suggestions);
   }
 
@@ -1068,6 +1068,9 @@ export class McpServer {
  */
 export type CompleteResourceTemplateCallback = (
   value: string,
+  context?: {
+    arguments?: Record<string, string>;
+  },
 ) => string[] | Promise<string[]>;
 
 /**

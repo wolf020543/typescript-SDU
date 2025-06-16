@@ -3521,12 +3521,12 @@ describe("prompt()", () => {
     );
 
     expect(result.resources).toHaveLength(2);
-    
+
     // Resource 1 should have its own metadata
     expect(result.resources[0].name).toBe("Resource 1");
     expect(result.resources[0].description).toBe("Individual resource description");
     expect(result.resources[0].mimeType).toBe("text/plain");
-    
+
     // Resource 2 should inherit template metadata
     expect(result.resources[1].name).toBe("Resource 2");
     expect(result.resources[1].description).toBe("Template description");
@@ -3592,7 +3592,7 @@ describe("prompt()", () => {
     );
 
     expect(result.resources).toHaveLength(1);
-    
+
     // All fields should be from the individual resource, not the template
     expect(result.resources[0].name).toBe("Overridden Name");
     expect(result.resources[0].description).toBe("Overridden description");
@@ -3698,41 +3698,274 @@ describe("Tool title precedence", () => {
   });
 
   test("getDisplayName unit tests for title precedence", () => {
-    
+
     // Test 1: Only name
     expect(getDisplayName({ name: "tool_name" })).toBe("tool_name");
-    
+
     // Test 2: Name and title - title wins
-    expect(getDisplayName({ 
-      name: "tool_name", 
-      title: "Tool Title" 
+    expect(getDisplayName({
+      name: "tool_name",
+      title: "Tool Title"
     })).toBe("Tool Title");
-    
+
     // Test 3: Name and annotations.title - annotations.title wins
-    expect(getDisplayName({ 
+    expect(getDisplayName({
       name: "tool_name",
       annotations: { title: "Annotations Title" }
     })).toBe("Annotations Title");
-    
+
     // Test 4: All three - title wins (correct precedence)
-    expect(getDisplayName({ 
-      name: "tool_name", 
+    expect(getDisplayName({
+      name: "tool_name",
       title: "Regular Title",
       annotations: { title: "Annotations Title" }
     })).toBe("Regular Title");
-    
+
     // Test 5: Empty title should not be used
-    expect(getDisplayName({ 
-      name: "tool_name", 
+    expect(getDisplayName({
+      name: "tool_name",
       title: "",
       annotations: { title: "Annotations Title" }
     })).toBe("Annotations Title");
-    
+
     // Test 6: Undefined vs null handling
-    expect(getDisplayName({ 
-      name: "tool_name", 
+    expect(getDisplayName({
+      name: "tool_name",
       title: undefined,
       annotations: { title: "Annotations Title" }
     })).toBe("Annotations Title");
+  });
+
+  test("should support resource template completion with resolved context", async () => {
+    const mcpServer = new McpServer({
+      name: "test server",
+      version: "1.0",
+    });
+
+    const client = new Client({
+      name: "test client",
+      version: "1.0",
+    });
+
+    mcpServer.resource(
+      "test",
+      new ResourceTemplate("github://repos/{owner}/{repo}", {
+        list: undefined,
+        complete: {
+          repo: (value, context) => {
+            if (context?.arguments?.["owner"] === "org1") {
+              return ["project1", "project2", "project3"].filter(r => r.startsWith(value));
+            } else if (context?.arguments?.["owner"] === "org2") {
+              return ["repo1", "repo2", "repo3"].filter(r => r.startsWith(value));
+            }
+            return [];
+          },
+        },
+      }),
+      async () => ({
+        contents: [
+          {
+            uri: "github://repos/test/test",
+            text: "Test content",
+          },
+        ],
+      }),
+    );
+
+    const [clientTransport, serverTransport] =
+      InMemoryTransport.createLinkedPair();
+
+    await Promise.all([
+      client.connect(clientTransport),
+      mcpServer.server.connect(serverTransport),
+    ]);
+
+    // Test with microsoft owner
+    const result1 = await client.request(
+      {
+        method: "completion/complete",
+        params: {
+          ref: {
+            type: "ref/resource",
+            uri: "github://repos/{owner}/{repo}",
+          },
+          argument: {
+            name: "repo",
+            value: "p",
+          },
+          context: {
+            arguments: {
+              owner: "org1",
+            },
+          },
+        },
+      },
+      CompleteResultSchema,
+    );
+
+    expect(result1.completion.values).toEqual(["project1", "project2", "project3"]);
+    expect(result1.completion.total).toBe(3);
+
+    // Test with facebook owner
+    const result2 = await client.request(
+      {
+        method: "completion/complete",
+        params: {
+          ref: {
+            type: "ref/resource",
+            uri: "github://repos/{owner}/{repo}",
+          },
+          argument: {
+            name: "repo",
+            value: "r",
+          },
+          context: {
+            arguments: {
+              owner: "org2",
+            },
+          },
+        },
+      },
+      CompleteResultSchema,
+    );
+
+    expect(result2.completion.values).toEqual(["repo1", "repo2", "repo3"]);
+    expect(result2.completion.total).toBe(3);
+
+    // Test with no resolved context
+    const result3 = await client.request(
+      {
+        method: "completion/complete",
+        params: {
+          ref: {
+            type: "ref/resource",
+            uri: "github://repos/{owner}/{repo}",
+          },
+          argument: {
+            name: "repo",
+            value: "t",
+          },
+        },
+      },
+      CompleteResultSchema,
+    );
+
+    expect(result3.completion.values).toEqual([]);
+    expect(result3.completion.total).toBe(0);
+  });
+
+  test("should support prompt argument completion with resolved context", async () => {
+    const mcpServer = new McpServer({
+      name: "test server",
+      version: "1.0",
+    });
+
+    const client = new Client({
+      name: "test client",
+      version: "1.0",
+    });
+
+    mcpServer.prompt(
+      "test-prompt",
+      {
+        name: completable(z.string(), (value, context) => {
+          if (context?.arguments?.["category"] === "developers") {
+            return ["Alice", "Bob", "Charlie"].filter(n => n.startsWith(value));
+          } else if (context?.arguments?.["category"] === "managers") {
+            return ["David", "Eve", "Frank"].filter(n => n.startsWith(value));
+          }
+          return ["Guest"].filter(n => n.startsWith(value));
+        }),
+      },
+      async ({ name }) => ({
+        messages: [
+          {
+            role: "assistant",
+            content: {
+              type: "text",
+              text: `Hello ${name}`,
+            },
+          },
+        ],
+      }),
+    );
+
+    const [clientTransport, serverTransport] =
+      InMemoryTransport.createLinkedPair();
+
+    await Promise.all([
+      client.connect(clientTransport),
+      mcpServer.server.connect(serverTransport),
+    ]);
+
+    // Test with developers category
+    const result1 = await client.request(
+      {
+        method: "completion/complete",
+        params: {
+          ref: {
+            type: "ref/prompt",
+            name: "test-prompt",
+          },
+          argument: {
+            name: "name",
+            value: "A",
+          },
+          context: {
+            arguments: {
+              category: "developers",
+            },
+          },
+        },
+      },
+      CompleteResultSchema,
+    );
+
+    expect(result1.completion.values).toEqual(["Alice"]);
+
+    // Test with managers category
+    const result2 = await client.request(
+      {
+        method: "completion/complete",
+        params: {
+          ref: {
+            type: "ref/prompt",
+            name: "test-prompt",
+          },
+          argument: {
+            name: "name",
+            value: "D",
+          },
+          context: {
+            arguments: {
+              category: "managers",
+            },
+          },
+        },
+      },
+      CompleteResultSchema,
+    );
+
+    expect(result2.completion.values).toEqual(["David"]);
+
+    // Test with no resolved context
+    const result3 = await client.request(
+      {
+        method: "completion/complete",
+        params: {
+          ref: {
+            type: "ref/prompt",
+            name: "test-prompt",
+          },
+          argument: {
+            name: "name",
+            value: "G",
+          },
+        },
+      },
+      CompleteResultSchema,
+    );
+
+    expect(result3.completion.values).toEqual(["Guest"]);
   });
 });
