@@ -12,8 +12,10 @@ import {
   UnsupportedGrantTypeError,
   ServerError,
   TooManyRequestsError,
-  OAuthError
+  OAuthError,
+  InvalidTargetError
 } from "../errors.js";
+import { OAuthServerConfig } from "../types.js";
 
 export type TokenHandlerOptions = {
   provider: OAuthServerProvider;
@@ -22,6 +24,10 @@ export type TokenHandlerOptions = {
    * Set to false to disable rate limiting for this endpoint.
    */
   rateLimit?: Partial<RateLimitOptions> | false;
+  /**
+   * OAuth server configuration options
+   */
+  config?: OAuthServerConfig;
 };
 
 const TokenRequestSchema = z.object({
@@ -32,14 +38,21 @@ const AuthorizationCodeGrantSchema = z.object({
   code: z.string(),
   code_verifier: z.string(),
   redirect_uri: z.string().optional(),
+  resource: z.string().url().optional(),
 });
 
 const RefreshTokenGrantSchema = z.object({
   refresh_token: z.string(),
   scope: z.string().optional(),
+  resource: z.string().url().optional(),
 });
 
-export function tokenHandler({ provider, rateLimit: rateLimitConfig }: TokenHandlerOptions): RequestHandler {
+export function tokenHandler({ provider, rateLimit: rateLimitConfig, config }: TokenHandlerOptions): RequestHandler {
+  // Validate configuration
+  if (config?.validateResourceMatchesServer && !config?.serverUrl) {
+    throw new Error("serverUrl must be configured when validateResourceMatchesServer is true");
+  }
+
   // Nested router so we can configure middleware and restrict HTTP method
   const router = express.Router();
 
@@ -89,7 +102,27 @@ export function tokenHandler({ provider, rateLimit: rateLimitConfig }: TokenHand
             throw new InvalidRequestError(parseResult.error.message);
           }
 
-          const { code, code_verifier, redirect_uri } = parseResult.data;
+          const { code, code_verifier, redirect_uri, resource } = parseResult.data;
+
+          // If validateResourceMatchesServer is enabled, resource is required and must match
+          if (config?.validateResourceMatchesServer) {
+            if (!resource) {
+              throw new InvalidRequestError("Resource parameter is required when server URL validation is enabled");
+            }
+            
+            const canonicalServerUrl = config.serverUrl!.split('#')[0];
+            
+            if (resource !== canonicalServerUrl) {
+              throw new InvalidTargetError(
+                `Resource parameter '${resource}' does not match this server's URL '${canonicalServerUrl}'`
+              );
+            }
+          } else {
+            // Always log warning if resource is missing (unless validation is enabled)
+            if (!resource) {
+              console.warn(`Token exchange request from client ${client.client_id} is missing the resource parameter. Consider migrating to RFC 8707.`);
+            }
+          }
 
           const skipLocalPkceValidation = provider.skipLocalPkceValidation;
 
@@ -107,7 +140,8 @@ export function tokenHandler({ provider, rateLimit: rateLimitConfig }: TokenHand
             client, 
             code, 
             skipLocalPkceValidation ? code_verifier : undefined,
-            redirect_uri
+            redirect_uri,
+            resource
           );
           res.status(200).json(tokens);
           break;
@@ -119,10 +153,30 @@ export function tokenHandler({ provider, rateLimit: rateLimitConfig }: TokenHand
             throw new InvalidRequestError(parseResult.error.message);
           }
 
-          const { refresh_token, scope } = parseResult.data;
+          const { refresh_token, scope, resource } = parseResult.data;
+
+          // If validateResourceMatchesServer is enabled, resource is required and must match
+          if (config?.validateResourceMatchesServer) {
+            if (!resource) {
+              throw new InvalidRequestError("Resource parameter is required when server URL validation is enabled");
+            }
+            
+            const canonicalServerUrl = config.serverUrl!.split('#')[0];
+            
+            if (resource !== canonicalServerUrl) {
+              throw new InvalidTargetError(
+                `Resource parameter '${resource}' does not match this server's URL '${canonicalServerUrl}'`
+              );
+            }
+          } else {
+            // Always log warning if resource is missing (unless validation is enabled)
+            if (!resource) {
+              console.warn(`Token refresh request from client ${client.client_id} is missing the resource parameter. Consider migrating to RFC 8707.`);
+            }
+          }
 
           const scopes = scope?.split(" ");
-          const tokens = await provider.exchangeRefreshToken(client, refresh_token, scopes);
+          const tokens = await provider.exchangeRefreshToken(client, refresh_token, scopes, resource);
           res.status(200).json(tokens);
           break;
         }

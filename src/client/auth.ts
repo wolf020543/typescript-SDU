@@ -2,6 +2,7 @@ import pkceChallenge from "pkce-challenge";
 import { LATEST_PROTOCOL_VERSION } from "../types.js";
 import type { OAuthClientMetadata, OAuthClientInformation, OAuthTokens, OAuthMetadata, OAuthClientInformationFull, OAuthProtectedResourceMetadata } from "../shared/auth.js";
 import { OAuthClientInformationFullSchema, OAuthMetadataSchema, OAuthProtectedResourceMetadataSchema, OAuthTokensSchema } from "../shared/auth.js";
+import { canonicalizeResourceUri } from "../shared/auth-utils.js";
 
 /**
  * Implements an end-to-end OAuth client to be used with one MCP server.
@@ -92,12 +93,20 @@ export async function auth(
   { serverUrl,
     authorizationCode,
     scope,
-    resourceMetadataUrl
+    resourceMetadataUrl,
+    resource
   }: {
     serverUrl: string | URL;
     authorizationCode?: string;
     scope?: string;
-    resourceMetadataUrl?: URL }): Promise<AuthResult> {
+    resourceMetadataUrl?: URL;
+    resource?: string }): Promise<AuthResult> {
+
+  // Remove fragment from resource parameter if provided
+  let canonicalResource: string | undefined;
+  if (resource) {
+    canonicalResource = canonicalizeResourceUri(resource);
+  }
 
   let authorizationServerUrl = serverUrl;
   try {
@@ -142,6 +151,7 @@ export async function auth(
       authorizationCode,
       codeVerifier,
       redirectUri: provider.redirectUrl,
+      resource: canonicalResource,
     });
 
     await provider.saveTokens(tokens);
@@ -158,6 +168,7 @@ export async function auth(
         metadata,
         clientInformation,
         refreshToken: tokens.refresh_token,
+        resource: canonicalResource,
       });
 
       await provider.saveTokens(newTokens);
@@ -176,6 +187,7 @@ export async function auth(
     state,
     redirectUrl: provider.redirectUrl,
     scope: scope || provider.clientMetadata.scope,
+    resource: canonicalResource,
   });
 
   await provider.saveCodeVerifier(codeVerifier);
@@ -310,12 +322,14 @@ export async function startAuthorization(
     redirectUrl,
     scope,
     state,
+    resource,
   }: {
     metadata?: OAuthMetadata;
     clientInformation: OAuthClientInformation;
     redirectUrl: string | URL;
     scope?: string;
     state?: string;
+    resource?: string;
   },
 ): Promise<{ authorizationUrl: URL; codeVerifier: string }> {
   const responseType = "code";
@@ -365,6 +379,10 @@ export async function startAuthorization(
     authorizationUrl.searchParams.set("scope", scope);
   }
 
+  if (resource) {
+    authorizationUrl.searchParams.set("resource", resource);
+  }
+
   return { authorizationUrl, codeVerifier };
 }
 
@@ -379,12 +397,14 @@ export async function exchangeAuthorization(
     authorizationCode,
     codeVerifier,
     redirectUri,
+    resource,
   }: {
     metadata?: OAuthMetadata;
     clientInformation: OAuthClientInformation;
     authorizationCode: string;
     codeVerifier: string;
     redirectUri: string | URL;
+    resource?: string;
   },
 ): Promise<OAuthTokens> {
   const grantType = "authorization_code";
@@ -418,6 +438,10 @@ export async function exchangeAuthorization(
     params.set("client_secret", clientInformation.client_secret);
   }
 
+  if (resource) {
+    params.set("resource", resource);
+  }
+
   const response = await fetch(tokenUrl, {
     method: "POST",
     headers: {
@@ -442,10 +466,12 @@ export async function refreshAuthorization(
     metadata,
     clientInformation,
     refreshToken,
+    resource,
   }: {
     metadata?: OAuthMetadata;
     clientInformation: OAuthClientInformation;
     refreshToken: string;
+    resource?: string;
   },
 ): Promise<OAuthTokens> {
   const grantType = "refresh_token";
@@ -475,6 +501,10 @@ export async function refreshAuthorization(
 
   if (clientInformation.client_secret) {
     params.set("client_secret", clientInformation.client_secret);
+  }
+
+  if (resource) {
+    params.set("resource", resource);
   }
 
   const response = await fetch(tokenUrl, {

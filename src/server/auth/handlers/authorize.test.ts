@@ -276,6 +276,128 @@ describe('Authorization Handler', () => {
     });
   });
 
+  describe('Resource parameter validation', () => {
+    it('accepts valid resource parameter', async () => {
+      const mockProviderWithResource = jest.spyOn(mockProvider, 'authorize');
+      
+      const response = await supertest(app)
+        .get('/authorize')
+        .query({
+          client_id: 'valid-client',
+          redirect_uri: 'https://example.com/callback',
+          response_type: 'code',
+          code_challenge: 'challenge123',
+          code_challenge_method: 'S256',
+          resource: 'https://api.example.com/resource'
+        });
+
+      expect(response.status).toBe(302);
+      expect(mockProviderWithResource).toHaveBeenCalledWith(
+        validClient,
+        expect.objectContaining({
+          resource: 'https://api.example.com/resource',
+          redirectUri: 'https://example.com/callback',
+          codeChallenge: 'challenge123'
+        }),
+        expect.any(Object)
+      );
+    });
+
+    it('rejects invalid resource parameter (non-URL)', async () => {
+      const response = await supertest(app)
+        .get('/authorize')
+        .query({
+          client_id: 'valid-client',
+          redirect_uri: 'https://example.com/callback',
+          response_type: 'code',
+          code_challenge: 'challenge123',
+          code_challenge_method: 'S256',
+          resource: 'not-a-url'
+        });
+
+      expect(response.status).toBe(302);
+      const location = new URL(response.header.location);
+      expect(location.searchParams.get('error')).toBe('invalid_request');
+      expect(location.searchParams.get('error_description')).toContain('resource');
+    });
+
+    it('handles authorization without resource parameter', async () => {
+      const mockProviderWithoutResource = jest.spyOn(mockProvider, 'authorize');
+      
+      const response = await supertest(app)
+        .get('/authorize')
+        .query({
+          client_id: 'valid-client',
+          redirect_uri: 'https://example.com/callback',
+          response_type: 'code',
+          code_challenge: 'challenge123',
+          code_challenge_method: 'S256'
+        });
+
+      expect(response.status).toBe(302);
+      expect(mockProviderWithoutResource).toHaveBeenCalledWith(
+        validClient,
+        expect.objectContaining({
+          resource: undefined,
+          redirectUri: 'https://example.com/callback',
+          codeChallenge: 'challenge123'
+        }),
+        expect.any(Object)
+      );
+    });
+
+    it('passes multiple resources if provided', async () => {
+      const mockProviderWithResources = jest.spyOn(mockProvider, 'authorize');
+      
+      const response = await supertest(app)
+        .get('/authorize')
+        .query({
+          client_id: 'valid-client',
+          redirect_uri: 'https://example.com/callback',
+          response_type: 'code',
+          code_challenge: 'challenge123',
+          code_challenge_method: 'S256',
+          resource: 'https://api1.example.com/resource',
+          state: 'test-state'
+        });
+
+      expect(response.status).toBe(302);
+      expect(mockProviderWithResources).toHaveBeenCalledWith(
+        validClient,
+        expect.objectContaining({
+          resource: 'https://api1.example.com/resource',
+          state: 'test-state'
+        }),
+        expect.any(Object)
+      );
+    });
+
+    it('validates resource parameter in POST requests', async () => {
+      const mockProviderPost = jest.spyOn(mockProvider, 'authorize');
+      
+      const response = await supertest(app)
+        .post('/authorize')
+        .type('form')
+        .send({
+          client_id: 'valid-client',
+          redirect_uri: 'https://example.com/callback',
+          response_type: 'code',
+          code_challenge: 'challenge123',
+          code_challenge_method: 'S256',
+          resource: 'https://api.example.com/resource'
+        });
+
+      expect(response.status).toBe(302);
+      expect(mockProviderPost).toHaveBeenCalledWith(
+        validClient,
+        expect.objectContaining({
+          resource: 'https://api.example.com/resource'
+        }),
+        expect.any(Object)
+      );
+    });
+  });
+
   describe('Successful authorization', () => {
     it('handles successful authorization with all parameters', async () => {
       const response = await supertest(app)

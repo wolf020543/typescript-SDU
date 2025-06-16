@@ -1,22 +1,37 @@
 import { randomUUID } from 'node:crypto';
 import { AuthorizationParams, OAuthServerProvider } from '../../server/auth/provider.js';
 import { OAuthRegisteredClientsStore } from '../../server/auth/clients.js';
-import { OAuthClientInformationFull, OAuthMetadata, OAuthTokens } from 'src/shared/auth.js';
+import { OAuthClientInformationFull, OAuthMetadata, OAuthTokens } from '../../shared/auth.js';
 import express, { Request, Response } from "express";
-import { AuthInfo } from 'src/server/auth/types.js';
-import { createOAuthMetadata, mcpAuthRouter } from 'src/server/auth/router.js';
+import { AuthInfo } from '../../server/auth/types.js';
+import { createOAuthMetadata, mcpAuthRouter } from '../../server/auth/router.js';
+import { InvalidTargetError } from '../../server/auth/errors.js';
 
+
+interface ExtendedClientInformation extends OAuthClientInformationFull {
+  allowed_resources?: string[];
+}
 
 export class DemoInMemoryClientsStore implements OAuthRegisteredClientsStore {
-  private clients = new Map<string, OAuthClientInformationFull>();
+  private clients = new Map<string, ExtendedClientInformation>();
 
   async getClient(clientId: string) {
     return this.clients.get(clientId);
   }
 
-  async registerClient(clientMetadata: OAuthClientInformationFull) {
+  async registerClient(clientMetadata: OAuthClientInformationFull & { allowed_resources?: string[] }) {
     this.clients.set(clientMetadata.client_id, clientMetadata);
     return clientMetadata;
+  }
+
+  /**
+   * Demo method to set allowed resources for a client
+   */
+  setAllowedResources(clientId: string, resources: string[]) {
+    const client = this.clients.get(clientId);
+    if (client) {
+      client.allowed_resources = resources;
+    }
   }
 }
 
@@ -28,18 +43,28 @@ export class DemoInMemoryClientsStore implements OAuthRegisteredClientsStore {
  * - Persistent token storage
  * - Rate limiting
  */
+interface ExtendedAuthInfo extends AuthInfo {
+  resource?: string;
+  type?: string;
+}
+
 export class DemoInMemoryAuthProvider implements OAuthServerProvider {
   clientsStore = new DemoInMemoryClientsStore();
   private codes = new Map<string, {
     params: AuthorizationParams,
     client: OAuthClientInformationFull}>();
-  private tokens = new Map<string, AuthInfo>();
+  private tokens = new Map<string, ExtendedAuthInfo>();
 
   async authorize(
     client: OAuthClientInformationFull,
     params: AuthorizationParams,
     res: Response
   ): Promise<void> {
+    // Validate resource parameter if provided
+    if (params.resource) {
+      await this.validateResource(client, params.resource);
+    }
+
     const code = randomUUID();
 
     const searchParams = new URLSearchParams({
@@ -78,7 +103,9 @@ export class DemoInMemoryAuthProvider implements OAuthServerProvider {
     authorizationCode: string,
     // Note: code verifier is checked in token.ts by default
     // it's unused here for that reason.
-    _codeVerifier?: string
+    _codeVerifier?: string,
+    _redirectUri?: string,
+    resource?: string
   ): Promise<OAuthTokens> {
     const codeData = this.codes.get(authorizationCode);
     if (!codeData) {
@@ -89,15 +116,26 @@ export class DemoInMemoryAuthProvider implements OAuthServerProvider {
       throw new Error(`Authorization code was not issued to this client, ${codeData.client.client_id} != ${client.client_id}`);
     }
 
+    // Validate that the resource matches what was authorized
+    if (resource !== codeData.params.resource) {
+      throw new InvalidTargetError('Resource parameter does not match the authorized resource');
+    }
+
+    // If resource was specified during authorization, validate it's still allowed
+    if (codeData.params.resource) {
+      await this.validateResource(client, codeData.params.resource);
+    }
+
     this.codes.delete(authorizationCode);
     const token = randomUUID();
 
-    const tokenData = {
+    const tokenData: ExtendedAuthInfo = {
       token,
       clientId: client.client_id,
       scopes: codeData.params.scopes || [],
       expiresAt: Date.now() + 3600000, // 1 hour
-      type: 'access'
+      type: 'access',
+      resource: codeData.params.resource
     };
 
     this.tokens.set(token, tokenData);
@@ -111,11 +149,16 @@ export class DemoInMemoryAuthProvider implements OAuthServerProvider {
   }
 
   async exchangeRefreshToken(
-    _client: OAuthClientInformationFull,
+    client: OAuthClientInformationFull,
     _refreshToken: string,
-    _scopes?: string[]
+    _scopes?: string[],
+    resource?: string
   ): Promise<OAuthTokens> {
-    throw new Error('Not implemented for example demo');
+    // Validate resource parameter if provided
+    if (resource) {
+      await this.validateResource(client, resource);
+    }
+    throw new Error('Refresh tokens not implemented for example demo');
   }
 
   async verifyAccessToken(token: string): Promise<AuthInfo> {
@@ -130,6 +173,33 @@ export class DemoInMemoryAuthProvider implements OAuthServerProvider {
       scopes: tokenData.scopes,
       expiresAt: Math.floor(tokenData.expiresAt / 1000),
     };
+  }
+
+  /**
+   * Validates that the client is allowed to access the requested resource.
+   * In a real implementation, this would check against a database or configuration.
+   */
+  private async validateResource(client: OAuthClientInformationFull, resource: string): Promise<void> {
+    const extendedClient = client as ExtendedClientInformation;
+    
+    // If no resources are configured, allow any resource (for demo purposes)
+    if (!extendedClient.allowed_resources) {
+      return;
+    }
+
+    // Check if the requested resource is in the allowed list
+    if (!extendedClient.allowed_resources.includes(resource)) {
+      throw new InvalidTargetError(
+        `Client is not authorized to access resource: ${resource}`
+      );
+    }
+  }
+
+  /**
+   * Get token details including resource information (for demo introspection endpoint)
+   */
+  getTokenDetails(token: string): ExtendedAuthInfo | undefined {
+    return this.tokens.get(token);
   }
 }
 
@@ -164,11 +234,14 @@ export const setupAuthServer = (authServerUrl: URL): OAuthMetadata => {
       }
 
       const tokenInfo = await provider.verifyAccessToken(token);
+      // For demo purposes, we'll add a method to get token details
+      const tokenDetails = provider.getTokenDetails(token);
       res.json({
         active: true,
         client_id: tokenInfo.clientId,
         scope: tokenInfo.scopes.join(' '),
-        exp: tokenInfo.expiresAt
+        exp: tokenInfo.expiresAt,
+        ...(tokenDetails?.resource && { aud: tokenDetails.resource })
       });
       return
     } catch (error) {

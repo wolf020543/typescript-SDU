@@ -8,10 +8,12 @@ import {
   InvalidRequestError,
   InvalidClientError,
   InvalidScopeError,
+  InvalidTargetError,
   ServerError,
   TooManyRequestsError,
   OAuthError
 } from "../errors.js";
+import { OAuthServerConfig } from "../types.js";
 
 export type AuthorizationHandlerOptions = {
   provider: OAuthServerProvider;
@@ -20,6 +22,10 @@ export type AuthorizationHandlerOptions = {
    * Set to false to disable rate limiting for this endpoint.
    */
   rateLimit?: Partial<RateLimitOptions> | false;
+  /**
+   * OAuth server configuration options
+   */
+  config?: OAuthServerConfig;
 };
 
 // Parameters that must be validated in order to issue redirects.
@@ -35,9 +41,15 @@ const RequestAuthorizationParamsSchema = z.object({
   code_challenge_method: z.literal("S256"),
   scope: z.string().optional(),
   state: z.string().optional(),
+  resource: z.string().url().optional(),
 });
 
-export function authorizationHandler({ provider, rateLimit: rateLimitConfig }: AuthorizationHandlerOptions): RequestHandler {
+export function authorizationHandler({ provider, rateLimit: rateLimitConfig, config }: AuthorizationHandlerOptions): RequestHandler {
+  // Validate configuration
+  if (config?.validateResourceMatchesServer && !config?.serverUrl) {
+    throw new Error("serverUrl must be configured when validateResourceMatchesServer is true");
+  }
+
   // Create a router to apply middleware
   const router = express.Router();
   router.use(allowedMethods(["GET", "POST"]));
@@ -115,8 +127,29 @@ export function authorizationHandler({ provider, rateLimit: rateLimitConfig }: A
         throw new InvalidRequestError(parseResult.error.message);
       }
 
-      const { scope, code_challenge } = parseResult.data;
+      const { scope, code_challenge, resource } = parseResult.data;
       state = parseResult.data.state;
+
+      // If validateResourceMatchesServer is enabled, resource is required and must match
+      if (config?.validateResourceMatchesServer) {
+        if (!resource) {
+          throw new InvalidRequestError("Resource parameter is required when server URL validation is enabled");
+        }
+        
+        // Remove fragment from server URL if present (though it shouldn't have one)
+        const canonicalServerUrl = config.serverUrl!.split('#')[0];
+        
+        if (resource !== canonicalServerUrl) {
+          throw new InvalidTargetError(
+            `Resource parameter '${resource}' does not match this server's URL '${canonicalServerUrl}'`
+          );
+        }
+      } else {
+        // Always log warning if resource is missing (unless validation is enabled)
+        if (!resource) {
+          console.warn(`Authorization request from client ${client_id} is missing the resource parameter. Consider migrating to RFC 8707.`);
+        }
+      }
 
       // Validate scopes
       let requestedScopes: string[] = [];
@@ -138,6 +171,7 @@ export function authorizationHandler({ provider, rateLimit: rateLimitConfig }: A
         scopes: requestedScopes,
         redirectUri: redirect_uri,
         codeChallenge: code_challenge,
+        resource,
       }, res);
     } catch (error) {
       // Post-redirect errors - redirect with error parameters

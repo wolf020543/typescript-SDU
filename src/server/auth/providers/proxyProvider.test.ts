@@ -103,6 +103,49 @@ describe("Proxy OAuth Server Provider", () => {
 
       expect(mockResponse.redirect).toHaveBeenCalledWith(expectedUrl.toString());
     });
+
+    it('includes resource parameter in authorization redirect', async () => {
+      await provider.authorize(
+        validClient,
+        {
+          redirectUri: 'https://example.com/callback',
+          codeChallenge: 'test-challenge',
+          state: 'test-state',
+          scopes: ['read', 'write'],
+          resource: 'https://api.example.com/resource'
+        },
+        mockResponse
+      );
+
+      const expectedUrl = new URL('https://auth.example.com/authorize');
+      expectedUrl.searchParams.set('client_id', 'test-client');
+      expectedUrl.searchParams.set('response_type', 'code');
+      expectedUrl.searchParams.set('redirect_uri', 'https://example.com/callback');
+      expectedUrl.searchParams.set('code_challenge', 'test-challenge');
+      expectedUrl.searchParams.set('code_challenge_method', 'S256');
+      expectedUrl.searchParams.set('state', 'test-state');
+      expectedUrl.searchParams.set('scope', 'read write');
+      expectedUrl.searchParams.set('resource', 'https://api.example.com/resource');
+
+      expect(mockResponse.redirect).toHaveBeenCalledWith(expectedUrl.toString());
+    });
+
+    it('handles authorization without resource parameter', async () => {
+      await provider.authorize(
+        validClient,
+        {
+          redirectUri: 'https://example.com/callback',
+          codeChallenge: 'test-challenge',
+          state: 'test-state',
+          scopes: ['read']
+        },
+        mockResponse
+      );
+
+      const redirectUrl = (mockResponse.redirect as jest.Mock).mock.calls[0][0];
+      const url = new URL(redirectUrl);
+      expect(url.searchParams.has('resource')).toBe(false);
+    });
   });
 
   describe("token exchange", () => {
@@ -164,6 +207,41 @@ describe("Proxy OAuth Server Provider", () => {
       expect(tokens).toEqual(mockTokenResponse);
     });
 
+    it('includes resource parameter in authorization code exchange', async () => {
+      const tokens = await provider.exchangeAuthorizationCode(
+        validClient,
+        'test-code',
+        'test-verifier',
+        'https://example.com/callback',
+        'https://api.example.com/resource'
+      );
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        'https://auth.example.com/token',
+        expect.objectContaining({
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: expect.stringContaining('resource=' + encodeURIComponent('https://api.example.com/resource'))
+        })
+      );
+      expect(tokens).toEqual(mockTokenResponse);
+    });
+
+    it('handles authorization code exchange without resource parameter', async () => {
+      const tokens = await provider.exchangeAuthorizationCode(
+        validClient,
+        'test-code',
+        'test-verifier'
+      );
+
+      const fetchCall = (global.fetch as jest.Mock).mock.calls[0];
+      const body = fetchCall[1].body as string;
+      expect(body).not.toContain('resource=');
+      expect(tokens).toEqual(mockTokenResponse);
+    });
+
     it("exchanges refresh token for new tokens", async () => {
       const tokens = await provider.exchangeRefreshToken(
         validClient,
@@ -181,6 +259,55 @@ describe("Proxy OAuth Server Provider", () => {
           body: expect.stringContaining("grant_type=refresh_token")
         })
       );
+      expect(tokens).toEqual(mockTokenResponse);
+    });
+
+    it('includes resource parameter in refresh token exchange', async () => {
+      const tokens = await provider.exchangeRefreshToken(
+        validClient,
+        'test-refresh-token',
+        ['read', 'write'],
+        'https://api.example.com/resource'
+      );
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        'https://auth.example.com/token',
+        expect.objectContaining({
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: expect.stringContaining('resource=' + encodeURIComponent('https://api.example.com/resource'))
+        })
+      );
+      expect(tokens).toEqual(mockTokenResponse);
+    });
+
+    it('handles refresh token exchange without resource parameter', async () => {
+      const tokens = await provider.exchangeRefreshToken(
+        validClient,
+        'test-refresh-token',
+        ['read']
+      );
+
+      const fetchCall = (global.fetch as jest.Mock).mock.calls[0];
+      const body = fetchCall[1].body as string;
+      expect(body).not.toContain('resource=');
+      expect(tokens).toEqual(mockTokenResponse);
+    });
+
+    it('includes both scope and resource parameters in refresh', async () => {
+      const tokens = await provider.exchangeRefreshToken(
+        validClient,
+        'test-refresh-token',
+        ['profile', 'email'],
+        'https://api.example.com/resource'
+      );
+
+      const fetchCall = (global.fetch as jest.Mock).mock.calls[0];
+      const body = fetchCall[1].body as string;
+      expect(body).toContain('scope=profile+email');
+      expect(body).toContain('resource=' + encodeURIComponent('https://api.example.com/resource'));
       expect(tokens).toEqual(mockTokenResponse);
     });
 

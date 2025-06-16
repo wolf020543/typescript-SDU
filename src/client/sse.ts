@@ -2,6 +2,7 @@ import { EventSource, type ErrorEvent, type EventSourceInit } from "eventsource"
 import { Transport } from "../shared/transport.js";
 import { JSONRPCMessage, JSONRPCMessageSchema } from "../types.js";
 import { auth, AuthResult, extractResourceMetadataUrl, OAuthClientProvider, UnauthorizedError } from "./auth.js";
+import { extractCanonicalResourceUri } from "../shared/auth-utils.js";
 
 export class SseError extends Error {
   constructor(
@@ -86,7 +87,11 @@ export class SSEClientTransport implements Transport {
 
     let result: AuthResult;
     try {
-      result = await auth(this._authProvider, { serverUrl: this._url, resourceMetadataUrl: this._resourceMetadataUrl });
+      result = await auth(this._authProvider, { 
+        serverUrl: this._url, 
+        resourceMetadataUrl: this._resourceMetadataUrl,
+        resource: extractCanonicalResourceUri(this._url)
+      });
     } catch (error) {
       this.onerror?.(error as Error);
       throw error;
@@ -201,7 +206,12 @@ export class SSEClientTransport implements Transport {
       throw new UnauthorizedError("No auth provider");
     }
 
-    const result = await auth(this._authProvider, { serverUrl: this._url, authorizationCode, resourceMetadataUrl: this._resourceMetadataUrl });
+    const result = await auth(this._authProvider, { 
+      serverUrl: this._url, 
+      authorizationCode, 
+      resourceMetadataUrl: this._resourceMetadataUrl,
+      resource: extractCanonicalResourceUri(this._url)
+    });
     if (result !== "AUTHORIZED") {
       throw new UnauthorizedError("Failed to authorize");
     }
@@ -236,7 +246,11 @@ export class SSEClientTransport implements Transport {
 
           this._resourceMetadataUrl = extractResourceMetadataUrl(response);
 
-          const result = await auth(this._authProvider, { serverUrl: this._url, resourceMetadataUrl: this._resourceMetadataUrl });
+          const result = await auth(this._authProvider, { 
+            serverUrl: this._url, 
+            resourceMetadataUrl: this._resourceMetadataUrl,
+            resource: extractCanonicalResourceUri(this._url)
+          });
           if (result !== "AUTHORIZED") {
             throw new UnauthorizedError();
           }

@@ -189,3 +189,13 @@ export class InsufficientScopeError extends OAuthError {
     super("insufficient_scope", message, errorUri);
   }
 }
+
+/**
+ * Invalid target error - The requested resource is invalid, unknown, or malformed.
+ * (RFC 8707 - Resource Indicators for OAuth 2.0)
+ */
+export class InvalidTargetError extends OAuthError {
+  constructor(message: string, errorUri?: string) {
+    super("invalid_target", message, errorUri);
+  }
+}
