@@ -195,16 +195,33 @@ export const CancelledNotificationSchema = NotificationSchema.extend({
   }),
 });
 
+/* Base Metadata */
+/**
+ * Base metadata interface for common properties across resources, tools, prompts, and implementations.
+ */
+export const BaseMetadataSchema = z
+  .object({
+    /** Intended for programmatic or logical use, but used as a display name in past specs or fallback */
+    name: z.string(),
+    /**
+    * Intended for UI and end-user contexts — optimized to be human-readable and easily understood,
+    * even by those unfamiliar with domain-specific terminology.
+    *
+    * If not provided, the name should be used for display (except for Tool,
+    * where `annotations.title` should be given precedence over using `name`,
+    * if present).
+    */
+    title: z.optional(z.string()),
+  })
+  .passthrough();
+
 /* Initialization */
 /**
  * Describes the name and version of an MCP implementation.
  */
-export const ImplementationSchema = z
-  .object({
-    name: z.string(),
-    version: z.string(),
-  })
-  .passthrough();
+export const ImplementationSchema = BaseMetadataSchema.extend({
+  version: z.string(),
+});
 
 /**
  * Capabilities a client may support. Known capabilities are defined here, in this schema, but this is not a closed set: any client can define its own, additional capabilities.
@@ -438,74 +455,56 @@ export const BlobResourceContentsSchema = ResourceContentsSchema.extend({
 /**
  * A known resource that the server is capable of reading.
  */
-export const ResourceSchema = z
-  .object({
-    /**
-     * The URI of this resource.
-     */
-    uri: z.string(),
+export const ResourceSchema = BaseMetadataSchema.extend({
+  /**
+   * The URI of this resource.
+   */
+  uri: z.string(),
 
-    /**
-     * A human-readable name for this resource.
-     *
-     * This can be used by clients to populate UI elements.
-     */
-    name: z.string(),
+  /**
+   * A description of what this resource represents.
+   *
+   * This can be used by clients to improve the LLM's understanding of available resources. It can be thought of like a "hint" to the model.
+   */
+  description: z.optional(z.string()),
 
-    /**
-     * A description of what this resource represents.
-     *
-     * This can be used by clients to improve the LLM's understanding of available resources. It can be thought of like a "hint" to the model.
-     */
-    description: z.optional(z.string()),
+  /**
+   * The MIME type of this resource, if known.
+   */
+  mimeType: z.optional(z.string()),
 
-    /**
-     * The MIME type of this resource, if known.
-     */
-    mimeType: z.optional(z.string()),
-
-    /**
-     * Reserved by MCP for protocol-level metadata; implementations must not make assumptions about its contents.
-    */
-    _meta: z.optional(z.object({}).passthrough()),
-  })
-  .passthrough();
+  /**
+   * Reserved by MCP for protocol-level metadata; implementations must not make assumptions about its contents.
+  */
+  _meta: z.optional(z.object({}).passthrough()),
+});
 
 /**
  * A template description for resources available on the server.
  */
-export const ResourceTemplateSchema = z
-  .object({
-    /**
-     * A URI template (according to RFC 6570) that can be used to construct resource URIs.
-     */
-    uriTemplate: z.string(),
+export const ResourceTemplateSchema = BaseMetadataSchema.extend({
+  /**
+   * A URI template (according to RFC 6570) that can be used to construct resource URIs.
+   */
+  uriTemplate: z.string(),
 
-    /**
-     * A human-readable name for the type of resource this template refers to.
-     *
-     * This can be used by clients to populate UI elements.
-     */
-    name: z.string(),
+  /**
+   * A description of what this template is for.
+   *
+   * This can be used by clients to improve the LLM's understanding of available resources. It can be thought of like a "hint" to the model.
+   */
+  description: z.optional(z.string()),
 
-    /**
-     * A description of what this template is for.
-     *
-     * This can be used by clients to improve the LLM's understanding of available resources. It can be thought of like a "hint" to the model.
-     */
-    description: z.optional(z.string()),
+  /**
+   * The MIME type for all resources that match this template. This should only be included if all resources matching this template have the same type.
+   */
+  mimeType: z.optional(z.string()),
 
-    /**
-     * The MIME type for all resources that match this template. This should only be included if all resources matching this template have the same type.
-     */
-    mimeType: z.optional(z.string()),
-
-    /**
-     * Reserved by MCP for protocol-level metadata; implementations must not make assumptions about its contents.
-    */
-    _meta: z.optional(z.object({}).passthrough()),
-  })
-  .passthrough();
+  /**
+   * Reserved by MCP for protocol-level metadata; implementations must not make assumptions about its contents.
+  */
+  _meta: z.optional(z.object({}).passthrough()),
+});
 
 /**
  * Sent from the client to request a list of resources the server has.
@@ -629,22 +628,16 @@ export const PromptArgumentSchema = z
 /**
  * A prompt or prompt template that the server offers.
  */
-export const PromptSchema = z
-  .object({
-    /**
-     * The name of the prompt or prompt template.
-     */
-    name: z.string(),
-    /**
-     * An optional description of what this prompt provides
-     */
-    description: z.optional(z.string()),
-    /**
-     * A list of arguments to use for templating the prompt.
-     */
-    arguments: z.optional(z.array(PromptArgumentSchema)),
-  })
-  .passthrough();
+export const PromptSchema = BaseMetadataSchema.extend({
+  /**
+   * An optional description of what this prompt provides
+   */
+  description: z.optional(z.string()),
+  /**
+   * A list of arguments to use for templating the prompt.
+   */
+  arguments: z.optional(z.array(PromptArgumentSchema)),
+});
 
 /**
  * Sent from the client to request a list of prompts and prompt templates the server has.
@@ -842,49 +835,43 @@ export const ToolAnnotationsSchema = z
 /**
  * Definition for a tool the client can call.
  */
-export const ToolSchema = z
-  .object({
-    /**
-     * The name of the tool.
-     */
-    name: z.string(),
-    /**
-     * A human-readable description of the tool.
-     */
-    description: z.optional(z.string()),
-    /**
-     * A JSON Schema object defining the expected parameters for the tool.
-     */
-    inputSchema: z
-      .object({
-        type: z.literal("object"),
-        properties: z.optional(z.object({}).passthrough()),
-        required: z.optional(z.array(z.string())),
-      })
-      .passthrough(),
-    /**
-     * An optional JSON Schema object defining the structure of the tool's output returned in 
-     * the structuredContent field of a CallToolResult.
-     */
-    outputSchema: z.optional(
-      z.object({
-        type: z.literal("object"),
-        properties: z.optional(z.object({}).passthrough()),
-        required: z.optional(z.array(z.string())),
-      })
-        .passthrough()
-    ),
-    /**
-     * Optional additional tool information.
-     */
-    annotations: z.optional(ToolAnnotationsSchema),
+export const ToolSchema = BaseMetadataSchema.extend({
+  /**
+   * A human-readable description of the tool.
+   */
+  description: z.optional(z.string()),
+  /**
+   * A JSON Schema object defining the expected parameters for the tool.
+   */
+  inputSchema: z
+    .object({
+      type: z.literal("object"),
+      properties: z.optional(z.object({}).passthrough()),
+      required: z.optional(z.array(z.string())),
+    })
+    .passthrough(),
+  /**
+   * An optional JSON Schema object defining the structure of the tool's output returned in 
+   * the structuredContent field of a CallToolResult.
+   */
+  outputSchema: z.optional(
+    z.object({
+      type: z.literal("object"),
+      properties: z.optional(z.object({}).passthrough()),
+      required: z.optional(z.array(z.string())),
+    })
+      .passthrough()
+  ),
+  /**
+   * Optional additional tool information.
+   */
+  annotations: z.optional(ToolAnnotationsSchema),
 
-    /**
-     * Reserved by MCP for protocol-level metadata; implementations must not make assumptions about its contents.
-    */
-    _meta: z.optional(z.object({}).passthrough()),
-  })
-  .passthrough();
+  /**
+   * Reserved by MCP for protocol-level metadata; implementations must not make assumptions about its contents.
+  */
+  _meta: z.optional(z.object({}).passthrough()),
+});
 
 /**
  * Sent from the client to request a list of tools the server has.
@@ -1346,6 +1333,9 @@ export type EmptyResult = Infer<typeof EmptyResultSchema>;
 
 /* Cancellation */
 export type CancelledNotification = Infer<typeof CancelledNotificationSchema>;
+
+/* Base Metadata */
+export type BaseMetadata = Infer<typeof BaseMetadataSchema>;
 
 /* Initialization */
 export type Implementation = Infer<typeof ImplementationSchema>;

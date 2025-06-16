@@ -54,22 +54,30 @@ import { z } from "zod";
 
 // Create an MCP server
 const server = new McpServer({
-  name: "Demo",
+  name: "demo-server",
   version: "1.0.0"
 });
 
 // Add an addition tool
-server.tool("add",
-  { a: z.number(), b: z.number() },
+server.registerTool("add",
+  {
+    title: "Addition Tool",
+    description: "Add two numbers",
+    inputSchema: { a: z.number(), b: z.number() }
+  },
   async ({ a, b }) => ({
     content: [{ type: "text", text: String(a + b) }]
   })
 );
 
 // Add a dynamic greeting resource
-server.resource(
+server.registerResource(
   "greeting",
   new ResourceTemplate("greeting://{name}", { list: undefined }),
+  { 
+    title: "Greeting Resource",      // Display name for UI
+    description: "Dynamic greeting generator"
+  },
   async (uri, { name }) => ({
     contents: [{
       uri: uri.href,
@@ -100,7 +108,7 @@ The McpServer is your core interface to the MCP protocol. It handles connection 
 
 ```typescript
 const server = new McpServer({
-  name: "My App",
+  name: "my-app",
   version: "1.0.0"
 });
 ```
@@ -111,9 +119,14 @@ Resources are how you expose data to LLMs. They're similar to GET endpoints in a
 
 ```typescript
 // Static resource
-server.resource(
+server.registerResource(
   "config",
   "config://app",
+  {
+    title: "Application Config",
+    description: "Application configuration data",
+    mimeType: "text/plain"
+  },
   async (uri) => ({
     contents: [{
       uri: uri.href,
@@ -123,9 +136,13 @@ server.resource(
 );
 
 // Dynamic resource with parameters
-server.resource(
+server.registerResource(
   "user-profile",
   new ResourceTemplate("users://{userId}/profile", { list: undefined }),
+  {
+    title: "User Profile",
+    description: "User profile information"
+  },
   async (uri, { userId }) => ({
     contents: [{
       uri: uri.href,
@@ -141,11 +158,15 @@ Tools let LLMs take actions through your server. Unlike resources, tools are exp
 
 ```typescript
 // Simple tool with parameters
-server.tool(
+server.registerTool(
   "calculate-bmi",
   {
-    weightKg: z.number(),
-    heightM: z.number()
+    title: "BMI Calculator",
+    description: "Calculate Body Mass Index",
+    inputSchema: {
+      weightKg: z.number(),
+      heightM: z.number()
+    }
   },
   async ({ weightKg, heightM }) => ({
     content: [{
@@ -156,9 +177,13 @@ server.tool(
 );
 
 // Async tool with external API call
-server.tool(
+server.registerTool(
   "fetch-weather",
-  { city: z.string() },
+  {
+    title: "Weather Fetcher",
+    description: "Get weather data for a city",
+    inputSchema: { city: z.string() }
+  },
   async ({ city }) => {
     const response = await fetch(`https://api.weather.com/${city}`);
     const data = await response.text();
@@ -174,9 +199,13 @@ server.tool(
 Prompts are reusable templates that help LLMs interact with your server effectively:
 
 ```typescript
-server.prompt(
+server.registerPrompt(
   "review-code",
-  { code: z.string() },
+  {
+    title: "Code Review",
+    description: "Review code for best practices and potential issues",
+    arguments: { code: z.string() }
+  },
   ({ code }) => ({
     messages: [{
       role: "user",
@@ -187,6 +216,44 @@ server.prompt(
     }]
   })
 );
+```
+
+### Display Names and Metadata
+
+All resources, tools, and prompts support an optional `title` field for better UI presentation. The `title` is used as a display name, while `name` remains the unique identifier.
+
+**Note:** The `register*` methods (`registerTool`, `registerPrompt`, `registerResource`) are the recommended approach for new code. The older methods (`tool`, `prompt`, `resource`) remain available for backwards compatibility.
+
+#### Title Precedence for Tools
+
+For tools specifically, there are two ways to specify a title:
+- `title` field in the tool configuration
+- `annotations.title` field (when using the older `tool()` method with annotations)
+
+The precedence order is: `title` → `annotations.title` → `name`
+
+```typescript
+// Using registerTool (recommended)
+server.registerTool("my_tool", {
+  title: "My Tool",              // This title takes precedence
+  annotations: {
+    title: "Annotation Title"    // This is ignored if title is set
+  }
+}, handler);
+
+// Using tool with annotations (older API)
+server.tool("my_tool", "description", {
+  title: "Annotation Title"      // This is used as title
+}, handler);
+```
+
+When building clients, use the provided utility to get the appropriate display name:
+
+```typescript
+import { getDisplayName } from "@modelcontextprotocol/sdk/shared/metadataUtils.js";
+
+// Automatically handles the precedence: title → annotations.title → name
+const displayName = getDisplayName(tool);
 ```
 
 ## Running Your Server
@@ -401,13 +468,17 @@ import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mc
 import { z } from "zod";
 
 const server = new McpServer({
-  name: "Echo",
+  name: "echo-server",
   version: "1.0.0"
 });
 
-server.resource(
+server.registerResource(
   "echo",
   new ResourceTemplate("echo://{message}", { list: undefined }),
+  {
+    title: "Echo Resource",
+    description: "Echoes back messages as resources"
+  },
   async (uri, { message }) => ({
     contents: [{
       uri: uri.href,
@@ -416,17 +487,25 @@ server.resource(
   })
 );
 
-server.tool(
+server.registerTool(
   "echo",
-  { message: z.string() },
+  {
+    title: "Echo Tool",
+    description: "Echoes back the provided message",
+    inputSchema: { message: z.string() }
+  },
   async ({ message }) => ({
     content: [{ type: "text", text: `Tool echo: ${message}` }]
   })
 );
 
-server.prompt(
+server.registerPrompt(
   "echo",
-  { message: z.string() },
+  {
+    title: "Echo Prompt",
+    description: "Creates a prompt to process a message",
+    argsSchema: { message: z.string() }
+  },
   ({ message }) => ({
     messages: [{
       role: "user",
@@ -450,7 +529,7 @@ import { promisify } from "util";
 import { z } from "zod";
 
 const server = new McpServer({
-  name: "SQLite Explorer",
+  name: "sqlite-explorer",
   version: "1.0.0"
 });
 
@@ -463,9 +542,14 @@ const getDb = () => {
   };
 };
 
-server.resource(
+server.registerResource(
   "schema",
   "schema://main",
+  {
+    title: "Database Schema",
+    description: "SQLite database schema",
+    mimeType: "text/plain"
+  },
   async (uri) => {
     const db = getDb();
     try {
@@ -484,9 +568,13 @@ server.resource(
   }
 );
 
-server.tool(
+server.registerTool(
   "query",
-  { sql: z.string() },
+  {
+    title: "SQL Query",
+    description: "Execute SQL queries on the database",
+    inputSchema: { sql: z.string() }
+  },
   async ({ sql }) => {
     const db = getDb();
     try {
