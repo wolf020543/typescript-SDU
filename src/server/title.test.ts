@@ -185,7 +185,7 @@ describe("Title field backwards compatibility", () => {
         title: "User Profile",
         description: "User profile information"
       },
-      async (uri, { userId }, extra) => ({
+      async (uri, { userId }, _extra) => ({
         contents: [{
           uri: uri.href,
           text: `Profile data for user ${userId}`
