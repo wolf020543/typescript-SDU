@@ -4,7 +4,8 @@ import {
     ResourceLinkSchema,
     ContentBlockSchema,
     PromptMessageSchema,
-    CallToolResultSchema
+    CallToolResultSchema,
+    CompleteRequestSchema
 } from "./types.js";
 
 describe("Types", () => {
@@ -220,6 +221,93 @@ describe("Types", () => {
             expect(result.success).toBe(true);
             if (result.success) {
                 expect(result.data.content).toEqual([]);
+            }
+        });
+    });
+
+    describe("CompleteRequest", () => {
+        test("should validate a CompleteRequest without resolved field", () => {
+            const request = {
+                method: "completion/complete",
+                params: {
+                    ref: { type: "ref/prompt", name: "greeting" },
+                    argument: { name: "name", value: "A" }
+                }
+            };
+
+            const result = CompleteRequestSchema.safeParse(request);
+            expect(result.success).toBe(true);
+            if (result.success) {
+                expect(result.data.method).toBe("completion/complete");
+                expect(result.data.params.ref.type).toBe("ref/prompt");
+                expect(result.data.params.context).toBeUndefined();
+            }
+        });
+
+        test("should validate a CompleteRequest with resolved field", () => {
+            const request = {
+                method: "completion/complete",
+                params: {
+                    ref: { type: "ref/resource", uri: "github://repos/{owner}/{repo}" },
+                    argument: { name: "repo", value: "t" },
+                    context: {
+                        arguments: {
+                            "{owner}": "microsoft"
+                        }
+                    }
+                }
+            };
+
+            const result = CompleteRequestSchema.safeParse(request);
+            expect(result.success).toBe(true);
+            if (result.success) {
+                expect(result.data.params.context?.arguments).toEqual({
+                    "{owner}": "microsoft"
+                });
+            }
+        });
+
+        test("should validate a CompleteRequest with empty resolved field", () => {
+            const request = {
+                method: "completion/complete",
+                params: {
+                    ref: { type: "ref/prompt", name: "test" },
+                    argument: { name: "arg", value: "" },
+                    context: {
+                        arguments: {}
+                    }
+                }
+            };
+
+            const result = CompleteRequestSchema.safeParse(request);
+            expect(result.success).toBe(true);
+            if (result.success) {
+                expect(result.data.params.context?.arguments).toEqual({});
+            }
+        });
+
+        test("should validate a CompleteRequest with multiple resolved variables", () => {
+            const request = {
+                method: "completion/complete",
+                params: {
+                    ref: { type: "ref/resource", uri: "api://v1/{tenant}/{resource}/{id}" },
+                    argument: { name: "id", value: "123" },
+                    context: {
+                        arguments: {
+                            "{tenant}": "acme-corp",
+                            "{resource}": "users"
+                        }
+                    }
+                }
+            };
+
+            const result = CompleteRequestSchema.safeParse(request);
+            expect(result.success).toBe(true);
+            if (result.success) {
+                expect(result.data.params.context?.arguments).toEqual({
+                    "{tenant}": "acme-corp",
+                    "{resource}": "users"
+                });
             }
         });
     });

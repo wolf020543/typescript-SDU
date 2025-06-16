@@ -1169,6 +1169,14 @@ export const CompleteRequestSchema = RequestSchema.extend({
         value: z.string(),
       })
       .passthrough(),
+    context: z.optional(
+      z.object({
+        /**
+         * Previously-resolved variables in a URI template or prompt.
+         */
+        arguments: z.optional(z.record(z.string(), z.string())),
+      })
+    ),
   }),
 });
 
