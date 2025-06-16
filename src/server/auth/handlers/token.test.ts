@@ -303,7 +303,7 @@ describe('Token Handler', () => {
         'valid_code',
         undefined, // code_verifier is undefined after PKCE validation
         undefined, // redirect_uri
-        'https://api.example.com/resource' // resource parameter
+        new URL('https://api.example.com/resource') // resource parameter
       );
     });
 
@@ -371,7 +371,7 @@ describe('Token Handler', () => {
         'valid_code',
         undefined, // code_verifier is undefined after PKCE validation
         'https://example.com/callback', // redirect_uri
-        'https://api.example.com/resource' // resource parameter
+        new URL('https://api.example.com/resource') // resource parameter
       );
     });
 
@@ -585,7 +585,7 @@ describe('Token Handler', () => {
         validClient,
         'valid_refresh_token',
         undefined, // scopes
-        'https://api.example.com/resource' // resource parameter
+        new URL('https://api.example.com/resource') // resource parameter
       );
     });
 
@@ -648,7 +648,7 @@ describe('Token Handler', () => {
         validClient,
         'valid_refresh_token',
         ['profile', 'email'], // scopes
-        'https://api.example.com/resource' // resource parameter
+        new URL('https://api.example.com/resource') // resource parameter
       );
     });
   });

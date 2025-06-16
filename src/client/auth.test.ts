@@ -347,7 +347,7 @@ describe("OAuth Authorization", () => {
         {
           clientInformation: validClientInfo,
           redirectUrl: "http://localhost:3000/callback",
-          resource: "https://api.example.com/mcp-server",
+          resource: new URL("https://api.example.com/mcp-server"),
         }
       );
 
@@ -526,7 +526,7 @@ describe("OAuth Authorization", () => {
         authorizationCode: "code123",
         codeVerifier: "verifier123",
         redirectUri: "http://localhost:3000/callback",
-        resource: "https://api.example.com/mcp-server",
+        resource: new URL("https://api.example.com/mcp-server"),
       });
 
       expect(tokens).toEqual(validTokens);
@@ -650,7 +650,7 @@ describe("OAuth Authorization", () => {
       const tokens = await refreshAuthorization("https://auth.example.com", {
         clientInformation: validClientInfo,
         refreshToken: "refresh123",
-        resource: "https://api.example.com/mcp-server",
+        resource: new URL("https://api.example.com/mcp-server"),
       });
 
       expect(tokens).toEqual(validTokensWithNewRefreshToken);
@@ -939,7 +939,7 @@ describe("OAuth Authorization", () => {
       // Call the auth function with a resource that has a fragment
       const result = await auth(mockProvider, {
         serverUrl: "https://resource.example.com",
-        resource: "https://api.example.com/mcp-server#fragment",
+        resource: new URL("https://api.example.com/mcp-server#fragment"),
       });
 
       expect(result).toBe("REDIRECT");
@@ -988,7 +988,7 @@ describe("OAuth Authorization", () => {
       // Call auth without authorization code (should trigger redirect)
       const result = await auth(mockProvider, {
         serverUrl: "https://resource.example.com",
-        resource: "https://api.example.com/mcp-server",
+        resource: new URL("https://api.example.com/mcp-server"),
       });
 
       expect(result).toBe("REDIRECT");
@@ -1050,7 +1050,7 @@ describe("OAuth Authorization", () => {
       const result = await auth(mockProvider, {
         serverUrl: "https://resource.example.com",
         authorizationCode: "auth-code-123",
-        resource: "https://api.example.com/mcp-server",
+        resource: new URL("https://api.example.com/mcp-server"),
       });
 
       expect(result).toBe("AUTHORIZED");
@@ -1112,7 +1112,7 @@ describe("OAuth Authorization", () => {
       // Call auth with existing tokens (should trigger refresh)
       const result = await auth(mockProvider, {
         serverUrl: "https://resource.example.com",
-        resource: "https://api.example.com/mcp-server",
+        resource: new URL("https://api.example.com/mcp-server"),
       });
 
       expect(result).toBe("AUTHORIZED");
@@ -1161,7 +1161,7 @@ describe("OAuth Authorization", () => {
       // Call auth with empty resource parameter
       const result = await auth(mockProvider, {
         serverUrl: "https://resource.example.com",
-        resource: "",
+        resource: undefined,
       });
 
       expect(result).toBe("REDIRECT");
@@ -1204,7 +1204,7 @@ describe("OAuth Authorization", () => {
       // Call auth with resource containing multiple # symbols
       const result = await auth(mockProvider, {
         serverUrl: "https://resource.example.com",
-        resource: "https://api.example.com/mcp-server#fragment#another",
+        resource: new URL("https://api.example.com/mcp-server#fragment#another"),
       });
 
       expect(result).toBe("REDIRECT");
@@ -1249,7 +1249,7 @@ describe("OAuth Authorization", () => {
       // multiple MCP servers on the same domain
       const result1 = await auth(mockProvider, {
         serverUrl: "https://api.example.com",
-        resource: "https://api.example.com/mcp-server-1/v1",
+        resource: new URL("https://api.example.com/mcp-server-1/v1"),
       });
 
       expect(result1).toBe("REDIRECT");
@@ -1264,7 +1264,7 @@ describe("OAuth Authorization", () => {
       // Test with different path on same domain
       const result2 = await auth(mockProvider, {
         serverUrl: "https://api.example.com",
-        resource: "https://api.example.com/mcp-server-2/v1",
+        resource: new URL("https://api.example.com/mcp-server-2/v1"),
       });
 
       expect(result2).toBe("REDIRECT");
@@ -1309,7 +1309,7 @@ describe("OAuth Authorization", () => {
       // Call auth with resource containing query parameters
       const result = await auth(mockProvider, {
         serverUrl: "https://resource.example.com",
-        resource: "https://api.example.com/mcp-server?param=value&another=test",
+        resource: new URL("https://api.example.com/mcp-server?param=value&another=test"),
       });
 
       expect(result).toBe("REDIRECT");

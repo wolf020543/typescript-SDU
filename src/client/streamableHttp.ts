@@ -2,7 +2,7 @@ import { Transport } from "../shared/transport.js";
 import { isInitializedNotification, isJSONRPCRequest, isJSONRPCResponse, JSONRPCMessage, JSONRPCMessageSchema } from "../types.js";
 import { auth, AuthResult, extractResourceMetadataUrl, OAuthClientProvider, UnauthorizedError } from "./auth.js";
 import { EventSourceParserStream } from "eventsource-parser/stream";
-import { extractResourceUri } from "../shared/auth-utils.js";
+import { resourceUrlFromServerUrl } from "../shared/auth-utils.js";
 
 // Default reconnection options for StreamableHTTP connections
 const DEFAULT_STREAMABLE_HTTP_RECONNECTION_OPTIONS: StreamableHTTPReconnectionOptions = {
@@ -153,7 +153,7 @@ export class StreamableHTTPClientTransport implements Transport {
       result = await auth(this._authProvider, { 
         serverUrl: this._url, 
         resourceMetadataUrl: this._resourceMetadataUrl,
-        resource: extractResourceUri(this._url)
+        resource: resourceUrlFromServerUrl(new URL(this._url))
       });
     } catch (error) {
       this.onerror?.(error as Error);
@@ -371,7 +371,7 @@ export class StreamableHTTPClientTransport implements Transport {
       serverUrl: this._url, 
       authorizationCode, 
       resourceMetadataUrl: this._resourceMetadataUrl,
-      resource: extractResourceUri(this._url)
+      resource: resourceUrlFromServerUrl(new URL(this._url))
     });
     if (result !== "AUTHORIZED") {
       throw new UnauthorizedError("Failed to authorize");
@@ -423,7 +423,7 @@ export class StreamableHTTPClientTransport implements Transport {
           const result = await auth(this._authProvider, { 
             serverUrl: this._url, 
             resourceMetadataUrl: this._resourceMetadataUrl,
-            resource: extractResourceUri(this._url)
+            resource: resourceUrlFromServerUrl(new URL(this._url))
           });
           if (result !== "AUTHORIZED") {
             throw new UnauthorizedError();

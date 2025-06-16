@@ -213,7 +213,7 @@ describe("Proxy OAuth Server Provider", () => {
         'test-code',
         'test-verifier',
         'https://example.com/callback',
-        'https://api.example.com/resource'
+        new URL('https://api.example.com/resource')
       );
 
       expect(global.fetch).toHaveBeenCalledWith(
@@ -267,7 +267,7 @@ describe("Proxy OAuth Server Provider", () => {
         validClient,
         'test-refresh-token',
         ['read', 'write'],
-        'https://api.example.com/resource'
+        new URL('https://api.example.com/resource')
       );
 
       expect(global.fetch).toHaveBeenCalledWith(
@@ -301,7 +301,7 @@ describe("Proxy OAuth Server Provider", () => {
         validClient,
         'test-refresh-token',
         ['profile', 'email'],
-        'https://api.example.com/resource'
+        new URL('https://api.example.com/resource')
       );
 
       const fetchCall = (global.fetch as jest.Mock).mock.calls[0];

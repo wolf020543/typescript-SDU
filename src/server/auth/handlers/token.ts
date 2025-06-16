@@ -113,7 +113,7 @@ export function tokenHandler({ provider, rateLimit: rateLimitConfig }: TokenHand
             code, 
             skipLocalPkceValidation ? code_verifier : undefined,
             redirect_uri,
-            resource
+            resource ? new URL(resource) : undefined
           );
           res.status(200).json(tokens);
           break;
@@ -131,7 +131,7 @@ export function tokenHandler({ provider, rateLimit: rateLimitConfig }: TokenHand
           // The provider can decide how to validate it
 
           const scopes = scope?.split(" ");
-          const tokens = await provider.exchangeRefreshToken(client, refresh_token, scopes, resource);
+          const tokens = await provider.exchangeRefreshToken(client, refresh_token, scopes, resource ? new URL(resource) : undefined);
           res.status(200).json(tokens);
           break;
         }

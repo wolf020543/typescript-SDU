@@ -175,7 +175,7 @@ export class ProxyOAuthServerProvider implements OAuthServerProvider {
     }
 
     if (resource) {
-      params.append("resource", resource);
+      params.append("resource", resource.href);
     }
 
     const response = await fetch(this._endpoints.tokenUrl, {
@@ -217,7 +217,7 @@ export class ProxyOAuthServerProvider implements OAuthServerProvider {
     }
 
     if (resource) {
-      params.set("resource", resource);
+      params.set("resource", resource.href);
     }
 
     const response = await fetch(this._endpoints.tokenUrl, {
