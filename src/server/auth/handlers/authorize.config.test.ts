@@ -3,7 +3,6 @@ import request from "supertest";
 import { authorizationHandler } from "./authorize.js";
 import { OAuthServerProvider } from "../provider.js";
 import { OAuthServerConfig } from "../types.js";
-import { InvalidRequestError, InvalidTargetError } from "../errors.js";
 
 describe("Authorization handler with config", () => {
   let app: express.Application;
