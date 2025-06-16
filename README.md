@@ -317,6 +317,32 @@ server.registerPrompt(
 );
 ```
 
+### Completions
+
+MCP supports argument completions to help users fill in prompt arguments and resource template parameters. See the examples above for [resource completions](#resources) and [prompt completions](#prompts).
+
+#### Client Usage
+
+```typescript
+// Request completions for any argument
+const result = await client.complete({
+  ref: {
+    type: "ref/prompt",  // or "ref/resource"
+    name: "example"      // or uri: "template://..."
+  },
+  argument: {
+    name: "argumentName",
+    value: "partial"     // What the user has typed so far
+  },
+  context: {             // Optional: Include previously resolved arguments
+    arguments: {
+      previousArg: "value"
+    }
+  }
+});
+console.log(result.completion.values); // ["suggestion1", "suggestion2", ...]
+```
+
 ### Display Names and Metadata
 
 All resources, tools, and prompts support an optional `title` field for better UI presentation. The `title` is used as a display name, while `name` remains the unique identifier.
@@ -868,6 +894,18 @@ const result = await client.callTool({
   name: "example-tool",
   arguments: {
     arg1: "value"
+  }
+});
+
+// Request completions
+const completions = await client.complete({
+  ref: {
+    type: "ref/prompt",
+    name: "example-prompt"
+  },
+  argument: {
+    name: "arg1",
+    value: "partial"
   }
 });
 ```
