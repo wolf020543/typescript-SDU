@@ -318,12 +318,7 @@ async function listTools(): Promise<void> {
       console.log('  No tools available');
     } else {
       for (const tool of toolsResult.tools) {
-        const displayName = getDisplayName(tool);
-        if (displayName !== tool.name) {
-          console.log(`  - ${tool.name} (${displayName}): ${tool.description}`);
-        } else {
-          console.log(`  - ${tool.name}: ${tool.description}`);
-        }
+        console.log(`  - id: ${tool.name}, name: ${getDisplayName(tool)}, description: ${tool.description}`);
       }
     }
   } catch (error) {
@@ -386,7 +381,7 @@ async function runNotificationsToolWithResumability(interval: number, count: num
   try {
     console.log(`Starting notification stream with resumability: interval=${interval}ms, count=${count || 'unlimited'}`);
     console.log(`Using resumption token: ${notificationsToolLastEventId || 'none'}`);
-    
+
     const request: CallToolRequest = {
       method: 'tools/call',
       params: {
@@ -399,7 +394,7 @@ async function runNotificationsToolWithResumability(interval: number, count: num
       notificationsToolLastEventId = event;
       console.log(`Updated resumption token: ${event}`);
     };
-    
+
     const result = await client.request(request, CallToolResultSchema, {
       resumptionToken: notificationsToolLastEventId,
       onresumptiontoken: onLastEventIdUpdate
@@ -435,7 +430,7 @@ async function listPrompts(): Promise<void> {
       console.log('  No prompts available');
     } else {
       for (const prompt of promptsResult.prompts) {
-        console.log(`  - ${getDisplayName(prompt)}: ${prompt.description}`);
+        console.log(`  - id: ${prompt.name}, name: ${getDisplayName(prompt)}, description: ${prompt.description}`);
       }
     }
   } catch (error) {
@@ -486,7 +481,7 @@ async function listResources(): Promise<void> {
       console.log('  No resources available');
     } else {
       for (const resource of resourcesResult.resources) {
-        console.log(`  - ${getDisplayName(resource)}: ${resource.uri}`);
+        console.log(`  - id: ${resource.name}, name: ${getDisplayName(resource)}, description: ${resource.uri}`);
       }
     }
   } catch (error) {
