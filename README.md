@@ -192,7 +192,41 @@ server.registerTool(
     };
   }
 );
+
+// Tool that returns ResourceLinks
+server.registerTool(
+  "list-files",
+  {
+    title: "List Files",
+    description: "List project files",
+    inputSchema: { pattern: z.string() }
+  },
+  async ({ pattern }) => ({
+    content: [
+      { type: "text", text: `Found files matching "${pattern}":` },
+      // ResourceLinks let tools return references without file content
+      {
+        type: "resource_link",
+        uri: "file:///project/README.md",
+        name: "README.md",
+        mimeType: "text/markdown",
+        description: 'A README file'
+      },
+      {
+        type: "resource_link",
+        uri: "file:///project/src/index.ts",
+        name: "index.ts",
+        mimeType: "text/typescript",
+        description: 'An index file'
+      }
+    ]
+  })
+);
 ```
+
+#### ResourceLinks
+
+Tools can return `ResourceLink` objects to reference resources without embedding their full content. This is essential for performance when dealing with large files or many resources - clients can then selectively read only the resources they need using the provided URIs.
 
 ### Prompts
 
