@@ -9,44 +9,17 @@ import { InvalidTargetError, InvalidRequestError } from '../../server/auth/error
 import { resourceUrlFromServerUrl } from '../../shared/auth-utils.js';
 
 
-interface ExtendedClientInformation extends OAuthClientInformationFull {
-  allowed_resources?: string[];
-}
-
 export class DemoInMemoryClientsStore implements OAuthRegisteredClientsStore {
-  private clients = new Map<string, ExtendedClientInformation>();
+  private clients = new Map<string, OAuthClientInformationFull>();
 
   async getClient(clientId: string) {
     return this.clients.get(clientId);
   }
 
-  async registerClient(clientMetadata: OAuthClientInformationFull & { allowed_resources?: string[] }) {
+  async registerClient(clientMetadata: OAuthClientInformationFull) {
     this.clients.set(clientMetadata.client_id, clientMetadata);
     return clientMetadata;
   }
-
-  /**
-   * Demo method to set allowed resources for a client
-   */
-  setAllowedResources(clientId: string, resources: string[]) {
-    const client = this.clients.get(clientId);
-    if (client) {
-      client.allowed_resources = resources;
-    }
-  }
-}
-
-/**
- * 🚨 DEMO ONLY - NOT FOR PRODUCTION
- *
- * This example demonstrates MCP OAuth flow but lacks some of the features required for production use,
- * for example:
- * - Persistent token storage
- * - Rate limiting
- */
-interface ExtendedAuthInfo extends AuthInfo {
-  resource?: string;
-  type?: string;
 }
 
 /**
@@ -87,7 +60,7 @@ export class DemoInMemoryAuthProvider implements OAuthServerProvider {
   private codes = new Map<string, {
     params: AuthorizationParams,
     client: OAuthClientInformationFull}>();
-  private tokens = new Map<string, ExtendedAuthInfo>();
+  private tokens = new Map<string, AuthInfo>();
   private config?: DemoOAuthProviderConfig;
 
   constructor(config?: DemoOAuthProviderConfig) {
@@ -102,29 +75,7 @@ export class DemoInMemoryAuthProvider implements OAuthServerProvider {
     params: AuthorizationParams,
     res: Response
   ): Promise<void> {
-    // Validate resource parameter based on configuration
-    if (this.config?.validateResourceMatchesServer) {
-      if (!params.resource) {
-        throw new InvalidRequestError("Resource parameter is required when server URL validation is enabled");
-      }
-      
-      // Remove fragment from server URL if present (though it shouldn't have one)
-      const canonicalServerUrl = resourceUrlFromServerUrl(this.config.serverUrl!);
-      
-      if (params.resource !== canonicalServerUrl) {
-        throw new InvalidTargetError(
-          `Resource parameter '${params.resource}' does not match this server's URL '${canonicalServerUrl}'`
-        );
-      }
-    } else if (!params.resource) {
-      // Always log warning if resource is missing (unless validation is enabled)
-      console.warn(`Authorization request from client ${client.client_id} is missing the resource parameter. Consider migrating to RFC 8707.`);
-    }
-    
-    // Additional validation: check if client is allowed to access the resource
-    if (params.resource) {
-      await this.validateResource(client, params.resource);
-    }
+    await this.validateResource(params.resource);
 
     const code = randomUUID();
 
@@ -164,9 +115,7 @@ export class DemoInMemoryAuthProvider implements OAuthServerProvider {
     authorizationCode: string,
     // Note: code verifier is checked in token.ts by default
     // it's unused here for that reason.
-    _codeVerifier?: string,
-    _redirectUri?: string,
-    resource?: string
+    _codeVerifier?: string
   ): Promise<OAuthTokens> {
     const codeData = this.codes.get(authorizationCode);
     if (!codeData) {
@@ -177,44 +126,18 @@ export class DemoInMemoryAuthProvider implements OAuthServerProvider {
       throw new Error(`Authorization code was not issued to this client, ${codeData.client.client_id} != ${client.client_id}`);
     }
 
-    // Validate resource parameter based on configuration
-    if (this.config?.validateResourceMatchesServer) {
-      if (!resource) {
-        throw new InvalidRequestError("Resource parameter is required when server URL validation is enabled");
-      }
-      
-      const canonicalServerUrl = resourceUrlFromServerUrl(this.config.serverUrl!);
-      
-      if (resource !== canonicalServerUrl) {
-        throw new InvalidTargetError(
-          `Resource parameter '${resource}' does not match this server's URL '${canonicalServerUrl}'`
-        );
-      }
-    } else if (!resource) {
-      // Always log warning if resource is missing (unless validation is enabled)
-      console.warn(`Token exchange request from client ${client.client_id} is missing the resource parameter. Consider migrating to RFC 8707.`);
-    }
-
-    // Validate that the resource matches what was authorized
-    if (resource !== codeData.params.resource) {
-      throw new InvalidTargetError('Resource parameter does not match the authorized resource');
-    }
-
-    // If resource was specified during authorization, validate it's still allowed
-    if (codeData.params.resource) {
-      await this.validateResource(client, codeData.params.resource);
-    }
+    await this.validateResource(codeData.params.resource);
 
     this.codes.delete(authorizationCode);
     const token = randomUUID();
 
-    const tokenData: ExtendedAuthInfo = {
+    const tokenData = {
       token,
       clientId: client.client_id,
       scopes: codeData.params.scopes || [],
       expiresAt: Date.now() + 3600000, // 1 hour
+      resource: codeData.params.resource,
       type: 'access',
-      resource: codeData.params.resource
     };
 
     this.tokens.set(token, tokenData);
@@ -233,7 +156,30 @@ export class DemoInMemoryAuthProvider implements OAuthServerProvider {
     _scopes?: string[],
     resource?: string
   ): Promise<OAuthTokens> {
-    // Validate resource parameter based on configuration
+    throw new Error('Refresh tokens not implemented for example demo');
+  }
+
+  async verifyAccessToken(token: string): Promise<AuthInfo> {
+    const tokenData = this.tokens.get(token);
+    if (!tokenData || !tokenData.expiresAt || tokenData.expiresAt < Date.now()) {
+      throw new Error('Invalid or expired token');
+    }
+    await this.validateResource(tokenData.resource);
+
+    return {
+      token,
+      clientId: tokenData.clientId,
+      scopes: tokenData.scopes,
+      expiresAt: Math.floor(tokenData.expiresAt / 1000),
+      resource: tokenData.resource,
+    };
+  }
+
+  /**
+   * Validates that the client is allowed to access the requested resource.
+   * In a real implementation, this would check against a database or configuration.
+   */
+  private async validateResource(resource?: string): Promise<void> {
     if (this.config?.validateResourceMatchesServer) {
       if (!resource) {
         throw new InvalidRequestError("Resource parameter is required when server URL validation is enabled");
@@ -248,54 +194,14 @@ export class DemoInMemoryAuthProvider implements OAuthServerProvider {
       }
     } else if (!resource) {
       // Always log warning if resource is missing (unless validation is enabled)
-      console.warn(`Token refresh request from client ${client.client_id} is missing the resource parameter. Consider migrating to RFC 8707.`);
-    }
-    
-    // Additional validation: check if client is allowed to access the resource
-    if (resource) {
-      await this.validateResource(client, resource);
-    }
-    throw new Error('Refresh tokens not implemented for example demo');
-  }
-
-  async verifyAccessToken(token: string): Promise<AuthInfo> {
-    const tokenData = this.tokens.get(token);
-    if (!tokenData || !tokenData.expiresAt || tokenData.expiresAt < Date.now()) {
-      throw new Error('Invalid or expired token');
-    }
-
-    return {
-      token,
-      clientId: tokenData.clientId,
-      scopes: tokenData.scopes,
-      expiresAt: Math.floor(tokenData.expiresAt / 1000),
-    };
-  }
-
-  /**
-   * Validates that the client is allowed to access the requested resource.
-   * In a real implementation, this would check against a database or configuration.
-   */
-  private async validateResource(client: OAuthClientInformationFull, resource: string): Promise<void> {
-    const extendedClient = client as ExtendedClientInformation;
-    
-    // If no resources are configured, allow any resource (for demo purposes)
-    if (!extendedClient.allowed_resources) {
-      return;
-    }
-
-    // Check if the requested resource is in the allowed list
-    if (!extendedClient.allowed_resources.includes(resource)) {
-      throw new InvalidTargetError(
-        `Client is not authorized to access resource: ${resource}`
-      );
+      console.warn(`Token refresh request is missing the resource parameter. Consider migrating to RFC 8707.`);
     }
   }
 
   /**
    * Get token details including resource information (for demo introspection endpoint)
    */
-  getTokenDetails(token: string): ExtendedAuthInfo | undefined {
+  getTokenDetails(token: string): AuthInfo | undefined {
     return this.tokens.get(token);
   }
 }
