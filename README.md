@@ -206,16 +206,18 @@ server.registerTool(
       { type: "text", text: `Found files matching "${pattern}":` },
       // ResourceLinks let tools return references without file content
       {
-        type: "resource_link" as const,
+        type: "resource_link",
         uri: "file:///project/README.md",
         name: "README.md",
-        mimeType: "text/markdown"
+        mimeType: "text/markdown",
+        description: 'A README file'
       },
       {
-        type: "resource_link" as const,
+        type: "resource_link",
         uri: "file:///project/src/index.ts",
         name: "index.ts",
-        mimeType: "text/typescript"
+        mimeType: "text/typescript",
+        description: 'An index file'
       }
     ]
   })
