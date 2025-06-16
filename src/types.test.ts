@@ -1,5 +1,5 @@
-import { 
-    LATEST_PROTOCOL_VERSION, 
+import {
+    LATEST_PROTOCOL_VERSION,
     SUPPORTED_PROTOCOL_VERSIONS,
     ResourceLinkSchema,
     ContentBlockSchema,
@@ -28,7 +28,7 @@ describe("Types", () => {
                 uri: "file:///path/to/file.txt",
                 name: "file.txt"
             };
-            
+
             const result = ResourceLinkSchema.safeParse(resourceLink);
             expect(result.success).toBe(true);
             if (result.success) {
@@ -48,7 +48,7 @@ describe("Types", () => {
                 mimeType: "text/plain",
                 _meta: { custom: "metadata" }
             };
-            
+
             const result = ResourceLinkSchema.safeParse(resourceLink);
             expect(result.success).toBe(true);
             if (result.success) {
@@ -65,7 +65,7 @@ describe("Types", () => {
                 uri: "file:///path/to/file.txt",
                 name: "file.txt"
             };
-            
+
             const result = ResourceLinkSchema.safeParse(invalidResourceLink);
             expect(result.success).toBe(false);
         });
@@ -76,7 +76,7 @@ describe("Types", () => {
                 uri: "file:///path/to/file.txt"
                 // missing name
             };
-            
+
             const result = ResourceLinkSchema.safeParse(invalidResourceLink);
             expect(result.success).toBe(false);
         });
@@ -88,7 +88,7 @@ describe("Types", () => {
                 type: "text",
                 text: "Hello, world!"
             };
-            
+
             const result = ContentBlockSchema.safeParse(textContent);
             expect(result.success).toBe(true);
             if (result.success) {
@@ -102,7 +102,7 @@ describe("Types", () => {
                 data: "aGVsbG8=", // base64 encoded "hello"
                 mimeType: "image/png"
             };
-            
+
             const result = ContentBlockSchema.safeParse(imageContent);
             expect(result.success).toBe(true);
             if (result.success) {
@@ -116,7 +116,7 @@ describe("Types", () => {
                 data: "aGVsbG8=", // base64 encoded "hello"
                 mimeType: "audio/mp3"
             };
-            
+
             const result = ContentBlockSchema.safeParse(audioContent);
             expect(result.success).toBe(true);
             if (result.success) {
@@ -131,7 +131,7 @@ describe("Types", () => {
                 name: "file.txt",
                 mimeType: "text/plain"
             };
-            
+
             const result = ContentBlockSchema.safeParse(resourceLink);
             expect(result.success).toBe(true);
             if (result.success) {
@@ -148,7 +148,7 @@ describe("Types", () => {
                     text: "File contents"
                 }
             };
-            
+
             const result = ContentBlockSchema.safeParse(embeddedResource);
             expect(result.success).toBe(true);
             if (result.success) {
@@ -169,7 +169,7 @@ describe("Types", () => {
                     mimeType: "text/x-rust"
                 }
             };
-            
+
             const result = PromptMessageSchema.safeParse(promptMessage);
             expect(result.success).toBe(true);
             if (result.success) {
@@ -202,7 +202,7 @@ describe("Types", () => {
                     }
                 ]
             };
-            
+
             const result = CallToolResultSchema.safeParse(toolResult);
             expect(result.success).toBe(true);
             if (result.success) {
@@ -215,7 +215,7 @@ describe("Types", () => {
 
         test("should validate empty content array with default", () => {
             const toolResult = {};
-            
+
             const result = CallToolResultSchema.safeParse(toolResult);
             expect(result.success).toBe(true);
             if (result.success) {
