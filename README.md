@@ -11,6 +11,7 @@
   - [Resources](#resources)
   - [Tools](#tools)
   - [Prompts](#prompts)
+  - [Completions](#completions)
 - [Running Your Server](#running-your-server)
   - [stdio](#stdio)
   - [Streamable HTTP](#streamable-http)
@@ -897,17 +898,6 @@ const result = await client.callTool({
   }
 });
 
-// Request completions
-const completions = await client.complete({
-  ref: {
-    type: "ref/prompt",
-    name: "example-prompt"
-  },
-  argument: {
-    name: "arg1",
-    value: "partial"
-  }
-});
 ```
 
 ### Proxy Authorization Requests Upstream
