@@ -5,7 +5,7 @@ import { McpServer } from '../../server/mcp.js';
 import { StreamableHTTPServerTransport } from '../../server/streamableHttp.js';
 import { getOAuthProtectedResourceMetadataUrl, mcpAuthMetadataRouter } from '../../server/auth/router.js';
 import { requireBearerAuth } from '../../server/auth/middleware/bearerAuth.js';
-import { CallToolResult, GetPromptResult, isInitializeRequest, PrimitiveSchemaDefinition, ReadResourceResult } from '../../types.js';
+import { CallToolResult, GetPromptResult, isInitializeRequest, PrimitiveSchemaDefinition, ReadResourceResult, ResourceLink } from '../../types.js';
 import { InMemoryEventStore } from '../shared/inMemoryEventStore.js';
 import { setupAuthServer } from './demoInMemoryOAuthProvider.js';
 import { OAuthMetadata } from 'src/shared/auth.js';
@@ -17,15 +17,18 @@ const useOAuth = process.argv.includes('--oauth');
 const getServer = () => {
   const server = new McpServer({
     name: 'simple-streamable-http-server',
-    version: '1.0.0',
+    version: '1.0.0'
   }, { capabilities: { logging: {} } });
 
   // Register a simple tool that returns a greeting
-  server.tool(
+  server.registerTool(
     'greet',
-    'A simple greeting tool',
     {
-      name: z.string().describe('Name to greet'),
+      title: 'Greeting Tool',  // Display name for UI
+      description: 'A simple greeting tool',
+      inputSchema: {
+        name: z.string().describe('Name to greet'),
+      },
     },
     async ({ name }): Promise<CallToolResult> => {
       return {
@@ -83,7 +86,6 @@ const getServer = () => {
       };
     }
   );
-
   // Register a tool that demonstrates elicitation (user input collection)
   // This creates a closure that captures the server instance
   server.tool(
@@ -234,13 +236,15 @@ const getServer = () => {
     }
   );
 
-
-  // Register a simple prompt
-  server.prompt(
+  // Register a simple prompt with title
+  server.registerPrompt(
     'greeting-template',
-    'A simple greeting prompt template',
     {
-      name: z.string().describe('Name to include in greeting'),
+      title: 'Greeting Template',  // Display name for UI
+      description: 'A simple greeting prompt template',
+      argsSchema: {
+        name: z.string().describe('Name to include in greeting'),
+      },
     },
     async ({ name }): Promise<GetPromptResult> => {
       return {
@@ -299,10 +303,14 @@ const getServer = () => {
   );
 
   // Create a simple resource at a fixed URI
-  server.resource(
+  server.registerResource(
     'greeting-resource',
     'https://example.com/greetings/default',
-    { mimeType: 'text/plain' },
+    {
+      title: 'Default Greeting',  // Display name for UI
+      description: 'A simple greeting resource',
+      mimeType: 'text/plain'
+    },
     async (): Promise<ReadResourceResult> => {
       return {
         contents: [
@@ -314,6 +322,99 @@ const getServer = () => {
       };
     }
   );
+
+  // Create additional resources for ResourceLink demonstration
+  server.registerResource(
+    'example-file-1',
+    'file:///example/file1.txt',
+    {
+      title: 'Example File 1',
+      description: 'First example file for ResourceLink demonstration',
+      mimeType: 'text/plain'
+    },
+    async (): Promise<ReadResourceResult> => {
+      return {
+        contents: [
+          {
+            uri: 'file:///example/file1.txt',
+            text: 'This is the content of file 1',
+          },
+        ],
+      };
+    }
+  );
+
+  server.registerResource(
+    'example-file-2',
+    'file:///example/file2.txt',
+    {
+      title: 'Example File 2',
+      description: 'Second example file for ResourceLink demonstration',
+      mimeType: 'text/plain'
+    },
+    async (): Promise<ReadResourceResult> => {
+      return {
+        contents: [
+          {
+            uri: 'file:///example/file2.txt',
+            text: 'This is the content of file 2',
+          },
+        ],
+      };
+    }
+  );
+
+  // Register a tool that returns ResourceLinks
+  server.registerTool(
+    'list-files',
+    {
+      title: 'List Files with ResourceLinks',
+      description: 'Returns a list of files as ResourceLinks without embedding their content',
+      inputSchema: {
+        includeDescriptions: z.boolean().optional().describe('Whether to include descriptions in the resource links'),
+      },
+    },
+    async ({ includeDescriptions = true }): Promise<CallToolResult> => {
+      const resourceLinks: ResourceLink[] = [
+        {
+          type: 'resource_link',
+          uri: 'https://example.com/greetings/default',
+          name: 'Default Greeting',
+          mimeType: 'text/plain',
+          ...(includeDescriptions && { description: 'A simple greeting resource' })
+        },
+        {
+          type: 'resource_link',
+          uri: 'file:///example/file1.txt',
+          name: 'Example File 1',
+          mimeType: 'text/plain',
+          ...(includeDescriptions && { description: 'First example file for ResourceLink demonstration' })
+        },
+        {
+          type: 'resource_link',
+          uri: 'file:///example/file2.txt',
+          name: 'Example File 2',
+          mimeType: 'text/plain',
+          ...(includeDescriptions && { description: 'Second example file for ResourceLink demonstration' })
+        }
+      ];
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: 'Here are the available files as resource links:',
+          },
+          ...resourceLinks,
+          {
+            type: 'text',
+            text: '\nYou can read any of these resources using their URI.',
+          }
+        ],
+      };
+    }
+  );
+
   return server;
 };
 

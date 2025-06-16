@@ -15,7 +15,11 @@ import {
   LoggingMessageNotificationSchema,
   ResourceListChangedNotificationSchema,
   ElicitRequestSchema,
+  ResourceLink,
+  ReadResourceRequest,
+  ReadResourceResultSchema,
 } from '../../types.js';
+import { getDisplayName } from '../../shared/metadataUtils.js';
 import Ajv from "ajv";
 
 // Create readline interface for user input
@@ -62,6 +66,7 @@ function printHelp(): void {
   console.log('  list-prompts               - List available prompts');
   console.log('  get-prompt [name] [args]   - Get a prompt with optional JSON arguments');
   console.log('  list-resources             - List available resources');
+  console.log('  read-resource <uri>        - Read a specific resource by URI');
   console.log('  help                       - Show this help');
   console.log('  quit                       - Exit the program');
 }
@@ -159,6 +164,14 @@ function commandLoop(): void {
 
         case 'list-resources':
           await listResources();
+          break;
+
+        case 'read-resource':
+          if (args.length < 2) {
+            console.log('Usage: read-resource <uri>');
+          } else {
+            await readResource(args[1]);
+          }
           break;
 
         case 'help':
@@ -521,7 +534,7 @@ async function listTools(): Promise<void> {
       console.log('  No tools available');
     } else {
       for (const tool of toolsResult.tools) {
-        console.log(`  - ${tool.name}: ${tool.description}`);
+        console.log(`  - id: ${tool.name}, name: ${getDisplayName(tool)}, description: ${tool.description}`);
       }
     }
   } catch (error) {
@@ -548,13 +561,37 @@ async function callTool(name: string, args: Record<string, unknown>): Promise<vo
     const result = await client.request(request, CallToolResultSchema);
 
     console.log('Tool result:');
+    const resourceLinks: ResourceLink[] = [];
+
     result.content.forEach(item => {
       if (item.type === 'text') {
         console.log(`  ${item.text}`);
+      } else if (item.type === 'resource_link') {
+        const resourceLink = item as ResourceLink;
+        resourceLinks.push(resourceLink);
+        console.log(`  📁 Resource Link: ${resourceLink.name}`);
+        console.log(`     URI: ${resourceLink.uri}`);
+        if (resourceLink.mimeType) {
+          console.log(`     Type: ${resourceLink.mimeType}`);
+        }
+        if (resourceLink.description) {
+          console.log(`     Description: ${resourceLink.description}`);
+        }
+      } else if (item.type === 'resource') {
+        console.log(`  [Embedded Resource: ${item.resource.uri}]`);
+      } else if (item.type === 'image') {
+        console.log(`  [Image: ${item.mimeType}]`);
+      } else if (item.type === 'audio') {
+        console.log(`  [Audio: ${item.mimeType}]`);
       } else {
-        console.log(`  ${item.type} content:`, item);
+        console.log(`  [Unknown content type]:`, item);
       }
     });
+
+    // Offer to read resource links
+    if (resourceLinks.length > 0) {
+      console.log(`\nFound ${resourceLinks.length} resource link(s). Use 'read-resource <uri>' to read their content.`);
+    }
   } catch (error) {
     console.log(`Error calling tool ${name}: ${error}`);
   }
@@ -589,7 +626,7 @@ async function runNotificationsToolWithResumability(interval: number, count: num
   try {
     console.log(`Starting notification stream with resumability: interval=${interval}ms, count=${count || 'unlimited'}`);
     console.log(`Using resumption token: ${notificationsToolLastEventId || 'none'}`);
-    
+
     const request: CallToolRequest = {
       method: 'tools/call',
       params: {
@@ -602,7 +639,7 @@ async function runNotificationsToolWithResumability(interval: number, count: num
       notificationsToolLastEventId = event;
       console.log(`Updated resumption token: ${event}`);
     };
-    
+
     const result = await client.request(request, CallToolResultSchema, {
       resumptionToken: notificationsToolLastEventId,
       onresumptiontoken: onLastEventIdUpdate
@@ -638,7 +675,7 @@ async function listPrompts(): Promise<void> {
       console.log('  No prompts available');
     } else {
       for (const prompt of promptsResult.prompts) {
-        console.log(`  - ${prompt.name}: ${prompt.description}`);
+        console.log(`  - id: ${prompt.name}, name: ${getDisplayName(prompt)}, description: ${prompt.description}`);
       }
     }
   } catch (error) {
@@ -689,11 +726,47 @@ async function listResources(): Promise<void> {
       console.log('  No resources available');
     } else {
       for (const resource of resourcesResult.resources) {
-        console.log(`  - ${resource.name}: ${resource.uri}`);
+        console.log(`  - id: ${resource.name}, name: ${getDisplayName(resource)}, description: ${resource.uri}`);
       }
     }
   } catch (error) {
     console.log(`Resources not supported by this server (${error})`);
+  }
+}
+
+async function readResource(uri: string): Promise<void> {
+  if (!client) {
+    console.log('Not connected to server.');
+    return;
+  }
+
+  try {
+    const request: ReadResourceRequest = {
+      method: 'resources/read',
+      params: { uri }
+    };
+
+    console.log(`Reading resource: ${uri}`);
+    const result = await client.request(request, ReadResourceResultSchema);
+
+    console.log('Resource contents:');
+    for (const content of result.contents) {
+      console.log(`  URI: ${content.uri}`);
+      if (content.mimeType) {
+        console.log(`  Type: ${content.mimeType}`);
+      }
+
+      if ('text' in content && typeof content.text === 'string') {
+        console.log('  Content:');
+        console.log('  ---');
+        console.log(content.text.split('\n').map((line: string) => '  ' + line).join('\n'));
+        console.log('  ---');
+      } else if ('blob' in content && typeof content.blob === 'string') {
+        console.log(`  [Binary data: ${content.blob.length} bytes]`);
+      }
+    }
+  } catch (error) {
+    console.log(`Error reading resource ${uri}: ${error}`);
   }
 }
 
