@@ -29,7 +29,7 @@ export class DemoInMemoryAuthProvider implements OAuthServerProvider {
   private tokens = new Map<string, AuthInfo>();
   private validateResource?: (resource?: URL) => boolean;
 
-  constructor(mcpServerUrl?: URL) {
+  constructor({mcpServerUrl}: {mcpServerUrl?: URL} = {}) {
     if (mcpServerUrl) {
       const expectedResource = resourceUrlFromServerUrl(mcpServerUrl);
       this.validateResource = (resource?: URL) => {
@@ -157,7 +157,7 @@ export const setupAuthServer = (authServerUrl: URL, mcpServerUrl: URL): OAuthMet
   // how to separate an OAuth Authorization Server from a Resource
   // server in the SDK. The SDK is not intended to be provide a standalone
   // authorization server.
-  const provider = new DemoInMemoryAuthProvider(mcpServerUrl);
+  const provider = new DemoInMemoryAuthProvider({mcpServerUrl});
   const authApp = express();
   authApp.use(express.json());
   // For introspection requests
