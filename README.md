@@ -150,6 +150,33 @@ server.registerResource(
     }]
   })
 );
+
+// Resource with context-aware completion
+server.registerResource(
+  "repository",
+  new ResourceTemplate("github://repos/{owner}/{repo}", {
+    list: undefined,
+    complete: {
+      // Provide intelligent completions based on previously resolved parameters
+      repo: (value, context) => {
+        if (context?.arguments?.["owner"] === "org1") {
+          return ["project1", "project2", "project3"].filter(r => r.startsWith(value));
+        }
+        return ["default-repo"].filter(r => r.startsWith(value));
+      }
+    }
+  }),
+  {
+    title: "GitHub Repository",
+    description: "Repository information"
+  },
+  async (uri, { owner, repo }) => ({
+    contents: [{
+      uri: uri.href,
+      text: `Repository: ${owner}/${repo}`
+    }]
+  })
+);
 ```
 
 ### Tools
@@ -233,12 +260,14 @@ Tools can return `ResourceLink` objects to reference resources without embedding
 Prompts are reusable templates that help LLMs interact with your server effectively:
 
 ```typescript
+import { completable } from "@modelcontextprotocol/sdk/server/completable.js";
+
 server.registerPrompt(
   "review-code",
   {
     title: "Code Review",
     description: "Review code for best practices and potential issues",
-    arguments: { code: z.string() }
+    argsSchema: { code: z.string() }
   },
   ({ code }) => ({
     messages: [{
@@ -246,6 +275,35 @@ server.registerPrompt(
       content: {
         type: "text",
         text: `Please review this code:\n\n${code}`
+      }
+    }]
+  })
+);
+
+// Prompt with context-aware completion
+server.registerPrompt(
+  "team-greeting",
+  {
+    title: "Team Greeting",
+    description: "Generate a greeting for team members",
+    argsSchema: {
+      // Completable arguments can use context for intelligent suggestions
+      name: completable(z.string(), (value, context) => {
+        if (context?.arguments?.["department"] === "engineering") {
+          return ["Alice", "Bob", "Charlie"].filter(n => n.startsWith(value));
+        } else if (context?.arguments?.["department"] === "sales") {
+          return ["David", "Eve", "Frank"].filter(n => n.startsWith(value));
+        }
+        return ["Guest"].filter(n => n.startsWith(value));
+      })
+    }
+  },
+  ({ name }) => ({
+    messages: [{
+      role: "assistant",
+      content: {
+        type: "text",
+        text: `Hello ${name}, welcome to the team!`
       }
     }]
   })
@@ -636,6 +694,57 @@ server.registerTool(
 ```
 
 ## Advanced Usage
+
+### Context-Aware Completions
+
+MCP supports intelligent completions that can use previously resolved values as context. This is useful for creating dependent parameter completions where later parameters depend on earlier ones:
+
+```typescript
+import { completable } from "@modelcontextprotocol/sdk/server/completable.js";
+
+// For resource templates
+server.registerResource(
+  "database-query",
+  new ResourceTemplate("db://{database}/{table}/{query}", {
+    list: undefined,
+    complete: {
+      // Table completions depend on the selected database
+      table: (value, context) => {
+        const database = context?.arguments?.["database"];
+        if (database === "users_db") {
+          return ["profiles", "sessions", "preferences"].filter(t => t.startsWith(value));
+        } else if (database === "products_db") {
+          return ["items", "categories", "inventory"].filter(t => t.startsWith(value));
+        }
+        return [];
+      }
+    }
+  }),
+  metadata,
+  handler
+);
+
+// For prompts with completable arguments
+server.registerPrompt(
+  "api-request",
+  {
+    argsSchema: {
+      endpoint: z.string(),
+      // Method completions can be context-aware
+      method: completable(z.string(), (value, context) => {
+        const endpoint = context?.arguments?.["endpoint"];
+        if (endpoint?.includes("/readonly/")) {
+          return ["GET"].filter(m => m.startsWith(value.toUpperCase()));
+        }
+        return ["GET", "POST", "PUT", "DELETE"].filter(m => m.startsWith(value.toUpperCase()));
+      })
+    }
+  },
+  handler
+);
+```
+
+The context object contains an `arguments` field with previously resolved parameter values, allowing you to provide more intelligent and contextual completions.
 
 ### Dynamic Servers
 

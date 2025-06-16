@@ -3747,7 +3747,7 @@ describe("Tool title precedence", () => {
       version: "1.0",
     });
 
-    mcpServer.resource(
+    mcpServer.registerResource(
       "test",
       new ResourceTemplate("github://repos/{owner}/{repo}", {
         list: undefined,
@@ -3762,6 +3762,10 @@ describe("Tool title precedence", () => {
           },
         },
       }),
+      {
+        title: "GitHub Repository",
+        description: "Repository information"
+      },
       async () => ({
         contents: [
           {
@@ -3865,17 +3869,21 @@ describe("Tool title precedence", () => {
       version: "1.0",
     });
 
-    mcpServer.prompt(
+    mcpServer.registerPrompt(
       "test-prompt",
       {
-        name: completable(z.string(), (value, context) => {
-          if (context?.arguments?.["category"] === "developers") {
-            return ["Alice", "Bob", "Charlie"].filter(n => n.startsWith(value));
-          } else if (context?.arguments?.["category"] === "managers") {
-            return ["David", "Eve", "Frank"].filter(n => n.startsWith(value));
-          }
-          return ["Guest"].filter(n => n.startsWith(value));
-        }),
+        title: "Team Greeting",
+        description: "Generate a greeting for team members",
+        argsSchema: {
+          name: completable(z.string(), (value, context) => {
+            if (context?.arguments?.["category"] === "developers") {
+              return ["Alice", "Bob", "Charlie"].filter(n => n.startsWith(value));
+            } else if (context?.arguments?.["category"] === "managers") {
+              return ["David", "Eve", "Frank"].filter(n => n.startsWith(value));
+            }
+            return ["Guest"].filter(n => n.startsWith(value));
+          }),
+        }
       },
       async ({ name }) => ({
         messages: [
