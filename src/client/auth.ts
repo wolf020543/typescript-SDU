@@ -100,12 +100,12 @@ export async function auth(
     authorizationCode?: string;
     scope?: string;
     resourceMetadataUrl?: URL;
-    resource?: string }): Promise<AuthResult> {
+    resource?: URL }): Promise<AuthResult> {
 
   // Remove fragment from resource parameter if provided
-  let canonicalResource: string | undefined;
+  let canonicalResource: URL | undefined;
   if (resource) {
-    canonicalResource = resourceUrlFromServerUrl(resource);
+    canonicalResource = resourceUrlFromServerUrl(new URL(resource));
   }
 
   let authorizationServerUrl = serverUrl;
@@ -329,7 +329,7 @@ export async function startAuthorization(
     redirectUrl: string | URL;
     scope?: string;
     state?: string;
-    resource?: string;
+    resource?: URL;
   },
 ): Promise<{ authorizationUrl: URL; codeVerifier: string }> {
   const responseType = "code";
@@ -380,7 +380,7 @@ export async function startAuthorization(
   }
 
   if (resource) {
-    authorizationUrl.searchParams.set("resource", resource);
+    authorizationUrl.searchParams.set("resource", resource.href);
   }
 
   return { authorizationUrl, codeVerifier };
@@ -404,7 +404,7 @@ export async function exchangeAuthorization(
     authorizationCode: string;
     codeVerifier: string;
     redirectUri: string | URL;
-    resource?: string;
+    resource?: URL;
   },
 ): Promise<OAuthTokens> {
   const grantType = "authorization_code";
@@ -439,7 +439,7 @@ export async function exchangeAuthorization(
   }
 
   if (resource) {
-    params.set("resource", resource);
+    params.set("resource", resource.href);
   }
 
   const response = await fetch(tokenUrl, {
@@ -471,7 +471,7 @@ export async function refreshAuthorization(
     metadata?: OAuthMetadata;
     clientInformation: OAuthClientInformation;
     refreshToken: string;
-    resource?: string;
+    resource?: URL;
   },
 ): Promise<OAuthTokens> {
   const grantType = "refresh_token";
@@ -504,7 +504,7 @@ export async function refreshAuthorization(
   }
 
   if (resource) {
-    params.set("resource", resource);
+    params.set("resource", resource.href);
   }
 
   const response = await fetch(tokenUrl, {

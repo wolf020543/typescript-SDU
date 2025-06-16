@@ -122,7 +122,7 @@ export class DemoInMemoryAuthProvider implements OAuthServerProvider {
     client: OAuthClientInformationFull,
     _refreshToken: string,
     _scopes?: string[],
-    resource?: string
+    resource?: URL
   ): Promise<OAuthTokens> {
     throw new Error('Refresh tokens not implemented for example demo');
   }

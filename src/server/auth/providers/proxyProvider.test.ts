@@ -112,7 +112,7 @@ describe("Proxy OAuth Server Provider", () => {
           codeChallenge: 'test-challenge',
           state: 'test-state',
           scopes: ['read', 'write'],
-          resource: 'https://api.example.com/resource'
+          resource: new URL('https://api.example.com/resource')
         },
         mockResponse
       );

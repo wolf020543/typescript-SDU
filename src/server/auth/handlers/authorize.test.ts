@@ -295,7 +295,7 @@ describe('Authorization Handler', () => {
       expect(mockProviderWithResource).toHaveBeenCalledWith(
         validClient,
         expect.objectContaining({
-          resource: 'https://api.example.com/resource',
+          resource: new URL('https://api.example.com/resource'),
           redirectUri: 'https://example.com/callback',
           codeChallenge: 'challenge123'
         }),
@@ -365,7 +365,7 @@ describe('Authorization Handler', () => {
       expect(mockProviderWithResources).toHaveBeenCalledWith(
         validClient,
         expect.objectContaining({
-          resource: 'https://api1.example.com/resource',
+          resource: new URL('https://api1.example.com/resource'),
           state: 'test-state'
         }),
         expect.any(Object)
@@ -391,7 +391,7 @@ describe('Authorization Handler', () => {
       expect(mockProviderPost).toHaveBeenCalledWith(
         validClient,
         expect.objectContaining({
-          resource: 'https://api.example.com/resource'
+          resource: new URL('https://api.example.com/resource')
         }),
         expect.any(Object)
       );

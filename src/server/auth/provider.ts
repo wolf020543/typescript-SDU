@@ -42,13 +42,13 @@ export interface OAuthServerProvider {
     authorizationCode: string, 
     codeVerifier?: string,
     redirectUri?: string,
-    resource?: string
+    resource?: URL
   ): Promise<OAuthTokens>;
 
   /**
    * Exchanges a refresh token for an access token.
    */
-  exchangeRefreshToken(client: OAuthClientInformationFull, refreshToken: string, scopes?: string[], resource?: string): Promise<OAuthTokens>;
+  exchangeRefreshToken(client: OAuthClientInformationFull, refreshToken: string, scopes?: string[], resource?: URL): Promise<OAuthTokens>;
 
   /**
    * Verifies an access token and returns information about it.

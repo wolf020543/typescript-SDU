@@ -134,7 +134,7 @@ export class ProxyOAuthServerProvider implements OAuthServerProvider {
     // Add optional standard OAuth parameters
     if (params.state) searchParams.set("state", params.state);
     if (params.scopes?.length) searchParams.set("scope", params.scopes.join(" "));
-    if (params.resource) searchParams.set("resource", params.resource);
+    if (params.resource) searchParams.set("resource", params.resource.href);
 
     targetUrl.search = searchParams.toString();
     res.redirect(targetUrl.toString());
@@ -154,7 +154,7 @@ export class ProxyOAuthServerProvider implements OAuthServerProvider {
     authorizationCode: string,
     codeVerifier?: string,
     redirectUri?: string,
-    resource?: string
+    resource?: URL
   ): Promise<OAuthTokens> {
     const params = new URLSearchParams({
       grant_type: "authorization_code",
@@ -199,7 +199,7 @@ export class ProxyOAuthServerProvider implements OAuthServerProvider {
     client: OAuthClientInformationFull,
     refreshToken: string,
     scopes?: string[],
-    resource?: string
+    resource?: URL
   ): Promise<OAuthTokens> {
 
     const params = new URLSearchParams({

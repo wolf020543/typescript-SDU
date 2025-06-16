@@ -142,7 +142,7 @@ export function authorizationHandler({ provider, rateLimit: rateLimitConfig }: A
         scopes: requestedScopes,
         redirectUri: redirect_uri,
         codeChallenge: code_challenge,
-        resource,
+        resource: resource ? new URL(resource) : undefined,
       }, res);
     } catch (error) {
       // Post-redirect errors - redirect with error parameters
