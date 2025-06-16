@@ -2,7 +2,7 @@ import { Server } from "./index.js";
 import { Client } from "../client/index.js";
 import { InMemoryTransport } from "../inMemory.js";
 import { z } from "zod";
-import { McpServer } from "./mcp.js";
+import { McpServer, ResourceTemplate } from "./mcp.js";
 
 describe("Title field backwards compatibility", () => {
   it("should work with tools that have title", async () => {
@@ -167,6 +167,48 @@ describe("Title field backwards compatibility", () => {
     expect(resources.resources[0].title).toBe("Test Resource Display Name");
     expect(resources.resources[0].description).toBe("A test resource");
     expect(resources.resources[0].mimeType).toBe("text/plain");
+  });
+
+  it("should work with dynamic resources using registerResource", async () => {
+    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+
+    const server = new McpServer(
+      { name: "test-server", version: "1.0.0" },
+      { capabilities: {} }
+    );
+
+    // Register dynamic resource with title using registerResource
+    server.registerResource(
+      "user-profile",
+      new ResourceTemplate("users://{userId}/profile", { list: undefined }),
+      {
+        title: "User Profile",
+        description: "User profile information"
+      },
+      async (uri, { userId }, extra) => ({
+        contents: [{
+          uri: uri.href,
+          text: `Profile data for user ${userId}`
+        }]
+      })
+    );
+
+    const client = new Client({ name: "test-client", version: "1.0.0" });
+
+    await server.server.connect(serverTransport);
+    await client.connect(clientTransport);
+
+    const resourceTemplates = await client.listResourceTemplates();
+    expect(resourceTemplates.resourceTemplates).toHaveLength(1);
+    expect(resourceTemplates.resourceTemplates[0].name).toBe("user-profile");
+    expect(resourceTemplates.resourceTemplates[0].title).toBe("User Profile");
+    expect(resourceTemplates.resourceTemplates[0].description).toBe("User profile information");
+    expect(resourceTemplates.resourceTemplates[0].uriTemplate).toBe("users://{userId}/profile");
+
+    // Test reading the resource
+    const readResult = await client.readResource({ uri: "users://123/profile" });
+    expect(readResult.contents).toHaveLength(1);
+    expect(readResult.contents[0].text).toBe("Profile data for user 123");
   });
 
   it("should support serverInfo with title", async () => {

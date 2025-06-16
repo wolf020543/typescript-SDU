@@ -78,10 +78,10 @@ server.registerResource(
     title: "Greeting Resource",      // Display name for UI
     description: "Dynamic greeting generator"
   },
-  async (uri, params) => ({
+  async (uri, { name }) => ({
     contents: [{
       uri: uri.href,
-      text: `Hello, ${params.name}!`
+      text: `Hello, ${name}!`
     }]
   })
 );
@@ -143,10 +143,10 @@ server.registerResource(
     title: "User Profile",
     description: "User profile information"
   },
-  async (uri, params) => ({
+  async (uri, { userId }) => ({
     contents: [{
       uri: uri.href,
-      text: `Profile data for user ${params.userId}`
+      text: `Profile data for user ${userId}`
     }]
   })
 );
@@ -479,10 +479,10 @@ server.registerResource(
     title: "Echo Resource",
     description: "Echoes back messages as resources"
   },
-  async (uri, params) => ({
+  async (uri, { message }) => ({
     contents: [{
       uri: uri.href,
-      text: `Resource echo: ${params.message}`
+      text: `Resource echo: ${message}`
     }]
   })
 );
