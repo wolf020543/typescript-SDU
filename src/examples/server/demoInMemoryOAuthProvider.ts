@@ -130,7 +130,7 @@ export class DemoInMemoryAuthProvider implements OAuthServerProvider {
     _client: OAuthClientInformationFull,
     _refreshToken: string,
     _scopes?: string[],
-    resource?: URL
+    _resource?: URL
   ): Promise<OAuthTokens> {
     throw new Error('Not implemented for example demo');
   }

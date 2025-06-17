@@ -2,7 +2,6 @@ import { EventSource, type ErrorEvent, type EventSourceInit } from "eventsource"
 import { Transport } from "../shared/transport.js";
 import { JSONRPCMessage, JSONRPCMessageSchema } from "../types.js";
 import { auth, AuthResult, extractResourceMetadataUrl, OAuthClientProvider, UnauthorizedError } from "./auth.js";
-import { resourceUrlFromServerUrl } from "../shared/auth-utils.js";
 
 export class SseError extends Error {
   constructor(
