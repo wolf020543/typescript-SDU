@@ -12,6 +12,13 @@ import { OAuthMetadata } from 'src/shared/auth.js';
 
 // Check for OAuth flag
 const useOAuth = process.argv.includes('--oauth');
+// Resource Indicator the OAuth tokens are checked against (RFC8707).
+const expectedOAuthResource = (iArg => iArg < 0 ? undefined: process.argv[iArg + 1])(process.argv.indexOf('--oauth-resource'));
+// Requires Resource Indicator check (implies protocol more recent than 2025-03-26)
+const strictOAuthResourceCheck = process.argv.includes('--oauth-resource-strict');
+if (strictOAuthResourceCheck && !expectedOAuthResource) {
+  throw new Error(`Strict resource indicator checking requires passing the expected resource with --oauth-resource https://...`);
+}
 
 // Create an MCP server with implementation details
 const getServer = () => {
@@ -285,7 +292,7 @@ if (useOAuth) {
   const oauthMetadata: OAuthMetadata = setupAuthServer(authServerUrl, mcpServerUrl);
 
   const tokenVerifier = {
-    verifyAccessToken: async (token: string) => {
+    verifyAccessToken: async (token: string, protocolVersion: string) => {
       const endpoint = oauthMetadata.introspection_endpoint;
 
       if (!endpoint) {
@@ -308,6 +315,15 @@ if (useOAuth) {
       }
 
       const data = await response.json();
+     
+      if (expectedOAuthResource) {
+        if (strictOAuthResourceCheck && !data.resource) {
+          throw new Error('Resource Indicator (RFC8707) missing');
+        }
+        if (data.resource && data.resource !== expectedOAuthResource) {
+          throw new Error(`Expected resource indicator ${expectedOAuthResource}, got: ${data.resource}`);
+        }
+      }
 
       // Convert the response to AuthInfo format
       return {

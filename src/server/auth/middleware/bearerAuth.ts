@@ -2,6 +2,7 @@ import { RequestHandler } from "express";
 import { InsufficientScopeError, InvalidTokenError, OAuthError, ServerError } from "../errors.js";
 import { OAuthTokenVerifier } from "../provider.js";
 import { AuthInfo } from "../types.js";
+import { DEFAULT_NEGOTIATED_PROTOCOL_VERSION } from "../../../types.js";
 
 export type BearerAuthMiddlewareOptions = {
   /**
@@ -50,7 +51,12 @@ export function requireBearerAuth({ verifier, requiredScopes = [], resourceMetad
         throw new InvalidTokenError("Invalid Authorization header format, expected 'Bearer TOKEN'");
       }
 
-      const authInfo = await verifier.verifyAccessToken(token);
+      let protocolVersion = req.headers["mcp-protocol-version"] ?? DEFAULT_NEGOTIATED_PROTOCOL_VERSION;
+      if (Array.isArray(protocolVersion)) {
+        protocolVersion = protocolVersion[protocolVersion.length - 1];
+      }
+
+      const authInfo = await verifier.verifyAccessToken(token, protocolVersion);
 
       // Check if token has the required scopes (if any)
       if (requiredScopes.length > 0) {

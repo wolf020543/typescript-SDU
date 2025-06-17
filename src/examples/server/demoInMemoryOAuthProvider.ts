@@ -41,7 +41,8 @@ export class DemoInMemoryAuthProvider implements OAuthServerProvider {
     if (mcpServerUrl) {
       const expectedResource = resourceUrlFromServerUrl(mcpServerUrl);
       this.validateResource = (resource?: URL) => {
-        return !resource || resource.toString() !== expectedResource.toString();
+        if (!resource) return false;
+        return resource.toString() === expectedResource.toString();
       };
     }
   }
