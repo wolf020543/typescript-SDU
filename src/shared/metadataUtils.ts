@@ -15,7 +15,7 @@ export function getDisplayName(metadata: BaseMetadata): string {
   if (metadata.title !== undefined && metadata.title !== '') {
     return metadata.title;
   }
-  
+
   // Then check for annotations.title (only present in Tool objects)
   if ('annotations' in metadata) {
     const metadataWithAnnotations = metadata as BaseMetadata & { annotations?: { title?: string } };
@@ -23,14 +23,7 @@ export function getDisplayName(metadata: BaseMetadata): string {
       return metadataWithAnnotations.annotations.title;
     }
   }
-  
+
   // Finally fall back to name
   return metadata.name;
-}
-
-/**
- * Checks if an object has a custom title different from its name.
- */
-export function hasCustomTitle(metadata: BaseMetadata): boolean {
-  return metadata.title !== undefined && metadata.title !== metadata.name;
 }
