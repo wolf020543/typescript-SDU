@@ -119,9 +119,6 @@ export function authorizationHandler({ provider, rateLimit: rateLimitConfig }: A
       const { scope, code_challenge, resource } = parseResult.data;
       state = parseResult.data.state;
 
-      // Pass through the resource parameter to the provider
-      // The provider can decide how to validate it
-
       // Validate scopes
       let requestedScopes: string[] = [];
       if (scope !== undefined) {

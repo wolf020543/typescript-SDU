@@ -94,19 +94,13 @@ export async function auth(
     authorizationCode,
     scope,
     resourceMetadataUrl,
-    resource
   }: {
     serverUrl: string | URL;
     authorizationCode?: string;
     scope?: string;
-    resourceMetadataUrl?: URL;
-    resource?: URL }): Promise<AuthResult> {
+    resourceMetadataUrl?: URL }): Promise<AuthResult> {
 
-  // Remove fragment from resource parameter if provided
-  let canonicalResource: URL | undefined;
-  if (resource) {
-    canonicalResource = resourceUrlFromServerUrl(new URL(resource));
-  }
+  const resource = resourceUrlFromServerUrl(typeof serverUrl === "string" ? new URL(serverUrl) : serverUrl);
 
   let authorizationServerUrl = serverUrl;
   try {
@@ -151,7 +145,7 @@ export async function auth(
       authorizationCode,
       codeVerifier,
       redirectUri: provider.redirectUrl,
-      resource: canonicalResource,
+      resource,
     });
 
     await provider.saveTokens(tokens);
@@ -168,7 +162,7 @@ export async function auth(
         metadata,
         clientInformation,
         refreshToken: tokens.refresh_token,
-        resource: canonicalResource,
+        resource,
       });
 
       await provider.saveTokens(newTokens);
@@ -187,7 +181,7 @@ export async function auth(
     state,
     redirectUrl: provider.redirectUrl,
     scope: scope || provider.clientMetadata.scope,
-    resource: canonicalResource,
+    resource,
   });
 
   await provider.saveCodeVerifier(codeVerifier);

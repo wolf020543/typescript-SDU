@@ -21,6 +21,14 @@ export class DemoInMemoryClientsStore implements OAuthRegisteredClientsStore {
   }
 }
 
+/**
+ * 🚨 DEMO ONLY - NOT FOR PRODUCTION
+ *
+ * This example demonstrates MCP OAuth flow but lacks some of the features required for production use,
+ * for example:
+ * - Persistent token storage
+ * - Rate limiting
+ */
 export class DemoInMemoryAuthProvider implements OAuthServerProvider {
   clientsStore = new DemoInMemoryClientsStore();
   private codes = new Map<string, {
@@ -119,12 +127,12 @@ export class DemoInMemoryAuthProvider implements OAuthServerProvider {
   }
 
   async exchangeRefreshToken(
-    client: OAuthClientInformationFull,
+    _client: OAuthClientInformationFull,
     _refreshToken: string,
     _scopes?: string[],
     resource?: URL
   ): Promise<OAuthTokens> {
-    throw new Error('Refresh tokens not implemented for example demo');
+    throw new Error('Not implemented for example demo');
   }
 
   async verifyAccessToken(token: string): Promise<AuthInfo> {

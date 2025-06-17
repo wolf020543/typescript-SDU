@@ -93,9 +93,6 @@ export function tokenHandler({ provider, rateLimit: rateLimitConfig }: TokenHand
 
           const { code, code_verifier, redirect_uri, resource } = parseResult.data;
 
-          // Pass through the resource parameter to the provider
-          // The provider can decide how to validate it
-
           const skipLocalPkceValidation = provider.skipLocalPkceValidation;
 
           // Perform local PKCE validation unless explicitly skipped 
@@ -126,9 +123,6 @@ export function tokenHandler({ provider, rateLimit: rateLimitConfig }: TokenHand
           }
 
           const { refresh_token, scope, resource } = parseResult.data;
-
-          // Pass through the resource parameter to the provider
-          // The provider can decide how to validate it
 
           const scopes = scope?.split(" ");
           const tokens = await provider.exchangeRefreshToken(client, refresh_token, scopes, resource ? new URL(resource) : undefined);

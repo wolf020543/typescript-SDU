@@ -90,7 +90,6 @@ export class SSEClientTransport implements Transport {
       result = await auth(this._authProvider, { 
         serverUrl: this._url, 
         resourceMetadataUrl: this._resourceMetadataUrl,
-        resource: resourceUrlFromServerUrl(new URL(this._url))
       });
     } catch (error) {
       this.onerror?.(error as Error);
@@ -210,7 +209,6 @@ export class SSEClientTransport implements Transport {
       serverUrl: this._url, 
       authorizationCode, 
       resourceMetadataUrl: this._resourceMetadataUrl,
-      resource: resourceUrlFromServerUrl(new URL(this._url))
     });
     if (result !== "AUTHORIZED") {
       throw new UnauthorizedError("Failed to authorize");
@@ -249,7 +247,6 @@ export class SSEClientTransport implements Transport {
           const result = await auth(this._authProvider, { 
             serverUrl: this._url, 
             resourceMetadataUrl: this._resourceMetadataUrl,
-            resource: resourceUrlFromServerUrl(new URL(this._url))
           });
           if (result !== "AUTHORIZED") {
             throw new UnauthorizedError();

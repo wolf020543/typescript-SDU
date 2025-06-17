@@ -282,12 +282,7 @@ if (useOAuth) {
   const mcpServerUrl = new URL(`http://localhost:${MCP_PORT}`);
   const authServerUrl = new URL(`http://localhost:${AUTH_PORT}`);
 
-  // Configure the demo auth provider to validate resources match this server
-  const demoProviderConfig = {
-    serverUrl: mcpServerUrl.href,
-    validateResourceMatchesServer: false // Set to true to enable strict validation
-  };
-  const oauthMetadata: OAuthMetadata = setupAuthServer(authServerUrl, demoProviderConfig);
+  const oauthMetadata: OAuthMetadata = setupAuthServer(authServerUrl, mcpServerUrl);
 
   const tokenVerifier = {
     verifyAccessToken: async (token: string) => {
