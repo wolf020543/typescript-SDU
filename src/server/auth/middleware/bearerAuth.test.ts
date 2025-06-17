@@ -3,7 +3,7 @@ import { requireBearerAuth } from "./bearerAuth.js";
 import { AuthInfo } from "../types.js";
 import { InsufficientScopeError, InvalidTokenError, OAuthError, ServerError } from "../errors.js";
 import { OAuthTokenVerifier } from "../provider.js";
-import { LATEST_PROTOCOL_VERSION } from '../../../types.js';
+import { LATEST_PROTOCOL_VERSION, DEFAULT_NEGOTIATED_PROTOCOL_VERSION } from '../../../types.js';
 
 // Mock verifier
 const mockVerifyAccessToken = jest.fn();
@@ -50,6 +50,28 @@ describe("requireBearerAuth middleware", () => {
     await middleware(mockRequest as Request, mockResponse as Response, nextFunction);
 
     expect(mockVerifyAccessToken).toHaveBeenCalledWith("valid-token", LATEST_PROTOCOL_VERSION);
+    expect(mockRequest.auth).toEqual(validAuthInfo);
+    expect(nextFunction).toHaveBeenCalled();
+    expect(mockResponse.status).not.toHaveBeenCalled();
+    expect(mockResponse.json).not.toHaveBeenCalled();
+  });
+
+  it("should use default negotiated protocol version when mcp-protocol-version header is missing", async () => {
+    const validAuthInfo: AuthInfo = {
+      token: "valid-token",
+      clientId: "client-123",
+      scopes: ["read", "write"],
+    };
+    mockVerifyAccessToken.mockResolvedValue(validAuthInfo);
+
+    mockRequest.headers = {
+      authorization: "Bearer valid-token",
+    };
+
+    const middleware = requireBearerAuth({ verifier: mockVerifier });
+    await middleware(mockRequest as Request, mockResponse as Response, nextFunction);
+
+    expect(mockVerifyAccessToken).toHaveBeenCalledWith("valid-token", DEFAULT_NEGOTIATED_PROTOCOL_VERSION);
     expect(mockRequest.auth).toEqual(validAuthInfo);
     expect(nextFunction).toHaveBeenCalled();
     expect(mockResponse.status).not.toHaveBeenCalled();
