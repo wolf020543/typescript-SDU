@@ -1125,7 +1125,7 @@ describe("OAuth Authorization", () => {
       expect(body.get("refresh_token")).toBe("refresh123");
     });
 
-    it("handles empty resource parameter", async () => {
+    it("handles derived resource parameter from serverUrl", async () => {
       // Mock successful metadata discovery
       mockFetch.mockImplementation((url) => {
         const urlString = url.toString();
@@ -1154,17 +1154,18 @@ describe("OAuth Authorization", () => {
       (mockProvider.saveCodeVerifier as jest.Mock).mockResolvedValue(undefined);
       (mockProvider.redirectToAuthorization as jest.Mock).mockResolvedValue(undefined);
 
-      // Call auth with empty resource parameter
+      // Call auth with just serverUrl (resource is derived from it)
       const result = await auth(mockProvider, {
         serverUrl: "https://api.example.com/mcp-server",
       });
 
       expect(result).toBe("REDIRECT");
 
-      // Verify that empty resource is not included in the URL
+      // Verify that resource parameter is always included (derived from serverUrl)
       const redirectCall = (mockProvider.redirectToAuthorization as jest.Mock).mock.calls[0];
       const authUrl: URL = redirectCall[0];
-      expect(authUrl.searchParams.has("resource")).toBe(false);
+      expect(authUrl.searchParams.has("resource")).toBe(true);
+      expect(authUrl.searchParams.get("resource")).toBe("https://api.example.com/mcp-server");
     });
 
     it("handles resource with multiple fragments", async () => {

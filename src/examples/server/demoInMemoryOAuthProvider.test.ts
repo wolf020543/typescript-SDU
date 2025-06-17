@@ -178,7 +178,7 @@ describe('DemoInMemoryOAuthProvider', () => {
       await expect(provider.exchangeRefreshToken(
         mockClient,
         'refresh-token'
-      )).rejects.toThrow('Refresh tokens not implemented for example demo');
+      )).rejects.toThrow('Not implemented for example demo');
     });
   });
 
