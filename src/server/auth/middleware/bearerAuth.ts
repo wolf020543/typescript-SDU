@@ -2,7 +2,6 @@ import { RequestHandler } from "express";
 import { InsufficientScopeError, InvalidTokenError, OAuthError, ServerError } from "../errors.js";
 import { OAuthTokenVerifier } from "../provider.js";
 import { AuthInfo } from "../types.js";
-import { DEFAULT_NEGOTIATED_PROTOCOL_VERSION } from "../../../types.js";
 
 export type BearerAuthMiddlewareOptions = {
   /**

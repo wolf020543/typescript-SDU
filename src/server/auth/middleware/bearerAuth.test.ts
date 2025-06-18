@@ -54,28 +54,6 @@ describe("requireBearerAuth middleware", () => {
     expect(mockResponse.json).not.toHaveBeenCalled();
   });
 
-  it("should use default negotiated protocol version when mcp-protocol-version header is missing", async () => {
-    const validAuthInfo: AuthInfo = {
-      token: "valid-token",
-      clientId: "client-123",
-      scopes: ["read", "write"],
-    };
-    mockVerifyAccessToken.mockResolvedValue(validAuthInfo);
-
-    mockRequest.headers = {
-      authorization: "Bearer valid-token",
-    };
-
-    const middleware = requireBearerAuth({ verifier: mockVerifier });
-    await middleware(mockRequest as Request, mockResponse as Response, nextFunction);
-
-    expect(mockVerifyAccessToken).toHaveBeenCalledWith("valid-token", DEFAULT_NEGOTIATED_PROTOCOL_VERSION);
-    expect(mockRequest.auth).toEqual(validAuthInfo);
-    expect(nextFunction).toHaveBeenCalled();
-    expect(mockResponse.status).not.toHaveBeenCalled();
-    expect(mockResponse.json).not.toHaveBeenCalled();
-  });
-
   it("should reject expired tokens", async () => {
     const expiredAuthInfo: AuthInfo = {
       token: "expired-token",
