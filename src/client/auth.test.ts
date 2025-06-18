@@ -849,7 +849,7 @@ describe("OAuth Authorization", () => {
       });
 
       expect(result).toBe("REDIRECT");
-      
+
       // Verify the authorization URL includes the resource parameter
       expect(mockProvider.redirectToAuthorization).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -866,7 +866,7 @@ describe("OAuth Authorization", () => {
       // Mock successful metadata discovery and token exchange
       mockFetch.mockImplementation((url) => {
         const urlString = url.toString();
-        
+
         if (urlString.includes("/.well-known/oauth-authorization-server")) {
           return Promise.resolve({
             ok: true,
@@ -891,7 +891,7 @@ describe("OAuth Authorization", () => {
             }),
           });
         }
-        
+
         return Promise.resolve({ ok: false, status: 404 });
       });
 
@@ -912,11 +912,11 @@ describe("OAuth Authorization", () => {
       expect(result).toBe("AUTHORIZED");
 
       // Find the token exchange call
-      const tokenCall = mockFetch.mock.calls.find(call => 
+      const tokenCall = mockFetch.mock.calls.find(call =>
         call[0].toString().includes("/token")
       );
       expect(tokenCall).toBeDefined();
-      
+
       const body = tokenCall![1].body as URLSearchParams;
       expect(body.get("resource")).toBe("https://api.example.com/mcp-server");
       expect(body.get("code")).toBe("auth-code-123");
@@ -926,7 +926,7 @@ describe("OAuth Authorization", () => {
       // Mock successful metadata discovery and token refresh
       mockFetch.mockImplementation((url) => {
         const urlString = url.toString();
-        
+
         if (urlString.includes("/.well-known/oauth-authorization-server")) {
           return Promise.resolve({
             ok: true,
@@ -950,7 +950,7 @@ describe("OAuth Authorization", () => {
             }),
           });
         }
-        
+
         return Promise.resolve({ ok: false, status: 404 });
       });
 
@@ -973,29 +973,29 @@ describe("OAuth Authorization", () => {
       expect(result).toBe("AUTHORIZED");
 
       // Find the token refresh call
-      const tokenCall = mockFetch.mock.calls.find(call => 
+      const tokenCall = mockFetch.mock.calls.find(call =>
         call[0].toString().includes("/token")
       );
       expect(tokenCall).toBeDefined();
-      
+
       const body = tokenCall![1].body as URLSearchParams;
       expect(body.get("resource")).toBe("https://api.example.com/mcp-server");
       expect(body.get("grant_type")).toBe("refresh_token");
       expect(body.get("refresh_token")).toBe("refresh123");
     });
 
-    it("skips default PRM resource validation when custom validateProtectedResourceMetadata is provided", async () => {
-      const mockValidateProtectedResourceMetadata = jest.fn().mockResolvedValue(undefined);
+    it("skips default PRM resource validation when custom validateResourceURL is provided", async () => {
+      const mockValidateResourceURL = jest.fn().mockResolvedValue(undefined);
       const providerWithCustomValidation = {
         ...mockProvider,
-        validateProtectedResourceMetadata: mockValidateProtectedResourceMetadata,
+        validateResourceURL: mockValidateResourceURL,
       };
 
       // Mock protected resource metadata with mismatched resource URL
       // This would normally throw an error in default validation, but should be skipped
       mockFetch.mockImplementation((url) => {
         const urlString = url.toString();
-        
+
         if (urlString.includes("/.well-known/oauth-protected-resource")) {
           return Promise.resolve({
             ok: true,
@@ -1018,7 +1018,7 @@ describe("OAuth Authorization", () => {
             }),
           });
         }
-        
+
         return Promise.resolve({ ok: false, status: 404 });
       });
 
@@ -1037,12 +1037,12 @@ describe("OAuth Authorization", () => {
       });
 
       expect(result).toBe("REDIRECT");
-      
+
       // Verify custom validation method was called
-      expect(mockValidateProtectedResourceMetadata).toHaveBeenCalledWith({
-        resource: "https://different-resource.example.com/mcp-server",
-        authorization_servers: ["https://auth.example.com"],
-      });
+      expect(mockValidateResourceURL).toHaveBeenCalledWith(
+        "https://api.example.com/mcp-server",
+        "https://different-resource.example.com/mcp-server"
+      );
     });
   });
 });
