@@ -76,7 +76,7 @@ export interface OAuthClientProvider {
   /**
    * If defined, overrides the OAuth Protected Resource Metadata (RFC 9728).
    *
-   * Implementations must verify the provider
+   * Implementations must verify the resource matches the MCP server.
    */
   validateProtectedResourceMetadata?(metadata?: OAuthProtectedResourceMetadata): Promise<void>;
 }

@@ -983,5 +983,66 @@ describe("OAuth Authorization", () => {
       expect(body.get("grant_type")).toBe("refresh_token");
       expect(body.get("refresh_token")).toBe("refresh123");
     });
+
+    it("skips default PRM resource validation when custom validateProtectedResourceMetadata is provided", async () => {
+      const mockValidateProtectedResourceMetadata = jest.fn().mockResolvedValue(undefined);
+      const providerWithCustomValidation = {
+        ...mockProvider,
+        validateProtectedResourceMetadata: mockValidateProtectedResourceMetadata,
+      };
+
+      // Mock protected resource metadata with mismatched resource URL
+      // This would normally throw an error in default validation, but should be skipped
+      mockFetch.mockImplementation((url) => {
+        const urlString = url.toString();
+        
+        if (urlString.includes("/.well-known/oauth-protected-resource")) {
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            json: async () => ({
+              resource: "https://different-resource.example.com/mcp-server", // Mismatched resource
+              authorization_servers: ["https://auth.example.com"],
+            }),
+          });
+        } else if (urlString.includes("/.well-known/oauth-authorization-server")) {
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            json: async () => ({
+              issuer: "https://auth.example.com",
+              authorization_endpoint: "https://auth.example.com/authorize",
+              token_endpoint: "https://auth.example.com/token",
+              response_types_supported: ["code"],
+              code_challenge_methods_supported: ["S256"],
+            }),
+          });
+        }
+        
+        return Promise.resolve({ ok: false, status: 404 });
+      });
+
+      // Mock provider methods
+      (providerWithCustomValidation.clientInformation as jest.Mock).mockResolvedValue({
+        client_id: "test-client",
+        client_secret: "test-secret",
+      });
+      (providerWithCustomValidation.tokens as jest.Mock).mockResolvedValue(undefined);
+      (providerWithCustomValidation.saveCodeVerifier as jest.Mock).mockResolvedValue(undefined);
+      (providerWithCustomValidation.redirectToAuthorization as jest.Mock).mockResolvedValue(undefined);
+
+      // Call auth - should succeed despite resource mismatch because custom validation overrides default
+      const result = await auth(providerWithCustomValidation, {
+        serverUrl: "https://api.example.com/mcp-server",
+      });
+
+      expect(result).toBe("REDIRECT");
+      
+      // Verify custom validation method was called
+      expect(mockValidateProtectedResourceMetadata).toHaveBeenCalledWith({
+        resource: "https://different-resource.example.com/mcp-server",
+        authorization_servers: ["https://auth.example.com"],
+      });
+    });
   });
 });
