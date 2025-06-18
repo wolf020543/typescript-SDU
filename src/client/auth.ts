@@ -72,6 +72,13 @@ export interface OAuthClientProvider {
    * the authorization result.
    */
   codeVerifier(): string | Promise<string>;
+
+  /**
+   * If defined, overrides the OAuth Protected Resource Metadata (RFC 9728).
+   *
+   * Implementations must verify the provider
+   */
+  validateProtectedResourceMetadata?(metadata?: OAuthProtectedResourceMetadata): Promise<void>;
 }
 
 export type AuthResult = "AUTHORIZED" | "REDIRECT";
@@ -109,11 +116,13 @@ export async function auth(
   } catch (error) {
     console.warn("Could not load OAuth Protected Resource metadata, falling back to /.well-known/oauth-authorization-server", error)
   }
-  if (resourceMetadata) {
+  if (provider.validateProtectedResourceMetadata) {
+    await provider.validateProtectedResourceMetadata(resourceMetadata);
+  } else if (resourceMetadata) {
     if (resourceMetadata.authorization_servers && resourceMetadata.authorization_servers.length > 0) {
       authorizationServerUrl = resourceMetadata.authorization_servers[0];
     }
-    if (resourceMetadata.resource && resourceMetadata.resource !== resource.href) {
+    if (resourceMetadata.resource !== resource.href) {
       throw new Error(`Protected resource ${resourceMetadata.resource} does not match expected ${resource}`);
     }
   }
