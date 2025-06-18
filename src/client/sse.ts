@@ -86,10 +86,7 @@ export class SSEClientTransport implements Transport {
 
     let result: AuthResult;
     try {
-      result = await auth(this._authProvider, { 
-        serverUrl: this._url, 
-        resourceMetadataUrl: this._resourceMetadataUrl,
-      });
+      result = await auth(this._authProvider, { serverUrl: this._url, resourceMetadataUrl: this._resourceMetadataUrl });
     } catch (error) {
       this.onerror?.(error as Error);
       throw error;
@@ -204,11 +201,7 @@ export class SSEClientTransport implements Transport {
       throw new UnauthorizedError("No auth provider");
     }
 
-    const result = await auth(this._authProvider, { 
-      serverUrl: this._url, 
-      authorizationCode, 
-      resourceMetadataUrl: this._resourceMetadataUrl,
-    });
+    const result = await auth(this._authProvider, { serverUrl: this._url, authorizationCode, resourceMetadataUrl: this._resourceMetadataUrl });
     if (result !== "AUTHORIZED") {
       throw new UnauthorizedError("Failed to authorize");
     }
@@ -243,10 +236,7 @@ export class SSEClientTransport implements Transport {
 
           this._resourceMetadataUrl = extractResourceMetadataUrl(response);
 
-          const result = await auth(this._authProvider, { 
-            serverUrl: this._url, 
-            resourceMetadataUrl: this._resourceMetadataUrl,
-          });
+          const result = await auth(this._authProvider, { serverUrl: this._url, resourceMetadataUrl: this._resourceMetadataUrl });
           if (result !== "AUTHORIZED") {
             throw new UnauthorizedError();
           }

@@ -365,11 +365,7 @@ export class StreamableHTTPClientTransport implements Transport {
       throw new UnauthorizedError("No auth provider");
     }
 
-    const result = await auth(this._authProvider, { 
-      serverUrl: this._url, 
-      authorizationCode, 
-      resourceMetadataUrl: this._resourceMetadataUrl,
-    });
+    const result = await auth(this._authProvider, { serverUrl: this._url, authorizationCode, resourceMetadataUrl: this._resourceMetadataUrl });
     if (result !== "AUTHORIZED") {
       throw new UnauthorizedError("Failed to authorize");
     }
@@ -417,10 +413,7 @@ export class StreamableHTTPClientTransport implements Transport {
 
           this._resourceMetadataUrl = extractResourceMetadataUrl(response);
 
-          const result = await auth(this._authProvider, { 
-            serverUrl: this._url, 
-            resourceMetadataUrl: this._resourceMetadataUrl,
-          });
+          const result = await auth(this._authProvider, { serverUrl: this._url, resourceMetadataUrl: this._resourceMetadataUrl });
           if (result !== "AUTHORIZED") {
             throw new UnauthorizedError();
           }
