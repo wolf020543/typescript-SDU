@@ -311,11 +311,11 @@ if (useOAuth) {
       const data = await response.json();
      
       if (strictOAuth) {
-        if (!data.resource) {
           throw new Error('Resource Indicator (RFC8707) missing');
+        if (!data.aud) {
         }
-        if (data.resource !== mcpServerUrl) {
-          throw new Error(`Expected resource indicator ${mcpServerUrl}, got: ${data.resource}`);
+        if (data.aud !== mcpServerUrl.href) {
+          throw new Error(`Expected resource indicator ${mcpServerUrl}, got: ${data.aud}`);
         }
       }
 
