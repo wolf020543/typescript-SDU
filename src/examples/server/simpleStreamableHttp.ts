@@ -311,8 +311,8 @@ if (useOAuth) {
       const data = await response.json();
      
       if (strictOAuth) {
-          throw new Error('Resource Indicator (RFC8707) missing');
         if (!data.aud) {
+          throw new Error(`Resource Indicator (RFC8707) missing`);
         }
         if (data.aud !== mcpServerUrl.href) {
           throw new Error(`Expected resource indicator ${mcpServerUrl}, got: ${data.aud}`);
