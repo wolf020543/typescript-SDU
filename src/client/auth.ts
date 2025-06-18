@@ -102,19 +102,20 @@ export async function auth(
 
   const resource = resourceUrlFromServerUrl(typeof serverUrl === "string" ? new URL(serverUrl) : serverUrl);
 
+  let resourceMetadata: OAuthProtectedResourceMetadata | undefined;
   let authorizationServerUrl = serverUrl;
   try {
-    const resourceMetadata = await discoverOAuthProtectedResourceMetadata(
-      resourceMetadataUrl || serverUrl);
-
+    resourceMetadata = await discoverOAuthProtectedResourceMetadata(serverUrl, {resourceMetadataUrl});
+  } catch (error) {
+    console.warn("Could not load OAuth Protected Resource metadata, falling back to /.well-known/oauth-authorization-server", error)
+  }
+  if (resourceMetadata) {
     if (resourceMetadata.authorization_servers && resourceMetadata.authorization_servers.length > 0) {
       authorizationServerUrl = resourceMetadata.authorization_servers[0];
     }
     if (resourceMetadata.resource && resourceMetadata.resource !== resource.href) {
       throw new Error(`Protected resource ${resourceMetadata.resource} does not match expected ${resource}`);
     }
-  } catch (error) {
-    console.warn("Could not load OAuth Protected Resource metadata, falling back to /.well-known/oauth-authorization-server", error)
   }
 
   const metadata = await discoverOAuthMetadata(authorizationServerUrl);
