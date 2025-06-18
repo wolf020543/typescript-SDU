@@ -205,12 +205,12 @@ const getServer = () => {
               },
             ],
           };
-        } else if (result.action === 'decline') {
+        } else if (result.action === 'reject') {
           return {
             content: [
               {
                 type: 'text',
-                text: `No information was collected. User declined to provide ${infoType} information.`,
+                text: `No information was collected. User rejectd to provide ${infoType} information.`,
               },
             ],
           };
@@ -458,7 +458,7 @@ if (useOAuth) {
       }
 
       const data = await response.json();
-     
+
       if (strictOAuth) {
         if (!data.aud) {
           throw new Error(`Resource Indicator (RFC8707) missing`);
