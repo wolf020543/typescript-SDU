@@ -324,6 +324,7 @@ describe("OAuth Authorization", () => {
           metadata: undefined,
           clientInformation: validClientInfo,
           redirectUrl: "http://localhost:3000/callback",
+          resource: new URL("https://api.example.com/mcp-server"),
         }
       );
 
@@ -338,20 +339,8 @@ describe("OAuth Authorization", () => {
       expect(authorizationUrl.searchParams.get("redirect_uri")).toBe(
         "http://localhost:3000/callback"
       );
-      expect(codeVerifier).toBe("test_verifier");
-    });
-
-    it("includes resource parameter when provided", async () => {
-      const { authorizationUrl } = await startAuthorization(
-        "https://auth.example.com",
-        {
-          clientInformation: validClientInfo,
-          redirectUrl: "http://localhost:3000/callback",
-          resource: new URL("https://api.example.com/mcp-server"),
-        }
-      );
-
       expect(authorizationUrl.searchParams.get("resource")).toBe("https://api.example.com/mcp-server");
+      expect(codeVerifier).toBe("test_verifier");
     });
 
     it("includes scope parameter when provided", async () => {
@@ -478,6 +467,7 @@ describe("OAuth Authorization", () => {
         authorizationCode: "code123",
         codeVerifier: "verifier123",
         redirectUri: "http://localhost:3000/callback",
+        resource: new URL("https://api.example.com/mcp-server"),
       });
 
       expect(tokens).toEqual(validTokens);
@@ -500,26 +490,6 @@ describe("OAuth Authorization", () => {
       expect(body.get("client_id")).toBe("client123");
       expect(body.get("client_secret")).toBe("secret123");
       expect(body.get("redirect_uri")).toBe("http://localhost:3000/callback");
-    });
-
-    it("includes resource parameter in token exchange when provided", async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        json: async () => validTokens,
-      });
-
-      const tokens = await exchangeAuthorization("https://auth.example.com", {
-        clientInformation: validClientInfo,
-        authorizationCode: "code123",
-        codeVerifier: "verifier123",
-        redirectUri: "http://localhost:3000/callback",
-        resource: new URL("https://api.example.com/mcp-server"),
-      });
-
-      expect(tokens).toEqual(validTokens);
-      
-      const body = mockFetch.mock.calls[0][1].body as URLSearchParams;
       expect(body.get("resource")).toBe("https://api.example.com/mcp-server");
     });
 
@@ -588,6 +558,7 @@ describe("OAuth Authorization", () => {
       const tokens = await refreshAuthorization("https://auth.example.com", {
         clientInformation: validClientInfo,
         refreshToken: "refresh123",
+        resource: new URL("https://api.example.com/mcp-server"),
       });
 
       expect(tokens).toEqual(validTokensWithNewRefreshToken);
@@ -608,24 +579,6 @@ describe("OAuth Authorization", () => {
       expect(body.get("refresh_token")).toBe("refresh123");
       expect(body.get("client_id")).toBe("client123");
       expect(body.get("client_secret")).toBe("secret123");
-    });
-
-    it("includes resource parameter in refresh token request when provided", async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        json: async () => validTokensWithNewRefreshToken,
-      });
-
-      const tokens = await refreshAuthorization("https://auth.example.com", {
-        clientInformation: validClientInfo,
-        refreshToken: "refresh123",
-        resource: new URL("https://api.example.com/mcp-server"),
-      });
-
-      expect(tokens).toEqual(validTokensWithNewRefreshToken);
-      
-      const body = mockFetch.mock.calls[0][1].body as URLSearchParams;
       expect(body.get("resource")).toBe("https://api.example.com/mcp-server");
     });
 
