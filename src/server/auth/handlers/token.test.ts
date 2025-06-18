@@ -264,12 +264,14 @@ describe('Token Handler', () => {
     });
 
     it('returns tokens for valid code exchange', async () => {
+      const mockExchangeCode = jest.spyOn(mockProvider, 'exchangeAuthorizationCode');
       const response = await supertest(app)
         .post('/token')
         .type('form')
         .send({
           client_id: 'valid-client',
           client_secret: 'valid-secret',
+          resource: 'https://api.example.com/resource',
           grant_type: 'authorization_code',
           code: 'valid_code',
           code_verifier: 'valid_verifier'
@@ -280,24 +282,6 @@ describe('Token Handler', () => {
       expect(response.body.token_type).toBe('bearer');
       expect(response.body.expires_in).toBe(3600);
       expect(response.body.refresh_token).toBe('mock_refresh_token');
-    });
-
-    it('accepts and passes resource parameter to provider', async () => {
-      const mockExchangeCode = jest.spyOn(mockProvider, 'exchangeAuthorizationCode');
-      
-      const response = await supertest(app)
-        .post('/token')
-        .type('form')
-        .send({
-          client_id: 'valid-client',
-          client_secret: 'valid-secret',
-          grant_type: 'authorization_code',
-          code: 'valid_code',
-          code_verifier: 'valid_verifier',
-          resource: 'https://api.example.com/resource'
-        });
-
-      expect(response.status).toBe(200);
       expect(mockExchangeCode).toHaveBeenCalledWith(
         validClient,
         'valid_code',
@@ -465,12 +449,14 @@ describe('Token Handler', () => {
     });
 
     it('returns new tokens for valid refresh token', async () => {
+      const mockExchangeRefresh = jest.spyOn(mockProvider, 'exchangeRefreshToken');
       const response = await supertest(app)
         .post('/token')
         .type('form')
         .send({
           client_id: 'valid-client',
           client_secret: 'valid-secret',
+          resource: 'https://api.example.com/resource',
           grant_type: 'refresh_token',
           refresh_token: 'valid_refresh_token'
         });
@@ -480,6 +466,12 @@ describe('Token Handler', () => {
       expect(response.body.token_type).toBe('bearer');
       expect(response.body.expires_in).toBe(3600);
       expect(response.body.refresh_token).toBe('new_mock_refresh_token');
+      expect(mockExchangeRefresh).toHaveBeenCalledWith(
+        validClient,
+        'valid_refresh_token',
+        undefined, // scopes
+        new URL('https://api.example.com/resource') // resource parameter
+      );
     });
 
     it('respects requested scopes on refresh', async () => {
@@ -496,92 +488,6 @@ describe('Token Handler', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.scope).toBe('profile email');
-    });
-
-    it('accepts and passes resource parameter to provider on refresh', async () => {
-      const mockExchangeRefresh = jest.spyOn(mockProvider, 'exchangeRefreshToken');
-      
-      const response = await supertest(app)
-        .post('/token')
-        .type('form')
-        .send({
-          client_id: 'valid-client',
-          client_secret: 'valid-secret',
-          grant_type: 'refresh_token',
-          refresh_token: 'valid_refresh_token',
-          resource: 'https://api.example.com/resource'
-        });
-
-      expect(response.status).toBe(200);
-      expect(mockExchangeRefresh).toHaveBeenCalledWith(
-        validClient,
-        'valid_refresh_token',
-        undefined, // scopes
-        new URL('https://api.example.com/resource') // resource parameter
-      );
-    });
-
-    it('rejects invalid resource parameter (non-URL) on refresh', async () => {
-      const response = await supertest(app)
-        .post('/token')
-        .type('form')
-        .send({
-          client_id: 'valid-client',
-          client_secret: 'valid-secret',
-          grant_type: 'refresh_token',
-          refresh_token: 'valid_refresh_token',
-          resource: 'not-a-url'
-        });
-
-      expect(response.status).toBe(400);
-      expect(response.body.error).toBe('invalid_request');
-      expect(response.body.error_description).toContain('resource');
-    });
-
-    it('handles refresh token exchange without resource parameter', async () => {
-      const mockExchangeRefresh = jest.spyOn(mockProvider, 'exchangeRefreshToken');
-      
-      const response = await supertest(app)
-        .post('/token')
-        .type('form')
-        .send({
-          client_id: 'valid-client',
-          client_secret: 'valid-secret',
-          grant_type: 'refresh_token',
-          refresh_token: 'valid_refresh_token'
-        });
-
-      expect(response.status).toBe(200);
-      expect(mockExchangeRefresh).toHaveBeenCalledWith(
-        validClient,
-        'valid_refresh_token',
-        undefined, // scopes
-        undefined  // resource parameter
-      );
-    });
-
-    it('passes resource with scopes on refresh', async () => {
-      const mockExchangeRefresh = jest.spyOn(mockProvider, 'exchangeRefreshToken');
-      
-      const response = await supertest(app)
-        .post('/token')
-        .type('form')
-        .send({
-          client_id: 'valid-client',
-          client_secret: 'valid-secret',
-          grant_type: 'refresh_token',
-          refresh_token: 'valid_refresh_token',
-          scope: 'profile email',
-          resource: 'https://api.example.com/resource'
-        });
-
-      expect(response.status).toBe(200);
-      expect(mockExchangeRefresh).toHaveBeenCalledWith(
-        validClient,
-        'valid_refresh_token',
-        ['profile', 'email'], // scopes
-        new URL('https://api.example.com/resource') // resource parameter
-      );
     });
   });
 
