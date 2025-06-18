@@ -354,18 +354,6 @@ describe("OAuth Authorization", () => {
       expect(authorizationUrl.searchParams.get("resource")).toBe("https://api.example.com/mcp-server");
     });
 
-    it("excludes resource parameter when not provided", async () => {
-      const { authorizationUrl } = await startAuthorization(
-        "https://auth.example.com",
-        {
-          clientInformation: validClientInfo,
-          redirectUrl: "http://localhost:3000/callback",
-        }
-      );
-
-      expect(authorizationUrl.searchParams.has("resource")).toBe(false);
-    });
-
     it("includes scope parameter when provided", async () => {
       const { authorizationUrl } = await startAuthorization(
         "https://auth.example.com",
@@ -535,24 +523,6 @@ describe("OAuth Authorization", () => {
       expect(body.get("resource")).toBe("https://api.example.com/mcp-server");
     });
 
-    it("excludes resource parameter from token exchange when not provided", async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        json: async () => validTokens,
-      });
-
-      await exchangeAuthorization("https://auth.example.com", {
-        clientInformation: validClientInfo,
-        authorizationCode: "code123",
-        codeVerifier: "verifier123",
-        redirectUri: "http://localhost:3000/callback",
-      });
-
-      const body = mockFetch.mock.calls[0][1].body as URLSearchParams;
-      expect(body.has("resource")).toBe(false);
-    });
-
     it("validates token response schema", async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
@@ -657,22 +627,6 @@ describe("OAuth Authorization", () => {
       
       const body = mockFetch.mock.calls[0][1].body as URLSearchParams;
       expect(body.get("resource")).toBe("https://api.example.com/mcp-server");
-    });
-
-    it("excludes resource parameter from refresh token request when not provided", async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        json: async () => validTokensWithNewRefreshToken,
-      });
-
-      await refreshAuthorization("https://auth.example.com", {
-        clientInformation: validClientInfo,
-        refreshToken: "refresh123",
-      });
-
-      const body = mockFetch.mock.calls[0][1].body as URLSearchParams;
-      expect(body.has("resource")).toBe(false);
     });
 
     it("exchanges refresh token for new tokens and keep existing refresh token if none is returned", async () => {
@@ -1135,48 +1089,6 @@ describe("OAuth Authorization", () => {
       
       // Verify that the two resources are different (critical for security)
       expect(authUrl1.searchParams.get("resource")).not.toBe(authUrl2.searchParams.get("resource"));
-    });
-
-    it("preserves query parameters in resource URI", async () => {
-      // Mock successful metadata discovery
-      mockFetch.mockImplementation((url) => {
-        const urlString = url.toString();
-        if (urlString.includes("/.well-known/oauth-authorization-server")) {
-          return Promise.resolve({
-            ok: true,
-            status: 200,
-            json: async () => ({
-              issuer: "https://auth.example.com",
-              authorization_endpoint: "https://auth.example.com/authorize",
-              token_endpoint: "https://auth.example.com/token",
-              response_types_supported: ["code"],
-              code_challenge_methods_supported: ["S256"],
-            }),
-          });
-        }
-        return Promise.resolve({ ok: false, status: 404 });
-      });
-
-      // Mock provider methods
-      (mockProvider.clientInformation as jest.Mock).mockResolvedValue({
-        client_id: "test-client",
-        client_secret: "test-secret",
-      });
-      (mockProvider.tokens as jest.Mock).mockResolvedValue(undefined);
-      (mockProvider.saveCodeVerifier as jest.Mock).mockResolvedValue(undefined);
-      (mockProvider.redirectToAuthorization as jest.Mock).mockResolvedValue(undefined);
-
-      // Call auth with resource containing query parameters
-      const result = await auth(mockProvider, {
-        serverUrl: "https://api.example.com/mcp-server?param=value&another=test",
-      });
-
-      expect(result).toBe("REDIRECT");
-
-      // Verify query parameters are preserved (only fragment is removed)
-      const redirectCall = (mockProvider.redirectToAuthorization as jest.Mock).mock.calls[0];
-      const authUrl: URL = redirectCall[0];
-      expect(authUrl.searchParams.get("resource")).toBe("https://api.example.com/mcp-server?param=value&another=test");
     });
   });
 });

@@ -150,13 +150,6 @@ export class DemoInMemoryAuthProvider implements OAuthServerProvider {
       resource: tokenData.resource,
     };
   }
-
-  /**
-   * Get token details including resource information (for demo introspection endpoint)
-   */
-  getTokenDetails(token: string): AuthInfo | undefined {
-    return this.tokens.get(token);
-  }
 }
 
 
@@ -190,14 +183,12 @@ export const setupAuthServer = (authServerUrl: URL, mcpServerUrl: URL): OAuthMet
       }
 
       const tokenInfo = await provider.verifyAccessToken(token);
-      // For demo purposes, we'll add a method to get token details
-      const tokenDetails = provider.getTokenDetails(token);
       res.json({
         active: true,
         client_id: tokenInfo.clientId,
         scope: tokenInfo.scopes.join(' '),
         exp: tokenInfo.expiresAt,
-        ...(tokenDetails?.resource && { aud: tokenDetails.resource })
+        aud: tokenInfo.resource,
       });
       return
     } catch (error) {
