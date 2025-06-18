@@ -93,7 +93,7 @@ export async function auth(
   { serverUrl,
     authorizationCode,
     scope,
-    resourceMetadataUrl,
+    resourceMetadataUrl
   }: {
     serverUrl: string | URL;
     authorizationCode?: string;
