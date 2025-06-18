@@ -78,7 +78,7 @@ export interface OAuthClientProvider {
    *
    * Implementations must verify the resource matches the MCP server.
    */
-  validateProtectedResourceMetadata?(metadata?: OAuthProtectedResourceMetadata): Promise<void>;
+  validateResourceURL?(serverUrl: string | URL, resource?: string): Promise<URL | undefined>;
 }
 
 export type AuthResult = "AUTHORIZED" | "REDIRECT";
@@ -107,25 +107,18 @@ export async function auth(
     scope?: string;
     resourceMetadataUrl?: URL }): Promise<AuthResult> {
 
-  const resource = resourceUrlFromServerUrl(typeof serverUrl === "string" ? new URL(serverUrl) : serverUrl);
-
   let resourceMetadata: OAuthProtectedResourceMetadata | undefined;
   let authorizationServerUrl = serverUrl;
   try {
     resourceMetadata = await discoverOAuthProtectedResourceMetadata(serverUrl, {resourceMetadataUrl});
-  } catch (error) {
-    console.warn("Could not load OAuth Protected Resource metadata, falling back to /.well-known/oauth-authorization-server", error)
-  }
-  if (provider.validateProtectedResourceMetadata) {
-    await provider.validateProtectedResourceMetadata(resourceMetadata);
-  } else if (resourceMetadata) {
     if (resourceMetadata.authorization_servers && resourceMetadata.authorization_servers.length > 0) {
       authorizationServerUrl = resourceMetadata.authorization_servers[0];
     }
-    if (resourceMetadata.resource !== resource.href) {
-      throw new Error(`Protected resource ${resourceMetadata.resource} does not match expected ${resource}`);
-    }
+  } catch (error) {
+    console.warn("Could not load OAuth Protected Resource metadata, falling back to /.well-known/oauth-authorization-server", error)
   }
+
+  const resource: URL | undefined = await selectResourceURL(serverUrl, provider, resourceMetadata);
 
   const metadata = await discoverOAuthMetadata(authorizationServerUrl);
 
@@ -200,6 +193,19 @@ export async function auth(
   await provider.saveCodeVerifier(codeVerifier);
   await provider.redirectToAuthorization(authorizationUrl);
   return "REDIRECT";
+}
+
+async function selectResourceURL(serverUrl: string| URL, provider: OAuthClientProvider, resourceMetadata?: OAuthProtectedResourceMetadata): Promise<URL | undefined> {
+  if (provider.validateResourceURL) {
+    return await provider.validateResourceURL(serverUrl, resourceMetadata?.resource);
+  }
+
+  const resource = resourceUrlFromServerUrl(typeof serverUrl === "string" ? new URL(serverUrl) : serverUrl);
+  if (resourceMetadata && resourceMetadata.resource !== resource.href) {
+    throw new Error(`Protected resource ${resourceMetadata.resource} does not match expected ${resource}`);
+  }
+
+  return resource;
 }
 
 /**
