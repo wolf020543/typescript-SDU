@@ -51,12 +51,7 @@ export function requireBearerAuth({ verifier, requiredScopes = [], resourceMetad
         throw new InvalidTokenError("Invalid Authorization header format, expected 'Bearer TOKEN'");
       }
 
-      let protocolVersion = req.headers["mcp-protocol-version"] ?? DEFAULT_NEGOTIATED_PROTOCOL_VERSION;
-      if (Array.isArray(protocolVersion)) {
-        protocolVersion = protocolVersion[protocolVersion.length - 1];
-      }
-
-      const authInfo = await verifier.verifyAccessToken(token, protocolVersion);
+      const authInfo = await verifier.verifyAccessToken(token);
 
       // Check if token has the required scopes (if any)
       if (requiredScopes.length > 0) {

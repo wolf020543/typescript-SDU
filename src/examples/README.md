@@ -78,7 +78,7 @@ npx tsx src/examples/server/simpleStreamableHttp.ts
 npx tsx src/examples/server/simpleStreamableHttp.ts --oauth
 
 # To mitigate impersonation risks, enable strict Resource Identifier verification:
-npx tsx src/examples/server/simpleStreamableHttp.ts --oauth --oauth-resource=https://some-mcp-server.com --oauth-resource-strict
+npx tsx src/examples/server/simpleStreamableHttp.ts --oauth --oauth-strict
 ```
 
 ##### JSON Response Mode Server

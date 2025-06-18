@@ -102,7 +102,7 @@ export class DemoInMemoryAuthProvider implements OAuthServerProvider {
     }
 
     if (this.validateResource && !this.validateResource(codeData.params.resource)) {
-      throw new Error('Invalid resource');
+      throw new Error(`Invalid resource: ${codeData.params.resource}`);
     }
 
     this.codes.delete(authorizationCode);
