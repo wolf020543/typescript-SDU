@@ -314,8 +314,8 @@ if (useOAuth) {
         if (!data.resource) {
           throw new Error('Resource Indicator (RFC8707) missing');
         }
-        if (data.resource !== expectedOAuthResource) {
-          throw new Error(`Expected resource indicator ${expectedOAuthResource}, got: ${data.resource}`);
+        if (data.resource !== mcpServerUrl) {
+          throw new Error(`Expected resource indicator ${mcpServerUrl}, got: ${data.resource}`);
         }
       }
 
