@@ -74,9 +74,11 @@ export interface OAuthClientProvider {
   codeVerifier(): string | Promise<string>;
 
   /**
-   * If defined, overrides the OAuth Protected Resource Metadata (RFC 9728).
+   * If defined, overrides the selection and validation of the
+   * RFC 8707 Resource Indicator. If left undefined, default
+   * validation behavior will be used.
    *
-   * Implementations must verify the resource matches the MCP server.
+   * Implementations must verify the returned resource matches the MCP server.
    */
   validateResourceURL?(serverUrl: string | URL, resource?: string): Promise<URL | undefined>;
 }
