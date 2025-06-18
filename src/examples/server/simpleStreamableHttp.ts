@@ -210,7 +210,7 @@ const getServer = () => {
             content: [
               {
                 type: 'text',
-                text: `No information was collected. User rejectd to provide ${infoType} information.`,
+                text: `No information was collected. User rejected ${infoType} information request.`,
               },
             ],
           };
