@@ -28,7 +28,7 @@
 - [Documentation](#documentation)
 - [Contributing](#contributing)
 - [License](#license)
-
+     
 ## Overview
 
 The Model Context Protocol allows applications to provide context for LLMs in a standardized way, separating the concerns of providing context from the actual LLM interaction. This TypeScript SDK implements the full MCP specification, making it easy to:
